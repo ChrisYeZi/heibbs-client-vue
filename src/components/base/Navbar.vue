@@ -62,7 +62,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .Navbar {
   height: 60px;
   padding: 7px 10px;

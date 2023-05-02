@@ -1,5 +1,6 @@
 <template>
   <div class="login">
+    <div class="headBox"></div>
     这里是登录页面
     <br />
     账户<input type="username" /><br />
@@ -14,7 +15,10 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .login {
+  .headBox {
+    
+  }
 }
 </style>
