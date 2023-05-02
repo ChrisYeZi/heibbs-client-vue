@@ -1,66 +1,55 @@
 <template>
   <div class="Tabbar">
-    <!-- 两端对齐布局 -->
-    <van-row justify="space-between">
-      <!-- 头像 -->
-      <div class="avatar" @click="showAvatar()">
-        <van-icon
-          name="http://127.0.0.1:8082/avatar.png"
-          :badge="test"
-          size="35"
-        />
-      </div>
-      <!-- Search框 -->
-      <div class="search" @click="showSearch()">
-        <van-icon name="search" color="rgba(255,255,255,0.7)" size="30" />
-      </div>
-      <!-- Chat UI -->
-      <div class="chat">
-        <van-icon
-          name="http://127.0.0.1:8082/icon/chat.png"
-          :badge="test"
-          size="30"
-        />
-      </div>
+    <van-row justify="space-around">
+      <van-col span="6">
+        <div :class="{ select: true }" @click="toIndex()">
+          <van-icon :name="imgUrl + `/icon/guangchang.svg`" size="25" />
+          <br />
+          广场
+        </div>
+      </van-col>
+      <van-col span="6">
+        <div @click="">
+          <van-icon :name="imgUrl + `/icon/huiguan.svg`" size="25" />
+          <br />
+          会馆
+        </div>
+      </van-col>
+      <van-col span="6">
+        <div @click="">
+          <van-icon :name="imgUrl + `/icon/shiyanlu.svg`" size="25" />
+          <br />
+          誓言录
+        </div>
+      </van-col>
+      <van-col span="6">
+        <div @click="toGugu()">
+          <van-icon :name="imgUrl + `/icon/gemen.svg`" size="25" />
+          <br />
+          鸽门
+        </div>
+      </van-col>
     </van-row>
-    <!-- 搜索弹出框 -->
-    <van-popup
-      v-model:show="searchShow"
-      position="top"
-      :style="{ height: '200px' }"
-      round
-    >
-      内容
-    </van-popup>
-    <!-- 头像设置弹出页 -->
-    <van-popup
-      v-model:show="avatarShow"
-      closeable
-      close-icon="close"
-      position="left"
-      :style="{ height: '100%', width: '100%' }"
-    >
-      内容
-    </van-popup>
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import config from "@/config/index";
 export default {
   name: "Tabbar",
+
   data() {
     return {
-      test: null,
-      searchShow: false,
-      avatarShow: false,
+      imgUrl: config.imgUrl,
     };
   },
   methods: {
-    showSearch() {
-      this.searchShow = true;
+    // 多个路由跳转
+    toIndex(): void {
+      this.$router.push("/index");
     },
-    showAvatar() {
-      this.avatarShow = true;
+    toGugu(): void {
+      this.$router.push("/gugu");
     },
   },
 };
@@ -68,27 +57,17 @@ export default {
 
 <style lang="scss" scoped>
 .Tabbar {
-  height: 60px;
-  padding-top: 7px;
-  .avatar {
-  }
-  .search {
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    width: 150px;
-    border-radius: 7px;
-    padding: 5px 0px 0px 10px;
-  }
-  .chat {
-    background: rgba(255, 255, 255, 0.5);
-    display: inline-block;
-    padding: 5px 10px 0px 10px;
-    border-radius: 5px;
-    right: 0;
-    box-sizing: border-box;
-  }
-  .chat:active {
-    transition: 0.2s;
-    background: rgba(252, 249, 224, 0.9);
+  width: 100%;
+  height: 50px;
+  padding-top: 9px;
+  background: rgba(255, 255, 255, 0.8);
+  position: absolute;
+  bottom: 0px;
+  text-align: center;
+  font-size: 0.7rem;
+  .select {
+    font-weight: 550;
+    color: rgba(0, 0, 0, 0.7);
   }
 }
 </style>

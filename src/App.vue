@@ -6,14 +6,14 @@
 
 <style lang="scss">
 * {
-  color: rgb(207, 157, 65);
+  color: rgba(124, 123, 91, 1);
+  // color: rgb(207, 157, 65);
   padding: 0;
   margin: 0;
 }
 body {
   background: #d1decd;
   -webkit-app-region: drag;
-  padding: 0px 7px;
 }
 ::-webkit-scrollbar {
   display: none;
