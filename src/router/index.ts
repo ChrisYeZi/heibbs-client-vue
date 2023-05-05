@@ -41,6 +41,42 @@ const routes: Array<RouteRecordRaw> = [
           title: "鸽门",
         },
       },
+      {
+        path: "/integral",
+        name: "integral",
+        component: () => import("../views/user/integral.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: false,
+          Login: true,
+          NavReturnbar: true,
+          title: "积分",
+        },
+      },
+      {
+        path: "/invitation",
+        name: "invitation",
+        component: () => import("../views/user/invitation.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: false,
+          Login: true,
+          NavReturnbar: true,
+          title: "邀请码",
+        },
+      },
+      {
+        path: "/setting",
+        name: "setting",
+        component: () => import("../views/user/setting.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: false,
+          Login: true,
+          NavReturnbar: true,
+          title: "设置",
+        },
+      },
     ]
   }
 ]
@@ -58,14 +94,30 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
+import { GetUserInfoAPI } from "../api/index";
+
 // 设置登录拦截器
 router.beforeEach((to, from, next) => {
-  if (to.meta.Login) {
-    if (!store.state.user?.login) {
-      next({ path: "/login", query: { url: to.path } })
-    }
+  if (localStorage.getItem("heibbs.token")) {
+    GetUserInfoAPI().then((res) => {
+      if (res.status == 200) {
+        store.commit("user/SET_USERINFO", res.data);
+        store.commit("user/SET_USERLOGIN", true);
+        next()
+      } else {
+
+        next({ path: "/login", query: { url: to.path } })
+      }
+    });
+  } else if (store.state.user?.login) {
+    next()
+  } else if (!to.meta.Login) {
+    next()
+  } else {
+    next({ path: "/login", query: { url: to.path } })
+
   }
-  next();
+
 });
 
 export default router

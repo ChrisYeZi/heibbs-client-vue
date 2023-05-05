@@ -16,6 +16,16 @@
         <van-grid-item icon="photo-o" text="文字" />
       </van-grid>
     </div>
+    没什么放的，那就放点歌吧！(↓黑历的咕咕咕)
+    <iframe
+      src="//player.bilibili.com/player.html?aid=73189916&bvid=BV1sE411y737&cid=125187065&page=1"
+      scrolling="no"
+      border="0"
+      frameborder="no"
+      framespacing="0"
+      allowfullscreen="true"
+    >
+    </iframe>
   </div>
 </template>
 
@@ -32,8 +42,10 @@ export default {
 
 <style lang="scss" scoped>
 .index {
-  background: rgba(252, 249, 224, 1);
-  padding: 10px 10px;
+  background: rgba(255, 255, 255, 0.9);
+  margin-top: 90px;
+  margin-bottom: 70px;
+  padding: 20px 10px;
   border-radius: 10px;
   line-height: 1.5em;
   .post-list {

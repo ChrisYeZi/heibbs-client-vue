@@ -1,4 +1,4 @@
 export default interface UserState {
-    info: Object;
+    info: any;
     login: Boolean
 }

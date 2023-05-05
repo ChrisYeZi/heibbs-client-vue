@@ -1,10 +1,20 @@
 <template>
-  <div class="gugu">test</div>
+  <div class="gugu">{{ content }}</div>
 </template>
 
-<script lang="ts">
+<script>
 export default {
   name: "gugu",
+  data() {
+    return {
+      content: "咕咕咕",
+    };
+  },
+  created() {
+    setInterval(() => {
+      this.content += "咕";
+    }, 1000);
+  },
 };
 </script>
 

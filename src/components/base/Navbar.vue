@@ -8,7 +8,7 @@
       </div>
       <!-- Search框 -->
       <div class="search" @click="showSearch()">
-        <van-icon name="search" color="rgba(255,255,255,0.7)" size="30" />
+        <van-icon name="search" color="rgba(124, 123, 91, 0.5)" size="30" />
       </div>
       <!-- Chat UI -->
       <div class="chat">
@@ -22,7 +22,7 @@
       :style="{ height: '200px' }"
       round
     >
-      内容
+      这里有好看的！
     </van-popup>
     <!-- 头像设置弹出页 -->
     <van-popup
@@ -30,14 +30,15 @@
       closeable
       :close-icon="imgUrl + '/icon/guanbi.svg'"
       position="left"
-      :style="{ height: '100%', width: '100%'}"
+      :style="{ height: '100%', width: '100%', background: 'rgb(255,248,226)' }"
     >
       <NavbarUserVue></NavbarUserVue>
     </van-popup>
   </div>
 </template>
 
-<script lang="ts">
+<!-- 这里不适合用ts -->
+<script>
 import config from "@/config/index";
 import NavbarUserVue from "../user/NavbarUser.vue";
 export default {
@@ -64,13 +65,19 @@ export default {
 
 <style lang="scss" scoped>
 .Navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
   height: 60px;
-  padding: 7px 10px;
   padding-top: 20px;
+  background: rgba(255, 254, 249, 1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  z-index: 999;
   .avatar {
+    margin-left: 10px;
   }
   .search {
-    border: 2px solid rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(124, 123, 91, 0.5);
     width: 150px;
     border-radius: 7px;
     padding: 5px 0px 0px 10px;
@@ -82,10 +89,11 @@ export default {
     border-radius: 5px;
     right: 0;
     box-sizing: border-box;
+    margin-right: 10px;
   }
   .chat:active {
     transition: 0.2s;
-    background: rgba(252, 249, 224, 0.9);
+    background: rgba(244, 170, 41, 0.5);
   }
 }
 </style>

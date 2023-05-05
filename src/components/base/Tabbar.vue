@@ -22,8 +22,8 @@
           誓言录
         </div>
       </van-col>
-      <van-col span="6">
-        <div @click="toGugu()">
+      <van-col span="6" @click="toGugu()">
+        <div>
           <van-icon :name="imgUrl + `/icon/gemen.svg`" size="25" />
           <br />
           鸽门
@@ -35,6 +35,7 @@
 
 <script lang="ts">
 import config from "@/config/index";
+import router from "@/router";
 export default {
   name: "Tabbar",
 
@@ -46,10 +47,10 @@ export default {
   methods: {
     // 多个路由跳转
     toIndex(): void {
-      this.$router.push("/index");
+      router.push("/index");
     },
     toGugu(): void {
-      this.$router.push("/gugu");
+      router.push("/gugu");
     },
   },
 };
@@ -60,8 +61,8 @@ export default {
   width: 100%;
   height: 50px;
   padding-top: 9px;
-  background: rgba(255, 255, 255, 0.8);
-  position: absolute;
+  background: rgba(255, 254, 249, 1);
+  position: fixed;
   bottom: 0px;
   text-align: center;
   font-size: 0.7rem;
