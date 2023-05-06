@@ -26,6 +26,7 @@ export default {
 
 <style lang="scss" scoped>
 .NavReturnbar {
+  background: rgba(255,248,226,1);
   position: fixed;
   display: flex;
   top: 0;

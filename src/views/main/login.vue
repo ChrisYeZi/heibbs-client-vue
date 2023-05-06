@@ -200,7 +200,7 @@ export default {
     },
     // 登录
     login() {
-      if(!this.agreementChecked){
+      if (!this.agreementChecked) {
         this.content = "接受协议接受协议接受协议接受协议接受协议";
         this.msgShow = true;
         return;
@@ -237,7 +237,7 @@ export default {
 
     // 忘记密码修改密码
     forgot() {
-      let email = /^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/;
+      let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
       if (!email.test(this.user.email)) {
         this.content = "邮箱格式错误";
         this.msgShow = true;
@@ -249,7 +249,7 @@ export default {
         return;
       }
       UpdateForgotPasswordAPI({
-        email: this.user.email,
+        email: this.user.email.toLocaleLowerCase(),
         captchacode: this.user.captcha,
         password: this.user.password,
       }).then((res) => {
@@ -268,14 +268,14 @@ export default {
     },
     // 忘记密码请求验证码
     forgotRequestCaptcha() {
-      let email = /^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/;
+      let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
       if (!email.test(this.user.email)) {
         this.content = "邮箱格式错误";
         this.msgShow = true;
         return;
       }
       GetForgotCaptchaAPI({
-        email: this.user.email,
+        email: this.user.email.toLocaleLowerCase(),
       }).then((res) => {
         if (res.data == "请勿重复请求验证码") {
           this.content = res.data;
@@ -297,8 +297,8 @@ export default {
     // 注册账户
     register() {
       let username = /^([\u4e00-\u9fa5a-zA-Z0-9]{1,9}\S{1,9})$/;
-      let email = /^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/;
-      if (!username.test(this.user.username)||this.user.username.length>8) {
+      let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
+      if (!username.test(this.user.username) || this.user.username.length > 8) {
         this.content = "用户名格式错误";
         this.msgShow = true;
         return;
@@ -313,14 +313,14 @@ export default {
         this.msgShow = true;
         return;
       }
-      if(!this.agreementChecked){
+      if (!this.agreementChecked) {
         this.content = "接受协议接受协议接受协议接受协议接受协议";
         this.msgShow = true;
         return;
       }
       RegisterAPI({
         username: this.user.username,
-        email: this.user.email,
+        email: this.user.email.toLocaleLowerCase(),
         password: this.user.password,
         invitation: this.user.invitation,
         captcha: this.user.captcha,
@@ -340,14 +340,15 @@ export default {
     },
     // 注册账户请求验证码
     registerRequestCaptcha() {
-      let email = /^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/;
+      let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
       if (!email.test(this.user.email)) {
         this.content = "邮箱格式错误";
         this.msgShow = true;
         return;
       }
       GetRegisterCaptchaAPI({
-        email: this.user.email,
+        email: this.user.email.toLocaleLowerCase(),
+        invitation: this.user.invitation,
       }).then((res) => {
         if (res.data == "请勿重复请求验证码") {
           this.content = res.data;

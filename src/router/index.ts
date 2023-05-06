@@ -31,6 +31,18 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
+        path: "/chat",
+        name: "chat",
+        component: () => import("../views/main/chat.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: true,
+          Login: true,
+          NavReturnbar: true,
+          title: "聊天",
+        },
+      },
+      {
         path: "/gugu",
         name: "gugu",
         component: () => import("../views/gugu/gugu.vue"),

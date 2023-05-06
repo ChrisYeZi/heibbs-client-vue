@@ -19,6 +19,11 @@ interface Register {
     invitation: String
     captcha: String
 }
+// 注册请求验证码
+interface RegisterCaptcha {
+    email: String
+    invitation: String
+}
 
 // Res是返回的参数，T是泛型，返回对数据统一管理
 type Res<T> = Promise<ItypeAPI<T>>;
@@ -46,7 +51,16 @@ export const UpdateForgotPasswordAPI = (data: ForgotPassword): Res<String> => in
 export const GetUserInfoAPI = (): Res<String> => instance.get("/member/getUserInfo")
 
 // 注册获取验证码
-export const GetRegisterCaptchaAPI = (params: { email: String }): Res<String> => instance.get("/member/getRegisterCaptcha", { params })
+export const GetRegisterCaptchaAPI = (data: RegisterCaptcha): Res<String> => instance.post("/member/getRegisterCaptcha", data)
 
 // 注册
 export const RegisterAPI = (data: Register): Res<String> => instance.post("/member/register", data)
+
+// 获取所有邀请码
+export const GetUserInvitationAPI = (): Res<String> => instance.get("/member/getInvitation")
+
+// 创建邀请码
+export const CreateInvitationAPI = (): Res<String> => instance.get("/member/createInvitation")
+
+// 获取当前用户所有消息
+export const GetChatListAPI = (): Res<String> => instance.get("/system/getChatList")

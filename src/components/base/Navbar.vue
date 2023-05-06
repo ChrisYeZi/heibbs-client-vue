@@ -11,7 +11,7 @@
         <van-icon name="search" color="rgba(124, 123, 91, 0.5)" size="30" />
       </div>
       <!-- Chat UI -->
-      <div class="chat">
+      <div class="chat" @click="toChat()">
         <van-icon :name="imgUrl + '/icon/xinxi.svg'" :badge?="test" size="30" />
       </div>
     </van-row>
@@ -41,6 +41,7 @@
 <script>
 import config from "@/config/index";
 import NavbarUserVue from "../user/NavbarUser.vue";
+import router from "@/router";
 export default {
   name: "Navbar",
   components: { NavbarUserVue },
@@ -58,6 +59,9 @@ export default {
     },
     showAvatar() {
       this.avatarShow = true;
+    },
+    toChat() {
+      router.push("/chat");
     },
   },
 };
