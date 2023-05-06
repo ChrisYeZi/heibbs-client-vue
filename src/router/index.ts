@@ -104,8 +104,10 @@ router.beforeEach((to, from, next) => {
         store.commit("user/SET_USERINFO", res.data);
         store.commit("user/SET_USERLOGIN", true);
         next()
+      } else if (res.status == 500) {
+        console.log(res.data);
+        localStorage.clear()
       } else {
-
         next({ path: "/login", query: { url: to.path } })
       }
     });
