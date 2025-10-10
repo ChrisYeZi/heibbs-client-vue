@@ -26,7 +26,8 @@ export default {
 
 <style lang="scss" scoped>
 .NavReturnbar {
-  background: rgba(255,248,226,1);
+  background: rgba(255, 254, 249, 1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   position: fixed;
   display: flex;
   top: 0;
@@ -42,8 +43,8 @@ export default {
     margin: 10px;
   }
   .return:active {
-    transition: 0.2s;
-    background: rgba(244, 170, 41, 0.3);
+    transition: 0.1s;
+    background: rgba(223, 209, 186, 0.3);
   }
   .title {
     position: absolute;

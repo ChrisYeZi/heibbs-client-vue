@@ -1,13 +1,13 @@
 <template>
   <div class="login">
     <div class="headBox">
-      <van-icon
-        :name="imgUrl + '/icon/guanbi.svg'"
-        size="30"
-        @click="toIndex()"
-      />
+      <img src="../../assets/icon/guanbi.svg" width="30" @click="toIndex()" />
     </div>
 
+    <van-notice-bar
+      left-icon="volume-o"
+      text="当前论坛开发当中，为确保论坛稳定，暂不开放注册功能。"
+    />
     <!--        登录         -->
     <div class="login-form" v-if="indexType == 'login'">
       <!-- 标题 -->
@@ -227,9 +227,9 @@ export default {
           // 延迟跳转
           setTimeout(() => {
             router.push("/index");
-          }, 1500);
+          }, 1000);
         } else {
-          this.content = res.msg;
+          this.content = res.data;
           this.msgShow = true;
         }
       });
@@ -259,7 +259,7 @@ export default {
           // 延迟跳转
           setTimeout(() => {
             router.push("/login");
-          }, 1500);
+          }, 1000);
         } else {
           this.content = res.data;
           this.msgShow = true;
@@ -296,75 +296,79 @@ export default {
 
     // 注册账户
     register() {
-      let username = /^([\u4e00-\u9fa5a-zA-Z0-9]{1,9}\S{1,9})$/;
-      let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
-      if (!username.test(this.user.username) || this.user.username.length > 8) {
-        this.content = "用户名格式错误";
-        this.msgShow = true;
-        return;
-      }
-      if (!email.test(this.user.email)) {
-        this.content = "邮箱格式错误";
-        this.msgShow = true;
-        return;
-      }
-      if (this.user.password != this.user.rePassword) {
-        this.content = "两次密码不一致";
-        this.msgShow = true;
-        return;
-      }
-      if (!this.agreementChecked) {
-        this.content = "接受协议接受协议接受协议接受协议接受协议";
-        this.msgShow = true;
-        return;
-      }
-      RegisterAPI({
-        username: this.user.username,
-        email: this.user.email.toLocaleLowerCase(),
-        password: this.user.password,
-        invitation: this.user.invitation,
-        captcha: this.user.captcha,
-      }).then((res) => {
-        if (res.status == 200) {
-          this.content = res.data;
-          this.msgShow = true;
-          // 延迟跳转
-          setTimeout(() => {
-            router.push("/login");
-          }, 1500);
-        } else {
-          this.content = res.data;
-          this.msgShow = true;
-        }
-      });
+      this.content = "目前不开放注册";
+      this.msgShow = true;
+      // let username = /^([\u4e00-\u9fa5a-zA-Z0-9]{1,9}\S{1,9})$/;
+      // let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
+      // if (!username.test(this.user.username) || this.user.username.length > 8) {
+      //   this.content = "用户名格式错误";
+      //   this.msgShow = true;
+      //   return;
+      // }
+      // if (!email.test(this.user.email)) {
+      //   this.content = "邮箱格式错误";
+      //   this.msgShow = true;
+      //   return;
+      // }
+      // if (this.user.password != this.user.rePassword) {
+      //   this.content = "两次密码不一致";
+      //   this.msgShow = true;
+      //   return;
+      // }
+      // if (!this.agreementChecked) {
+      //   this.content = "接受协议接受协议接受协议接受协议接受协议";
+      //   this.msgShow = true;
+      //   return;
+      // }
+      // RegisterAPI({
+      //   username: this.user.username,
+      //   email: this.user.email.toLocaleLowerCase(),
+      //   password: this.user.password,
+      //   invitation: this.user.invitation,
+      //   captcha: this.user.captcha,
+      // }).then((res) => {
+      //   if (res.status == 200) {
+      //     this.content = res.data;
+      //     this.msgShow = true;
+      //     // 延迟跳转
+      //     setTimeout(() => {
+      //       router.push("/login");
+      //     }, 1500);
+      //   } else {
+      //     this.content = res.data;
+      //     this.msgShow = true;
+      //   }
+      // });
     },
     // 注册账户请求验证码
     registerRequestCaptcha() {
-      let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
-      if (!email.test(this.user.email)) {
-        this.content = "邮箱格式错误";
-        this.msgShow = true;
-        return;
-      }
-      GetRegisterCaptchaAPI({
-        email: this.user.email.toLocaleLowerCase(),
-        invitation: this.user.invitation,
-      }).then((res) => {
-        if (res.data == "请勿重复请求验证码") {
-          this.content = res.data;
-          this.questCaptcha = true;
-          this.msgShow = true;
-          return;
-        }
-        if (res.status == 200) {
-          this.content = res.data;
-          this.questCaptcha = true;
-          this.msgShow = true;
-        } else {
-          this.content = res.data;
-          this.msgShow = true;
-        }
-      });
+      this.content = "目前不开放注册";
+      this.msgShow = true;
+      // let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
+      // if (!email.test(this.user.email)) {
+      //   this.content = "邮箱格式错误";
+      //   this.msgShow = true;
+      //   return;
+      // }
+      // GetRegisterCaptchaAPI({
+      //   email: this.user.email.toLocaleLowerCase(),
+      //   invitation: this.user.invitation,
+      // }).then((res) => {
+      //   if (res.data == "请勿重复请求验证码") {
+      //     this.content = res.data;
+      //     this.questCaptcha = true;
+      //     this.msgShow = true;
+      //     return;
+      //   }
+      //   if (res.status == 200) {
+      //     this.content = res.data;
+      //     this.questCaptcha = true;
+      //     this.msgShow = true;
+      //   } else {
+      //     this.content = res.data;
+      //     this.msgShow = true;
+      //   }
+      // });
     },
 
     // 切换
@@ -429,6 +433,7 @@ export default {
         text-align: center;
         border-radius: 10px;
         color: rgb(226, 156, 50);
+        width: 100%;
       }
       .form-quest-submit {
         position: absolute;

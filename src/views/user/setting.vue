@@ -1,6 +1,6 @@
 <template>
   <div class="settingBox">
-    <div class="settingList">11111111111</div>
+    <div class="settingList">这里没有任何设置！</div>
     <div class="quitLogin" @click="quit()">退出登录</div>
   </div>
 
@@ -46,7 +46,7 @@ export default {
           this.msgShow = true;
           setTimeout(() => {
             router.push("/login");
-          }, 1500);
+          }, 1000);
         })
         .catch(() => {
           // on cancel
@@ -74,8 +74,8 @@ export default {
     font-weight: 550;
   }
   .quitLogin:active {
-    transition: 0.2s;
-    background: rgba(244, 170, 41, 0.9);
+    transition: 0.05s;
+    background: rgba(255, 209, 130, 0.9);
   }
 }
 </style>

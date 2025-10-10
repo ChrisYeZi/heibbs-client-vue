@@ -4,15 +4,16 @@
     <van-row justify="space-between">
       <!-- 头像 -->
       <div class="avatar" @click="showAvatar()">
-        <van-icon :name="imgUrl + '/avatar.png'" size="35" />
+        <img src="../../assets/img/avatar.png" width="35" />
+        <!-- <div class="Navbar-username">{{ username }}</div> -->
       </div>
-      <!-- Search框 -->
+      <!-- Search框
       <div class="search" @click="showSearch()">
         <van-icon name="search" color="rgba(124, 123, 91, 0.5)" size="30" />
-      </div>
+      </div> -->
       <!-- Chat UI -->
       <div class="chat" @click="toChat()">
-        <van-icon :name="imgUrl + '/icon/xinxi.svg'" :badge?="test" size="30" />
+        <img src="../../assets/icon/xinxi.svg" width="30" />
       </div>
     </van-row>
     <!-- 搜索弹出框 -->
@@ -28,9 +29,13 @@
     <van-popup
       v-model:show="avatarShow"
       closeable
-      :close-icon="imgUrl + '/icon/guanbi.svg'"
+      :close-icon="require(`@/assets/icon/guanbi.svg`)"
       position="left"
-      :style="{ height: '100%', width: '100%', background: 'rgb(255,248,226)' }"
+      :style="{
+        height: '100%',
+        width: '100%',
+        background: 'rgba(255,248,226,0)',
+      }"
     >
       <NavbarUserVue></NavbarUserVue>
     </van-popup>
@@ -41,6 +46,7 @@
 <script>
 import config from "@/config/index";
 import NavbarUserVue from "../user/NavbarUser.vue";
+import store from "@/store";
 import router from "@/router";
 export default {
   name: "Navbar",
@@ -51,6 +57,7 @@ export default {
       test: null,
       searchShow: false,
       avatarShow: false,
+      username: store.state.user?.info?.user?.username,
     };
   },
   methods: {
@@ -72,13 +79,20 @@ export default {
   position: fixed;
   top: 0;
   width: 100%;
-  height: 60px;
-  padding-top: 20px;
+  height: 50px;
+  padding: 0px 10px;
+  padding-top: 10px;
   background: rgba(255, 254, 249, 1);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   z-index: 999;
   .avatar {
     margin-left: 10px;
+    .Navbar-username {
+      float: right;
+      font-size: 18px;
+      text-indent: 10px;
+      line-height: 2.2em;
+    }
   }
   .search {
     border: 2px solid rgba(124, 123, 91, 0.5);

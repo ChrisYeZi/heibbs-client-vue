@@ -4,6 +4,12 @@
   <div class="layout">
     <router-view />
   </div>
+  <div v-if="$route.meta.Copyright" class="layout-copyright">
+    <p>罗小黑妖灵论坛（公益非官方）</p>
+    <p>Copyright ©2020-2025 heibbs.net All Rights Reserved.</p>
+    <p>论坛管理组: admin@heibbs.net 风气监督组: complaint@heibbs.net</p>
+  </div>
+
   <TabbarVue v-if="$route.meta.Tabbar"></TabbarVue>
 </template>
 
@@ -42,5 +48,14 @@ export default {
 <style lang="scss" scoped>
 .layout {
   padding: 0px 10px;
+}
+.layout-copyright {
+  margin-top: 10px;
+  padding-top: 20px;
+  margin-bottom: 60px;
+  height: 100px;
+  text-align: center;
+  color: rgb(155, 154, 128);
+  line-height: 1.8em;
 }
 </style>

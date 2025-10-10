@@ -2,7 +2,7 @@
   <div class="integralBox">
     <div class="integralList">
       <van-cell-group inset>
-        <van-cell title="宇宙级超级无敌霸王龙战士的战斗力" :value="credits" />
+        <van-cell title="积分" :value="credits" />
         <van-cell title="妖灵币" :value="integral.extcredits1" />
         <van-cell title="人气" :value="integral.extcredits2" />
         <van-cell title="灵气" :value="integral.extcredits3" />

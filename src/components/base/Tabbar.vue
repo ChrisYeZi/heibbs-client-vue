@@ -3,28 +3,28 @@
     <van-row justify="space-around">
       <van-col span="6">
         <div :class="{ select: true }" @click="toIndex()">
-          <van-icon :name="imgUrl + `/icon/guangchang.svg`" size="25" />
+          <img src="../../assets/icon/guangchang.svg" width="25">
           <br />
           广场
         </div>
       </van-col>
       <van-col span="6">
-        <div @click="">
-          <van-icon :name="imgUrl + `/icon/huiguan.svg`" size="25" />
+        <div @click="toIndex()">
+          <img src="../../assets/icon/huiguan.svg" width="25">
           <br />
           会馆
         </div>
       </van-col>
       <van-col span="6">
-        <div @click="">
-          <van-icon :name="imgUrl + `/icon/shiyanlu.svg`" size="25" />
+        <div @click="toIndex()">
+          <img src="../../assets/icon/shiyanlu.svg" width="25">
           <br />
-          誓言录
+          集市
         </div>
       </van-col>
       <van-col span="6" @click="toGugu()">
         <div>
-          <van-icon :name="imgUrl + `/icon/gemen.svg`" size="25" />
+          <img src="../../assets/icon/gemen.svg" width="25">
           <br />
           鸽门
         </div>
@@ -66,6 +66,7 @@ export default {
   bottom: 0px;
   text-align: center;
   font-size: 0.7rem;
+  z-index: 998;
   .select {
     font-weight: 550;
     color: rgba(0, 0, 0, 0.7);
