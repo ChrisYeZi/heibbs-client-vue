@@ -10,6 +10,7 @@
   // color: rgb(207, 157, 65);
   padding: 0;
   margin: 0;
+  
 }
 :root:root {
   // 单元格背景 - 触发颜色
@@ -32,6 +33,7 @@ body {
   color: rgba(124, 123, 91, 1);
   background: rgb(255, 248, 226);
   -webkit-app-region: drag;
+  
 }
 ::-webkit-scrollbar {
   display: none;

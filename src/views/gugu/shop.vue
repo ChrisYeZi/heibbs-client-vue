@@ -1,5 +1,5 @@
 <template>
-  <div class="gugu">咕咕之门{{ content }}</div>
+  <div class="shop">集市{{ content }}</div>
 </template>
 
 <script setup>
@@ -17,7 +17,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.gugu {
+.shop {
   padding: 10px 20px;
 }
 </style>

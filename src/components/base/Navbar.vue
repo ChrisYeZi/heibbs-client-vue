@@ -68,7 +68,7 @@ export default {
       this.avatarShow = true;
     },
     toChat() {
-      router.push("/chat");
+      router.push("/chatlist");
     },
   },
 };

@@ -5,6 +5,8 @@
 
     <!-- 空状态 -->
     <van-empty
+      image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
+      :image-size="[250, 280]"
       v-if="!isLoading && !replyPage?.records?.length"
       :description="postUnknow || '暂无帖子数据'"
       class="empty-state"
@@ -12,25 +14,53 @@
 
     <!-- 帖子内容 -->
     <div v-if="!isLoading && mainPost">
+      <div class="post-block">
+        <span class="post-block-tag"
+          >{{ blockList[mainPost.fid - 1].name }}
+        </span>
+      </div>
       <!-- 主帖 -->
       <div class="main-post">
         <div class="post-header">
           <div class="author-info">
+            <!-- 头像 -->
             <el-avatar
               class="author-avatar"
-              src="http://127.0.0.1:8081/api/attachment/200000/logo.png"
+              src="http://www.heibbs.net:8081/api/attachment/200000/logo.png"
             />
             <div class="author-details">
-              <div class="author-name">{{ mainPost.author }}</div>
+              <!-- 作者 -->
+              <div class="author-name">
+                <!-- 用户组 -->
+                <span class="post-meta-group" v-if="mainPost.extgroupid == 0">{{
+                  groupList.groupDo[mainPost?.groupid - 1]?.gname
+                }}</span>
+                <span
+                  class="post-meta-admingroup"
+                  v-if="mainPost?.extgroupid != 0"
+                  >{{
+                    groupList.extgroupDo[mainPost?.extgroupid - 1]?.gname
+                  }}</span
+                >
+                {{ mainPost.author }}
+              </div>
+              <!-- 时间 -->
               <div class="post-time">{{ mainPost.formattedCreateTime }}</div>
             </div>
           </div>
-          <van-tag v-if="mainPost.first === 1" color="rgba(0,0,0,0.1)"
-            >楼主</van-tag
-          >
+          <div class="post-tag">
+            <van-tag v-if="mainPost.first === 1" color="rgba(200, 140, 20, 0.3)"
+              >查看({{ mainPost.viewCount }})</van-tag
+            >&nbsp;
+            <van-tag v-if="mainPost.first === 1" color="rgba(200, 140, 20, 0.3)"
+              >楼主</van-tag
+            >
+          </div>
         </div>
 
-        <div class="post-title">{{ mainPost.subject }}</div>
+        <div class="post-title">
+          {{ mainPost.subject }}
+        </div>
 
         <div
           class="post-content"
@@ -233,7 +263,7 @@ import { defineComponent, ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Empty, Loading, Icon, Tag, Image as VanImage, Pagination } from "vant";
 
-import { GetPostAPI } from "@/api/index";
+import { GetPostAPI, GetBlockListAPI, GetGroupListAPI } from "@/api/index";
 import parsedContent from "@/assets/js/parsedContent";
 
 // 定义附件接口
@@ -265,6 +295,9 @@ interface PostItem {
   state: number;
   attachments: Attachment[];
   formattedCreateTime: string;
+  viewCount: number;
+  groupid?: number;
+  extgroupid?: number;
 }
 
 // 定义分页响应接口
@@ -275,6 +308,24 @@ interface ReplyPage {
   current: number;
   pages: number;
   // 其他分页字段...
+}
+
+interface BlockItem {
+  id?: number;
+  name?: string;
+  management?: [];
+  license?: boolean;
+  type?: number;
+  repost?: boolean;
+  finance?: number;
+  taxRate?: number;
+  title?: [];
+  imgUrl?: string;
+}
+
+interface GroupItem {
+  groupDo?: [];
+  extgroupDo?: [];
 }
 
 export default defineComponent({
@@ -292,6 +343,8 @@ export default defineComponent({
     const route = useRoute();
     const isLoading = ref(true);
     const attachSubmit = ref(false);
+    const blockList = ref<BlockItem>(null);
+    const groupList = ref<GroupItem>(null);
     const postUnknow = ref("");
     const mainPost = ref<PostItem | null>(null);
     const replyPage = ref<ReplyPage>({
@@ -348,7 +401,7 @@ export default defineComponent({
           router.currentRoute.value.meta.title = pageTitle;
         } else {
           console.error("获取帖子失败:", res.data);
-          postUnknow.value = res.msg || "获取帖子失败";
+          postUnknow.value = res.data || "获取帖子失败";
         }
       } catch (error: any) {
         console.error("获取帖子出错:", error);
@@ -418,10 +471,34 @@ export default defineComponent({
       }
     };
 
+    // 获取板块信息
+    const getBlockData = async () => {
+      const res: any = await GetBlockListAPI();
+      if (res.status == 200) {
+        blockList.value = res.data;
+      } else {
+        console.error("获取板块数据失败:", res.msg);
+      }
+    };
+
+    // 获取用户组信息
+    const getGroupData = async () => {
+      const res: any = await GetGroupListAPI();
+      if (res.status == 200) {
+        groupList.value = res.data;
+      } else {
+        console.error("获取用户组数据失败:", res.msg);
+      }
+    };
+
     // 初始化加载数据
     getData();
+    getBlockData();
+    getGroupData();
 
     return {
+      blockList,
+      groupList,
       isLoading,
       mainPost,
       replyPage,
@@ -446,10 +523,10 @@ export default defineComponent({
 .post-detail {
   background: rgba(255, 255, 255, 0.9);
   min-height: calc(100vh - 730px);
-  margin-top: 70px;
   padding: 15px 10px;
   border-radius: 10px;
   line-height: 1.6em;
+  margin: 70px 10px 0px 10px;
 }
 
 .loading-indicator {
@@ -459,6 +536,19 @@ export default defineComponent({
 
 .empty-state {
   padding: 50px 0;
+}
+.post-block {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  .post-block-tag {
+    color: rgba(255, 255, 255, 1);
+    font-weight: 500;
+    margin-right: 5px;
+    border-radius: 5px;
+    padding: 2px 4px;
+    font-size: 16px;
+  }
 }
 
 // 主帖样式
@@ -489,6 +579,18 @@ export default defineComponent({
         .author-name {
           font-weight: 500;
           color: #2c2c2c;
+          .post-meta-group {
+            color: rgba(255, 255, 255, 1);
+            background: rgba(41, 146, 244, 0.7);
+            border-radius: 5px;
+            padding: 2px 4px;
+          }
+          .post-meta-admingroup {
+            color: rgba(255, 255, 255, 1);
+            background: rgba(244, 41, 41, 0.7);
+            border-radius: 5px;
+            padding: 2px 4px;
+          }
         }
 
         .post-time {
@@ -507,11 +609,19 @@ export default defineComponent({
     padding-bottom: 10px;
     border-bottom: 1px solid #f5f5f5;
   }
-
+  .discuz-img {
+    max-width: 100% !important; // 关键：图片最大宽度 = 容器宽度
+    height: auto !important; // 高度随宽度等比例缩放，避免变形
+    border-radius: 4px; // 可选：优化视觉效果
+  }
   .post-content {
     color: #555;
     font-size: 15px;
     margin-bottom: 15px;
+    // 允许长文本在任意字符处换行（解决无空格长URL问题）
+    word-break: break-all;
+    // 同时兼容中文/英文换行（备选，根据内容调整）
+    word-wrap: break-word;
 
     .post-image {
       max-width: 100%;
@@ -598,6 +708,7 @@ export default defineComponent({
     }
   }
 
+  // 评论
   .comment-list {
     .comment-item {
       padding: 10px 0;
@@ -636,6 +747,10 @@ export default defineComponent({
         color: #555;
         margin-bottom: 8px;
         padding-left: 46px;
+        // 允许长文本在任意字符处换行（解决无空格长URL问题）
+        word-break: break-all;
+        // 同时兼容中文/英文换行（备选，根据内容调整）
+        word-wrap: break-word;
       }
 
       .comment-actions {

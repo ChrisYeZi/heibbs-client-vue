@@ -9,37 +9,14 @@ const routes: Array<RouteRecordRaw> = [
     redirect: "/index",
     // children: [
     //   {
-    //     path: "/index",
-    //     name: "index",
+    //     path: "/qyindex",
+    //     name: "qyindex",
     //     component: () => import("../views/qyindex.vue"),
     //     meta: {
     //       Navbar: true,//顶部导航栏
     //       Tabbar: false,//底部导航栏
     //       Login: true,//是否需要登录
     //       title: "账户转移",
-    //     },
-    //   },
-    //   {
-    //     path: "/login",
-    //     name: "login",
-    //     component: () => import("../views/main/login.vue"),
-    //     meta: {
-    //       Navbar: false,
-    //       Tabbar: false,
-    //       Login: false,
-    //       title: "登录",
-    //     },
-    //   },
-    //   {
-    //     path: "/setting",
-    //     name: "setting",
-    //     component: () => import("../views/user/setting.vue"),
-    //     meta: {
-    //       Navbar: false,
-    //       Tabbar: false,
-    //       Login: true,
-    //       NavReturnbar: true,
-    //       title: "设置",
     //     },
     //   },
     // ]
@@ -83,6 +60,19 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
+        path: "/chatlist",
+        name: "chatlist",
+        component: () => import("../views/main/chatlist.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: true,
+          Login: true,
+          NavReturnbar: true,
+          Copyright: true,
+          title: "消息列表",
+        },
+      },
+      {
         path: "/chat",
         name: "chat",
         component: () => import("../views/main/chat.vue"),
@@ -91,8 +81,20 @@ const routes: Array<RouteRecordRaw> = [
           Tabbar: true,
           Login: true,
           NavReturnbar: true,
+          Copyright: false,
+          title: "消息",
+        },
+      },
+      {
+        path: "/shop",
+        name: "shop",
+        component: () => import("../views/gugu/shop.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: true,
+          Login: false,
           Copyright: true,
-          title: "聊天",
+          title: "集市",
         },
       },
       {
@@ -108,16 +110,42 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
-        path: "/integral",
-        name: "integral",
-        component: () => import("../views/user/integral.vue"),
+        path: "/blocklist",
+        name: "blocklist",
+        component: () => import("../views/main/blocklist.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: true,
+          Login: false,
+          NavReturnbar: false,
+          Copyright: true,
+          title: "会馆",
+        },
+      },
+
+      {
+        path: "/qyindex",
+        name: "qyindex",
+        component: () => import("../views/qyindex.vue"),
+        meta: {
+          Navbar: true,//顶部导航栏
+          Tabbar: false,//底部导航栏
+          Login: true,//是否需要登录
+          title: "账户转移",
+        },
+      },
+
+      {
+        path: "/info",
+        name: "info",
+        component: () => import("../views/user/info.vue"),
         meta: {
           Navbar: false,
           Tabbar: false,
           Login: true,
           NavReturnbar: true,
           Copyright: true,
-          title: "积分",
+          title: "个人信息",
         },
       },
       {
@@ -131,6 +159,19 @@ const routes: Array<RouteRecordRaw> = [
           NavReturnbar: true,
           Copyright: true,
           title: "邀请码",
+        },
+      },
+      {
+        path: "/permission",
+        name: "permission",
+        component: () => import("../views/user/permission.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: false,
+          Login: true,
+          NavReturnbar: true,
+          Copyright: true,
+          title: "用户组",
         },
       },
       {
@@ -185,11 +226,11 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
   if (localStorage.getItem("heibbs.token")) {
     try {
       // 显示加载状态
-      store.commit("app/SET_LOADING", true);
-      
+      // store.commit("app/SET_LOADING", true);
+
       // 调用API获取用户信息
       const res = await GetUserInfoAPI();
-      
+
       if (res.status === 200) {
         // 获取成功，更新用户状态
         store.commit("user/SET_USERINFO", res.data);
@@ -200,9 +241,9 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
         localStorage.removeItem("heibbs.token");
         store.commit("user/SET_USERLOGIN", false);
         store.commit("user/SET_USERINFO", null);
-        next({ 
-          path: "/login", 
-          query: { url: to.path } 
+        next({
+          path: "/login",
+          query: { url: to.path }
         });
       }
     } catch (error) {
@@ -211,19 +252,19 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
       localStorage.removeItem("heibbs.token");
       store.commit("user/SET_USERLOGIN", false);
       store.commit("user/SET_USERINFO", null);
-      next({ 
-        path: "/login", 
-        query: { url: to.path } 
+      next({
+        path: "/login",
+        query: { url: to.path }
       });
     } finally {
       // 隐藏加载状态
-      store.commit("app/SET_LOADING", false);
+      // store.commit("app/SET_LOADING", false);
     }
   } else {
     // 没有token，跳转到登录页
-    next({ 
-      path: "/login", 
-      query: { url: to.path } 
+    next({
+      path: "/login",
+      query: { url: to.path }
     });
   }
 });

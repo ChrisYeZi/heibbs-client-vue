@@ -1,6 +1,6 @@
 <template>
   <div class="NavReturnbar">
-    <div class="return" @click="toIndex()">
+    <div class="return" @click="goBack()">
       <van-icon name="arrow-left" size="25" />
     </div>
     <div class="title">{{ title }}</div>
@@ -17,8 +17,15 @@ export default {
     };
   },
   methods: {
-    toIndex() {
-      router.push("/index");
+    // 改为回退到上一页，无历史记录时兜底跳首页
+    goBack() {
+      // 检查浏览器历史记录长度：若小于2（当前页是第一个页面），则跳首页
+      if (window.history.length <= 1) {
+        router.push("/index");
+      } else {
+        // 回退到上一次跳转过来的页面（历史记录的上一页）
+        this.$router.go(-1);
+      }
     },
   },
 };

@@ -1,16 +1,18 @@
 <template>
-  <NavbarVue v-if="$route.meta.Navbar"></NavbarVue>
-  <nav-returnbar-vue v-if="$route.meta.NavReturnbar"></nav-returnbar-vue>
   <div class="layout">
-    <router-view />
-  </div>
-  <div v-if="$route.meta.Copyright" class="layout-copyright">
-    <p>罗小黑妖灵论坛（公益非官方）</p>
-    <p>Copyright ©2020-2025 heibbs.net All Rights Reserved.</p>
-    <p>论坛管理组: admin@heibbs.net 风气监督组: complaint@heibbs.net</p>
-  </div>
+    <NavbarVue v-if="$route.meta.Navbar"></NavbarVue>
+    <nav-returnbar-vue v-if="$route.meta.NavReturnbar"></nav-returnbar-vue>
+    <div class="layout-box">
+      <router-view />
+    </div>
+    <div v-if="$route.meta.Copyright" class="layout-copyright">
+      <p>罗小黑妖灵论坛（公益非官方）</p>
+      <p>Copyright ©2020-2025 heibbs.net All Rights Reserved.</p>
+      <p>论坛管理组: admin@heibbs.net</p>
+    </div>
 
-  <TabbarVue v-if="$route.meta.Tabbar"></TabbarVue>
+    <TabbarVue v-if="$route.meta.Tabbar"></TabbarVue>
+  </div>
 </template>
 
 <script>
@@ -47,15 +49,18 @@ export default {
 
 <style lang="scss" scoped>
 .layout {
-  padding: 0px 10px;
-}
-.layout-copyright {
-  margin-top: 10px;
-  padding-top: 20px;
-  margin-bottom: 60px;
-  height: 100px;
-  text-align: center;
-  color: rgb(155, 154, 128);
-  line-height: 1.8em;
+  .layout-box {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .layout-copyright {
+    margin-top: 10px;
+    padding-top: 20px;
+    margin-bottom: 60px;
+    height: 100px;
+    text-align: center;
+    color: rgb(155, 154, 128);
+    line-height: 1.8em;
+  }
 }
 </style>

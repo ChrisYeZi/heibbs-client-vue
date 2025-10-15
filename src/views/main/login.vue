@@ -210,14 +210,14 @@ export default {
         password: this.user.password,
       }).then((res) => {
         if (res.status == 200) {
-          this.content = res.msg;
+          this.content = "登录成功";
           localStorage.setItem("heibbs.token", res.data);
           GetUserInfoAPI().then((res) => {
             if (res.status == 200) {
               // 存入登录数据
               store.commit("user/SET_USERINFO", res.data);
             } else {
-              this.content = res.data;
+              this.content = res.msg;
               this.msgShow = true;
             }
           });
@@ -229,7 +229,7 @@ export default {
             router.push("/index");
           }, 1000);
         } else {
-          this.content = res.data;
+          this.content = res.msg;
           this.msgShow = true;
         }
       });
@@ -390,6 +390,7 @@ export default {
 
 <style lang="scss" scoped>
 .login {
+  margin: 0 10px;
   .headBox {
     padding: 5px;
   }

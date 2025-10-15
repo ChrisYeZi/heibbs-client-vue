@@ -115,10 +115,10 @@ export const parsedContent = (content: string): string => {
     .replace(/\[img=(\d+),(\d+)\]([\s\S]*?)\[\/img\]/g, (match, width, height, src) => {
       // 若需对接 DiscuzX 本地附件，可替换 src（示例：拼接附件根路径）
       // const discuzImgSrc = `http://你的论坛域名/data/attachment/${src}`;
-      return `<img src="${src}" width="${width}" height="${height}" alt="Discuz 图片" class="discuz-img" loading="lazy" />`;
+      return `<img src="${src}" width="${width}" height="${height}" alt="罗小黑妖灵论坛 图片" width="100%" loading="lazy" />`;
     })
     .replace(/\[img\]([\s\S]*?)\[\/img\]/g, (match, src) => {
-      return `<img src="${src}" alt="Discuz 图片" class="discuz-img" loading="lazy" />`;
+      return `<img src="${src}" alt="罗小黑妖灵论坛 图片" width="100%" loading="lazy" />`;
     })
     // B站视频 [bili]
     .replace(/\[bili\](\d+)\[\/bili\]/g, `
@@ -152,16 +152,16 @@ export const parsedContent = (content: string): string => {
   };
   html = convertSpecialTags(html, emojiMap);
 
-  
+
 
   // 4. 安全过滤（核心：清除恶意 HTML 标签，防止 XSS，允许iframe标签及B站视频所需属性）
   return DOMPurify.sanitize(html, {
     ADD_TAGS: ['iframe'], // 允许iframe标签
     ADD_ATTR: [
-      'allowfullscreen', 
-      'scrolling', 
-      'frameborder', 
-      'border', 
+      'allowfullscreen',
+      'scrolling',
+      'frameborder',
+      'border',
       'framespacing',
       'src' // 确保src属性不被过滤
     ],

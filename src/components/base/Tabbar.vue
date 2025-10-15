@@ -2,29 +2,29 @@
   <div class="Tabbar">
     <van-row justify="space-around">
       <van-col span="6">
-        <div :class="{ select: true }" @click="toIndex()">
-          <img src="../../assets/icon/guangchang.svg" width="25">
+        <div :class="{ select: $route.name == `index` }" @click="toIndex()">
+          <img src="../../assets/icon/guangchang.svg" width="25" />
           <br />
           广场
         </div>
       </van-col>
       <van-col span="6">
-        <div @click="toIndex()">
-          <img src="../../assets/icon/huiguan.svg" width="25">
+        <div :class="{ select: $route.name == `blocklist` }" @click="toBlock()">
+          <img src="../../assets/icon/huiguan.svg" width="25" />
           <br />
           会馆
         </div>
       </van-col>
       <van-col span="6">
-        <div @click="toIndex()">
-          <img src="../../assets/icon/shiyanlu.svg" width="25">
+        <div :class="{ select: $route.name == `shop` }" @click="toShop()">
+          <img src="../../assets/icon/shiyanlu.svg" width="25" />
           <br />
           集市
         </div>
       </van-col>
-      <van-col span="6" @click="toGugu()">
-        <div>
-          <img src="../../assets/icon/gemen.svg" width="25">
+      <van-col span="6">
+        <div :class="{ select: $route.name == `gugu` }" @click="toGugu()">
+          <img src="../../assets/icon/gemen.svg" width="25" />
           <br />
           鸽门
         </div>
@@ -38,7 +38,7 @@ import config from "@/config/index";
 import router from "@/router";
 export default {
   name: "Tabbar",
-
+  created() {},
   data() {
     return {
       imgUrl: config.imgUrl,
@@ -48,6 +48,12 @@ export default {
     // 多个路由跳转
     toIndex(): void {
       router.push("/index");
+    },
+    toBlock(): void {
+      router.push("/blocklist");
+    },
+    toShop(): void {
+      router.push("/shop");
     },
     toGugu(): void {
       router.push("/gugu");
@@ -69,6 +75,9 @@ export default {
   z-index: 998;
   .select {
     font-weight: 550;
+    color: rgba(0, 0, 0, 0.7);
+  }
+  .default {
     color: rgba(0, 0, 0, 0.7);
   }
 }

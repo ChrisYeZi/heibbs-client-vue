@@ -20,15 +20,23 @@
         :key="item.pid || index"
         @click="PostClick(item)"
       >
+        <!-- 会馆 -->
         <div class="index-post-title">
           <span class="index-post-title-block"
-            >{{ blockList[item.fid - 1].name }} </span
+            >{{ getBlockName(item.fid) }} </span
           >{{ item.subject }}
         </div>
         <div class="index-post-meta">
           <span>
-            <span class="index-post-meta-group" v-if="item.extgroupid==0">{{groupList.groupDo[item.groupid - 1]?.gname}}</span>
-            <span class="index-post-meta-admingroup" v-if="item.extgroupid!=0">{{groupList.extgroupDo[item.extgroupid - 1]?.gname}}</span>
+            <!-- 用户组 -->
+            <span class="index-post-meta-group" v-if="item.extgroupid == 0">{{
+              groupList.groupDo[item.groupid - 1]?.gname
+            }}</span>
+            <span
+              class="index-post-meta-admingroup"
+              v-if="item.extgroupid != 0"
+              >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
+            >
             {{ item.author }}
             <van-icon
               name="http://www.heibbs.net:8081/api/attachment/default/xz001.png"
@@ -63,6 +71,8 @@
       class="loading-indicator"
     />
     <van-empty
+      image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
+      :image-size="[250, 280]"
       v-if="!isLoading && (!postList.records || postList.records.length === 0)"
       description="暂无帖子内容"
     />
@@ -141,6 +151,8 @@ interface GroupItem {
   extgroupDo?: [];
 }
 
+type BlockList = BlockItem[];
+
 export default defineComponent({
   name: "Index",
   components: {
@@ -158,7 +170,7 @@ export default defineComponent({
     const scrollContainer = ref<HTMLDivElement>(null);
 
     const postList = ref<PostListResponse>({ records: [] });
-    const blockList = ref<BlockItem>(null);
+    const blockList = ref<BlockList>([]);
     const groupList = ref<GroupItem>(null);
 
     const isLoading = ref(true);
@@ -264,6 +276,19 @@ export default defineComponent({
       }
     };
 
+    /**
+     * 根据fid获取板块名称
+     * @param fid 帖子的板块ID（对应 BlockItem 的 id）
+     * @param blockList 板块数组（必须是数组类型）
+     * @returns 匹配的板块名称，未找到则返回“未知板块”
+     */
+    const getBlockName = (fid: number): string => {
+      // 在板块列表中查找id等于fid的板块
+      const matchedBlock = blockList.value.find((block) => block.id === fid);
+      // 找到返回名称，未找到返回"未知板块"
+      return matchedBlock ? matchedBlock.name : "未知板块";
+    };
+
     // 初始化加载数据
     getData();
     getBlockData();
@@ -293,6 +318,7 @@ export default defineComponent({
       slides,
       parsedContent,
       scrollContainer,
+      getBlockName,
     };
   },
   methods: {
@@ -308,6 +334,7 @@ export default defineComponent({
   background: rgba(255, 255, 255, 0.9);
   margin-top: 50px;
   margin-bottom: 60px;
+  margin: 50px 10px 60px 10px;
   padding: 15px 10px;
   line-height: 1.5em;
   height: calc(100vh - 140px);
@@ -392,7 +419,7 @@ export default defineComponent({
         border-radius: 5px;
         padding: 2px 4px;
       }
-      .index-post-meta-admingroup{
+      .index-post-meta-admingroup {
         color: rgba(255, 255, 255, 1);
         background: rgba(244, 41, 41, 0.7);
         margin-right: 5px;

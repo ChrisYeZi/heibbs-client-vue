@@ -43,11 +43,6 @@ export const GetRegisterCaptchaAPI = (data: RegisterCaptcha): Res<String> => ins
 // 注册
 export const RegisterAPI = (data: Register): Res<String> => instance.post("/member/register", data)
 
-// 获取所有邀请码
-export const GetUserInvitationAPI = (): Res<String> => instance.get("/member/getInvitation")
-
-// 创建邀请码
-export const CreateInvitationAPI = (): Res<String> => instance.get("/member/createInvitation")
 
 // 获取当前用户所有消息
 export const GetChatListAPI = (): Res<String> => instance.get("/system/getChatList")
@@ -130,3 +125,20 @@ export const GetBlockListAPI = (): Res<String> => instance.get("/block/getlist")
 // ——————Group 用户组模块
 //获取用户组数据
 export const GetGroupListAPI = (): Res<String> => instance.get("/group/getall")
+
+
+// ——————Invitation邀请码模块
+// 获取所有邀请码
+export const GetUserInvitationAPI = (): Res<String> => instance.get("/invitation/getInvitation")
+
+// 创建邀请码
+export const CreateInvitationAPI = (): Res<String> => instance.get("/invitation/createInvitation")
+
+
+// ——————Message消息模块
+// 获取个人消息列表
+export const GetMessageListAPI = (): Res<String> => instance.get("/message/getlist")
+
+//获取消息会话
+export const GetMessageAPI = (params: { plid: number }): Res<String> => instance.get("/message/get", { params });
+;
