@@ -1,5 +1,6 @@
 import { createStore } from 'vuex'
 import user from './modules/user'
+import system from './modules/system'
 import OtherType from './states'
 
 type states = OtherType;
@@ -11,7 +12,7 @@ const store = createStore<states>({
   mutations: {},
   actions: {},
   modules: {
-    user
+    user, system
   },
 })
 

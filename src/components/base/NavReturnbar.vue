@@ -8,13 +8,16 @@
 </template>
 
 <script>
-import router from '@/router';
+import router from "@/router";
 export default {
   name: "NavReturnbar",
   data() {
-    return {
-      title: this.$route.meta.title,
-    };
+    return {};
+  },
+  computed: {
+    title() {
+      return this.$route.meta.title;
+    },
   },
   methods: {
     // 改为回退到上一页，无历史记录时兜底跳首页

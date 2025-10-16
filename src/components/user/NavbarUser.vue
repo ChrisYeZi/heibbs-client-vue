@@ -13,8 +13,13 @@
     <van-cell icon="coupon-o" title="邀请码" is-link to="invitation" />
     <van-cell icon="friends-o" title="用户组" is-link to="permission" />
     <van-cell icon="setting-o" title="设置" is-link to="setting" />
-
-    
+    <van-cell
+      icon="setting"
+      title="论坛管理"
+      is-link
+      to="admin"
+      v-if="admin == 1"
+    />
   </div>
 </template>
 
@@ -27,9 +32,18 @@ export default {
   data() {
     return {
       imgUrl: config.imgUrl,
-      login: store.state.user?.login,
-      username: store.state.user?.info?.user?.username,
     };
+  },
+  computed: {
+    login() {
+      return store.state.user?.login;
+    },
+    username() {
+      return store.state.user?.info?.user?.username;
+    },
+    admin() {
+      return store.state.user?.info?.user?.extgroupids;
+    },
   },
   created() {},
   methods: {

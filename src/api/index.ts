@@ -1,30 +1,5 @@
 import instance from "../config/request/request"
 
-// 登录
-interface Login {
-    username: String
-    password: String
-}
-// 忘记密码
-interface ForgotPassword {
-    email: String
-    captchacode: String
-    password: String
-}
-// 注册
-interface Register {
-    username: String
-    email: String
-    password: String
-    invitation: String
-    captcha: String
-}
-// 注册请求验证码
-interface RegisterCaptcha {
-    email: String
-    invitation: String
-}
-
 // Res是返回的参数，T是泛型，返回对数据统一管理
 type Res<T> = Promise<ItypeAPI<T>>;
 
@@ -37,10 +12,22 @@ interface ItypeAPI<T> {
     // 请求数据
     data: T
 }
-// 注册获取验证码
+
+// 注册请求验证码
+interface RegisterCaptcha {
+    email: String
+    invitation: String
+}
 export const GetRegisterCaptchaAPI = (data: RegisterCaptcha): Res<String> => instance.post("/member/getRegisterCaptcha", data)
 
 // 注册
+interface Register {
+    username: String
+    email: String
+    password: String
+    invitation: String
+    captcha: String
+}
 export const RegisterAPI = (data: Register): Res<String> => instance.post("/member/register", data)
 
 
@@ -97,6 +84,10 @@ export const GetPostAPI = (params: {
 
 // ——————User 用户模块
 //登录接口封装 
+interface Login {
+    username: String
+    password: String
+}
 export const LoginAPI = (data: Login): Res<String> => instance.post("/user/login", data)
 
 //获取用户信息
@@ -106,6 +97,11 @@ export const GetUserInfoAPI = (): Res<String> => instance.get("/user/securityver
 export const GetForgotCaptchaAPI = (params: { email: String }): Res<String> => instance.get("/user/getForgetCaptcha", { params })
 
 //忘记密码修改密码
+interface ForgotPassword {
+    email: String
+    captchacode: String
+    password: String
+}
 export const UpdateForgotPasswordAPI = (data: ForgotPassword): Res<String> => instance.post("/user/forgetPassword", data)
 
 
@@ -139,6 +135,12 @@ export const CreateInvitationAPI = (): Res<String> => instance.get("/invitation/
 // 获取个人消息列表
 export const GetMessageListAPI = (): Res<String> => instance.get("/message/getlist")
 
-//获取消息会话
+// 获取消息会话
 export const GetMessageAPI = (params: { plid: number }): Res<String> => instance.get("/message/get", { params });
-;
+
+// 回复消息
+interface replyMessageQuery {
+    plid: number
+    content: String
+}
+export const ReplyMessageAPI = (data: replyMessageQuery): Res<String> => instance.post("/message/reply", data);

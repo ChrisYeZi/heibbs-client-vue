@@ -27,14 +27,8 @@
           <!-- 接收消息（左侧） -->
           <div class="message received" v-if="msg.sid !== currentUid">
             <div class="avatar">
-              <!-- <img
-                :src="getAvatarUrl(msg.sid)"
-                :alt="getUserName(msg.sid)"
-                class="avatar-img"
-              /> -->
               <img src="../../assets/img/avatar.png" class="avatar-img" />
             </div>
-            <!-- 关键：用inline-block容器包裹，避免宽度被压缩 -->
             <div class="message-wrap">
               <div class="user-name">{{ getUserName(msg.sid) }}</div>
               <div class="message-bubble received-bubble">
@@ -46,7 +40,6 @@
 
           <!-- 发送消息（右侧） -->
           <div class="message sent" v-else>
-            <!-- 关键：用inline-block容器包裹，避免宽度被压缩 -->
             <div class="message-wrap">
               <div class="message-bubble sent-bubble">
                 <div class="message-content">{{ msg.content }}</div>
@@ -83,35 +76,41 @@
         @keyup.enter.prevent="sendMessage"
         :style="{ height: inputHeight }"
         @input="adjustInputHeight"
+        :disabled="isSending"
       ></textarea>
       <button
         class="send-btn"
         @click="sendMessage"
-        :disabled="!inputContent.trim()"
+        :disabled="!inputContent.trim() || isSending"
       >
-        发送
+        <!-- 发送中显示加载文本 -->
+        {{ isSending ? "发送中..." : "发送" }}
       </button>
     </div>
 
     <!-- 弹出框 -->
     <van-toast
       v-model:show="msgShow"
-      style="padding: 0; background: rgba(0, 0, 0, 0)"
-    >
-      <template #message>
-        <messagebar-vue :content="content"></messagebar-vue>
-      </template>
-    </van-toast>
+      :message="toastContent"
+      :type="toastType"
+      duration="2000"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { GetMessageAPI } from "@/api/index";
-import { Icon, Empty } from "vant";
+import { GetMessageAPI, ReplyMessageAPI } from "@/api/index";
+import { Icon, Empty, Toast } from "vant";
 import router from "@/router";
 import store from "@/store";
 import MessagebarVue from "@/components/common/Messagebar.vue";
 import parsedContent from "@/assets/js/parsedContent";
+
+// 导入回复消息的类型接口
+interface ReplyMessageQuery {
+  plid: number;
+  content: string;
+}
 
 interface MessageDo {
   mid: number;
@@ -133,6 +132,13 @@ interface MessageListDo {
   dateline: number;
 }
 
+// 定义接口响应类型
+interface Res<T> {
+  status: number;
+  msg: string;
+  data: T;
+}
+
 export default {
   name: "Chat",
   components: {
@@ -143,7 +149,8 @@ export default {
   data() {
     return {
       msgShow: false,
-      content: "",
+      toastContent: "",
+      toastType: "success",
       pidParam: this.$route.query.plid,
       messageList: {} as any,
       messageDoList: [] as MessageDo[],
@@ -151,6 +158,7 @@ export default {
       inputContent: "",
       inputHeight: "40px",
       currentUid: store.state.user?.info?.user?.uid || 1,
+      isSending: false, // 发送状态锁，防止重复发送
     };
   },
   computed: {
@@ -174,6 +182,9 @@ export default {
   },
   methods: {
     getMessageList() {
+      // 显示加载动画
+      store.dispatch("system/SET_SYSLOADING_ACTION", true);
+      
       GetMessageAPI({ plid: this.pidParam })
         .then((res: any) => {
           if (res.status === 200) {
@@ -182,39 +193,68 @@ export default {
             this.chatInfo = res.data.messageListDo || {};
             this.scrollToBottom();
           } else {
-            this.content = res.data || "获取消息失败";
-            this.msgShow = true;
+            this.showToast("获取消息失败", "error");
           }
         })
         .catch(() => {
-          this.content = "网络错误，获取消息失败";
-          this.msgShow = true;
+          this.showToast("网络错误，获取消息失败", "error");
+        })
+        .finally(() => {
+          // 隐藏加载动画
+          store.dispatch("system/SET_SYSLOADING_ACTION", false);
         });
     },
 
-    sendMessage() {
+    async sendMessage() {
       const content = this.inputContent.trim();
       if (!content) return;
 
-      const newMessage: MessageDo = {
-        mid: Date.now(),
-        plid: this.pidParam,
-        sid: this.currentUid,
+      // 防止重复发送
+      this.isSending = true;
+      
+      // 构建请求参数
+      const requestData: ReplyMessageQuery = {
+        plid: Number(this.pidParam), // 确保plid是数字类型
         content: content,
-        delstatus: 0,
-        time: Math.floor(Date.now() / 1000),
       };
 
-      this.messageDoList.push(newMessage);
-      this.inputContent = "";
-      this.inputHeight = "40px";
-      this.scrollToBottom();
+      try {
+        // 显示加载动画
+        store.dispatch("system/SET_SYSLOADING_ACTION", true);
+        
+        // 调用实际的回复接口
+        const res = await ReplyMessageAPI(requestData);
+        
+        if (res.status === 200) {
+          // 发送成功，重新获取消息列表更新界面
+          this.showToast("消息发送成功");
+          this.inputContent = "";
+          this.inputHeight = "40px";
+          await this.getMessageList(); // 重新拉取最新消息
+        } else {
+          // 接口返回失败
+          this.showToast(res.msg || "消息发送失败", "error");
+        }
+      } catch (error: any) {
+        // 网络错误或其他异常
+        this.showToast(error.message || "网络异常，发送失败", "error");
+      } finally {
+        // 恢复发送状态，隐藏加载动画
+        this.isSending = false;
+        store.dispatch("system/SET_SYSLOADING_ACTION", false);
+      }
+    },
 
-      this.content = "消息已发送";
+    // 封装提示框方法
+    showToast(content: string, type: "success" | "error" = "success") {
+      this.toastContent = content;
+      this.toastType = type;
       this.msgShow = true;
+      
+      // 自动关闭
       setTimeout(() => {
         this.msgShow = false;
-      }, 1500);
+      }, 2000);
     },
 
     adjustInputHeight() {
@@ -248,14 +288,9 @@ export default {
     },
 
     formatDateLabel(dateKey: string) {
-      // 从dateKey拆分年、月、日（原格式："2025-10-15"）
       const [year, month, day] = dateKey.split("-").map(Number);
-
-      // 关键：月份和日期补零（确保显示为两位数，如1月→01月，5日→05日）
       const formattedMonth = month.toString().padStart(2, "0");
       const formattedDay = day.toString().padStart(2, "0");
-
-      // 统一返回「XXXX年XX月XX日」格式
       return `${year}年${formattedMonth}月${formattedDay}日`;
     },
 
@@ -363,7 +398,7 @@ export default {
 /* 单独一行，避免相互影响 */
 .message-item {
   margin-bottom: 12px;
-  display: block; /* 改为块级元素，避免flex挤压 */
+  display: block;
 }
 
 /* 控制头像和气泡的横向布局 */
@@ -379,7 +414,7 @@ export default {
   height: 40px;
   border-radius: 8px;
   overflow: hidden;
-  flex-shrink: 0; /* 禁止头像压缩 */
+  flex-shrink: 0;
   margin-top: 2px;
 }
 
@@ -389,19 +424,19 @@ export default {
   object-fit: cover;
 }
 
-/* 消息包裹层 - 用inline-block确保宽度跟随内容，不被强制压缩 */
+/* 消息包裹层 */
 .message-wrap {
   display: inline-block;
   vertical-align: top;
   min-width: 90%;
-  margin-left: 10px; /* 接收方：头像与气泡间距 */
+  margin-left: 10px;
 }
 
-/* 发送方的消息包裹层：调整间距和对齐 */
+/* 发送方的消息包裹层 */
 .sent .message-wrap {
   margin-left: 0;
-  margin-right: 10px; /* 发送方：气泡与头像间距 */
-  text-align: right; /* 气泡右对齐 */
+  margin-right: 10px;
+  text-align: right;
 }
 
 /* 用户名 */
@@ -415,23 +450,21 @@ export default {
 /* 气泡核心样式 */
 .message-bubble {
   position: relative;
-  /* 最小宽度保证短文本不过窄，最大宽度限制长文本 */
-  max-width: calc(100% - 100px); /* 预留足够空间，避免超出屏幕 */
+  max-width: calc(100% - 100px);
   padding: 10px 12px;
   border-radius: 18px;
-  /* 强制文字换行 */
-  white-space: normal !important; /* 覆盖可能的nowrap */
-  word-wrap: break-word !important; /* 中文换行 */
-  word-break: break-all !important; /* 英文/数字强制换行 */
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
   line-height: 1.5;
-  display: inline-block; /* 宽度跟随内容，不强制撑满 */
+  display: inline-block;
 }
 
 /* 消息内容 */
 .message-content {
   font-size: 16px;
   margin-bottom: 4px;
-  display: block; /* 确保内容块级显示，正常换行 */
+  display: block;
 }
 
 /* 消息时间 */
@@ -487,7 +520,7 @@ export default {
   display: flex;
   align-items: flex-end;
   padding: 8px 16px;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgb(255, 254, 249);
   border-top: 1px solid #eee;
   z-index: 10;
   margin-bottom: 60px;
@@ -508,6 +541,11 @@ export default {
   line-height: 1.4;
 }
 
+.message-input:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
 .send-btn {
   width: 64px;
   height: 36px;
@@ -521,6 +559,7 @@ export default {
   flex-shrink: 0;
   &:disabled {
     background-color: #ccdfff;
+    color: #fff;
     cursor: not-allowed;
   }
 }
@@ -533,5 +572,9 @@ export default {
 
 ::v-deep .van-toast {
   z-index: 9999 !important;
+}
+
+::v-deep .van-toast--error {
+  background-color: rgba(255, 82, 82, 0.9) !important;
 }
 </style>

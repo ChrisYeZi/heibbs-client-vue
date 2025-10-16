@@ -164,12 +164,13 @@ export default {
   margin-top: 60px;
   padding: 10px 12px;
   padding-bottom: 30px;
-  // background: rgba(255, 255, 255, 0.5);
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(255, 255, 255, 0.8) 10px
-  );
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0px 0px 10px 10px;
+  // background: linear-gradient(
+  //   to top,
+  //   rgba(0, 0, 0, 0) 0%,
+  //   rgba(255, 255, 255, 0.8) 10px
+  // );
 
   .chat-empty {
     padding: 50px 0;
