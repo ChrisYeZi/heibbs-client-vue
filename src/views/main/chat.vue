@@ -323,7 +323,7 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.7);
   overflow: hidden;
 }
 

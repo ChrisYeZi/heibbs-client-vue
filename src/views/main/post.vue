@@ -15,9 +15,7 @@
     <!-- 帖子内容 -->
     <div v-if="!isLoading && mainPost">
       <div class="post-block">
-        <span class="post-block-tag"
-          >{{ blockList[mainPost.fid - 1].name }}
-        </span>
+        <span class="post-block-tag">{{ getBlockName(mainPost.fid) }} </span>
       </div>
       <!-- 主帖 -->
       <div class="main-post">
@@ -32,9 +30,15 @@
               <!-- 作者 -->
               <div class="author-name">
                 <!-- 用户组 -->
-                <span class="post-meta-group" v-if="mainPost.extgroupid == 0">{{
-                  groupList.groupDo[mainPost?.groupid - 1]?.gname
-                }}</span>
+                <span
+                  class="post-meta-group"
+                  :style="{
+                    backgroundColor:
+                      groupList.groupDo[mainPost?.groupid - 1]?.color,
+                  }"
+                  v-if="mainPost.extgroupid == 0"
+                  >{{ groupList.groupDo[mainPost?.groupid - 1]?.gname }}</span
+                >
                 <span
                   class="post-meta-admingroup"
                   v-if="mainPost?.extgroupid != 0"
@@ -147,7 +151,30 @@
                 src="http://127.0.0.1:8081/api/attachment/200000/logo.png"
               />
               <div class="comment-author-info">
-                <div class="comment-author">{{ comment.author }}</div>
+                <div class="comment-author">
+                  <!-- 用户组 -->
+                  <span
+                    class="comment-meta-group"
+                    :style="{
+                      backgroundColor:
+                        groupList.groupDo[comment?.groupid - 1]?.color,
+                    }"
+                    v-if="comment.extgroupid == 0"
+                    >{{ groupList.groupDo[comment?.groupid - 1]?.gname }}</span
+                  >
+                  <span
+                    class="comment-meta-admingroup"
+                    :style="{
+                      backgroundColor:
+                        groupList.extgroupDo[comment?.extgroupid - 1]?.color,
+                    }"
+                    v-if="comment?.extgroupid != 0"
+                    >{{
+                      groupList.extgroupDo[comment?.extgroupid - 1]?.gname
+                    }}</span
+                  >
+                  {{ comment.author }}
+                </div>
                 <div class="comment-time">
                   {{ comment.formattedCreateTime }}
                 </div>
@@ -240,7 +267,7 @@
       </div>
 
       <!-- 底部操作栏 -->
-      <div class="post-actions">
+      <!-- <div class="post-actions">
         <button class="action-button">
           <van-icon name="star-o" />
           <span>评分</span>
@@ -253,7 +280,7 @@
           <van-icon name="share-o" />
           <span>分享</span>
         </button>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -323,6 +350,8 @@ interface BlockItem {
   imgUrl?: string;
 }
 
+type BlockList = BlockItem[];
+
 interface GroupItem {
   groupDo?: [];
   extgroupDo?: [];
@@ -343,7 +372,7 @@ export default defineComponent({
     const route = useRoute();
     const isLoading = ref(true);
     const attachSubmit = ref(false);
-    const blockList = ref<BlockItem>(null);
+    const blockList = ref<BlockList>([]);
     const groupList = ref<GroupItem>(null);
     const postUnknow = ref("");
     const mainPost = ref<PostItem | null>(null);
@@ -491,6 +520,19 @@ export default defineComponent({
       }
     };
 
+    /**
+     * 根据fid获取板块名称
+     * @param fid 帖子的板块ID（对应 BlockItem 的 id）
+     * @param blockList 板块数组（必须是数组类型）
+     * @returns 匹配的板块名称，未找到则返回“未知板块”
+     */
+    const getBlockName = (fid: number): string => {
+      // 在板块列表中查找id等于fid的板块
+      const matchedBlock = blockList.value.find((block) => block.id === fid);
+      // 找到返回名称，未找到返回"未知板块"
+      return matchedBlock ? matchedBlock.name : "未知板块";
+    };
+
     // 初始化加载数据
     getData();
     getBlockData();
@@ -514,6 +556,7 @@ export default defineComponent({
       formatFileSize,
       handleAttachSubmit,
       getImgUrl,
+      getBlockName,
     };
   },
 });
@@ -542,12 +585,13 @@ export default defineComponent({
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   .post-block-tag {
-    color: rgba(255, 255, 255, 1);
+    color: rgb(94, 91, 86);
     font-weight: 500;
     margin-right: 5px;
     border-radius: 5px;
     padding: 2px 4px;
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: 550;
   }
 }
 
@@ -581,7 +625,6 @@ export default defineComponent({
           color: #2c2c2c;
           .post-meta-group {
             color: rgba(255, 255, 255, 1);
-            background: rgba(41, 146, 244, 0.7);
             border-radius: 5px;
             padding: 2px 4px;
           }
@@ -733,6 +776,17 @@ export default defineComponent({
             font-size: 14px;
             font-weight: 500;
             color: #333;
+            .comment-meta-group {
+              color: rgba(255, 255, 255, 1);
+              border-radius: 5px;
+              padding: 2px 4px;
+            }
+            .comment-meta-admingroup {
+              color: rgba(255, 255, 255, 1);
+              background: rgba(244, 41, 41, 0.7);
+              border-radius: 5px;
+              padding: 2px 4px;
+            }
           }
 
           .comment-time {

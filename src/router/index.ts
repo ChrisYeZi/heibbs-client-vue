@@ -119,10 +119,22 @@ const routes: Array<RouteRecordRaw> = [
           Login: false,
           NavReturnbar: false,
           Copyright: true,
+          title: "会馆列表",
+        },
+      },
+      {
+        path: "/block/:id",
+        name: "block",
+        component: () => import("../views/main/block.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: true,
+          Login: false,
+          NavReturnbar: true,
+          Copyright: true,
           title: "会馆",
         },
       },
-
       {
         path: "/qyindex",
         name: "qyindex",
@@ -212,10 +224,7 @@ import { GetUserInfoAPI } from "../api/index";
 
 // 登录状态验证拦截器
 router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
-  // 不需要登录的页面直接放行
-  if (!to.meta.Login) {
-    return next();
-  }
+
 
   // 已经登录且有用户信息，直接放行
   if (store.state.user?.login) {
@@ -237,6 +246,13 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
         store.commit("user/SET_USERLOGIN", true);
         next();
       } else {
+
+
+        // 不需要登录的页面直接放行
+        if (!to.meta.Login) {
+          return next();
+        }
+
         // 接口返回错误状态，清除token并跳转到登录页
         localStorage.removeItem("heibbs.token");
         store.commit("user/SET_USERLOGIN", false);
@@ -262,6 +278,12 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
     }
   } else {
     // 没有token，跳转到登录页
+
+    // 不需要登录的页面直接放行
+    if (!to.meta.Login) {
+      return next();
+    }
+
     next({
       path: "/login",
       query: { url: to.path }

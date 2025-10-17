@@ -20,7 +20,7 @@
       <!-- 普通用户组 -->
       <div class="group-card">
         <div class="card-header">
-          <van-icon name="user-o" color="#1989fa" />
+          <van-icon name="user-o" color="#D4780D" />
           <span class="card-title">普通用户组</span>
         </div>
         <div class="card-content">
@@ -33,7 +33,7 @@
             <div
               class="level-tag"
               :style="{
-                backgroundColor: levelColors[idx % levelColors.length],
+                backgroundColor: group.color,
               }"
             >
               {{ idx - 1 }}级
@@ -82,14 +82,21 @@
         </div>
         <div class="card-content">
           <div class="group-item" v-for="group in extgroupDo" :key="group.gid">
-            <div class="level-tag" style="background-color: #ff4d4f">特殊</div>
+            <div
+              class="level-tag"
+              :style="{
+                backgroundColor: group.color,
+              }"
+            >
+              特殊
+            </div>
             <div class="group-info">
               <div class="group-name">
                 <span class="name-text">{{ group.gname }}</span>
                 <van-tag
                   size="mini"
                   color="#ff4d4f"
-                  v-if="group.gtype === userdata?.user?.extgroupids"
+                  v-if="group.gid === userdata?.user?.extgroupids"
                   >当前</van-tag
                 >
                 <van-tag size="mini" color="#ff4d4f" v-if="group.gtype === 1"
@@ -135,6 +142,7 @@ interface GroupDoItem {
   permission: string | null;
   credits: number;
   description: string | null;
+  color: String;
 }
 
 interface ExtGroupDoItem {
@@ -143,6 +151,7 @@ interface ExtGroupDoItem {
   permission: string | null;
   description: string | null;
   gtype: number;
+  color: String;
 }
 
 interface GroupResponseData {
@@ -164,19 +173,6 @@ export default defineComponent({
     const groupDo = ref<GroupDoItem[]>([]); // 普通用户组
     const extgroupDo = ref<ExtGroupDoItem[]>([]); // 特殊用户组
     const userdata = store.state.user?.info;
-
-    // 普通用户组等级颜色（循环使用，区分不同等级）
-    const levelColors = [
-      "#86909c", // 灰色（初始）
-      "#86909c",
-      "#D5FF9D", // 绿色
-      "#99FFCB", // 黄色
-      "#95F0FF", // 橙色
-      "#94BBFF", // 红色
-      "#C199FF", // 紫色
-      "#FF9CC0", // 深红色
-    ];
-
     // 获取用户组数据
     const getGroupData = async () => {
       try {
@@ -209,7 +205,6 @@ export default defineComponent({
       errorMsg,
       groupDo,
       extgroupDo,
-      levelColors,
     };
   },
 });

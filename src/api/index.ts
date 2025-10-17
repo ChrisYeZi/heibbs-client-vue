@@ -72,6 +72,25 @@ export const GetPostListAPI = (params?: GetPostListParams): Res<PostDo[]> => {
     return instance.get("/post/getlist", { params: requestParams });
 };
 
+//获取会馆所有帖子数据（支持传递分页参数）
+// 定义API请求参数类型（current和size均为可选，默认值与后端一致）
+interface GetBlockPostListParams {
+    bid?: number;
+    current?: number; // 可选，默认1
+    size?: number;    // 可选，默认10
+}
+export const GetBlockPostListAPI = (params?: GetBlockPostListParams): Res<PostDo[]> => {
+    // 拼接默认参数：若前端未传，则使用与后端一致的默认值（current=1，size=10）
+    const requestParams = {
+        bid: 1,
+        current: 1,
+        size: 10,
+        ...params // 前端传递的参数会覆盖默认值
+    };
+
+    return instance.get("/post/getblocklist", { params: requestParams });
+};
+
 //获取所有用户发布主题帖子数据
 export const GetUserPostListAPI = (): Res<String> => instance.get("/post/getuserpost")
 

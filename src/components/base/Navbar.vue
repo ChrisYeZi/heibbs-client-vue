@@ -5,7 +5,7 @@
       <!-- 头像 -->
       <div class="avatar" @click="showAvatar()">
         <img src="../../assets/img/avatar.png" width="35" />
-        <!-- <div class="Navbar-username">{{ username }}</div> -->
+        <div class="Navbar-username">{{ username }}</div>
       </div>
       <!-- Search框
       <div class="search" @click="showSearch()">
@@ -57,8 +57,15 @@ export default {
       test: null,
       searchShow: false,
       avatarShow: false,
-      username: store.state.user?.info?.user?.username,
     };
+  },
+  computed: {
+    login() {
+      return store.state.user?.login;
+    },
+    username() {
+      return store.state.user?.info?.user?.username;
+    },
   },
   methods: {
     showSearch() {
@@ -89,9 +96,9 @@ export default {
     margin-left: 10px;
     .Navbar-username {
       float: right;
-      font-size: 18px;
-      text-indent: 10px;
-      line-height: 2.2em;
+      font-size: 16px;
+      margin-left: 12px;
+      line-height: 2.5em;
     }
   }
   .search {

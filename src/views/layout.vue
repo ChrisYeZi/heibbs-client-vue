@@ -8,7 +8,7 @@
       <router-view />
     </div>
     <div v-if="$route.meta.Copyright" class="layout-copyright">
-      <p>罗小黑黑妖灵论坛（公益非官方）</p>
+      <p>罗小黑妖灵论坛（公益非官方）</p>
       <p>Copyright ©2020-2025 heibbs.net All Rights Reserved.</p>
       <p>论坛管理组: admin@heibbs.net</p>
     </div>

@@ -10,9 +10,14 @@
     :description="blockUnknow || '暂无帖子数据'"
     class="empty-state"
   />
-  <img src="../../assets/img/block-banner.png" alt="罗小黑妖灵论坛会馆列表" />
   <div v-if="!isLoading" class="block">
-    <div class="block-list" v-for="(item, index) in blockList" :key="index">
+    <img src="../../assets/img/block-banner.png" alt="罗小黑妖灵论坛会馆列表" />
+    <div
+      class="block-list"
+      v-for="(item, index) in blockList"
+      :key="index"
+      @click="gotoBlock(item?.id)"
+    >
       <div class="block-head">
         <div class="block-head-avatar">
           <el-avatar
@@ -39,7 +44,7 @@
 
 <script lang="ts">
 import { GetBlockListAPI } from "@/api/index";
-
+import router from "@/router";
 import { ref, defineComponent } from "vue";
 
 interface BlockItem {
@@ -75,6 +80,11 @@ export default defineComponent({
         console.error("获取板块数据失败:", res.msg);
       }
     };
+
+    const gotoBlock = (id: number) => {
+      router.push({ path: `/block/${id}` });
+    };
+
     // 初始化加载数据
     getBlockData();
 
@@ -82,29 +92,27 @@ export default defineComponent({
       blockList,
       isLoading,
       blockUnknow,
+      gotoBlock,
     };
   },
 });
 </script>
 
 <style lang="scss" scoped>
-img {
-  width: 100%;
-}
 .block {
-  margin-top: -80px;
-  width: 100%;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(255, 255, 255, 0.8) 50px
-  );
+  cursor: pointer;
+  margin: -80px 0px 0px 0px;
+  background: rgba(255, 255, 255, 0.8);
   padding-top: 80px;
   padding-bottom: 10px;
   border-radius: 10px;
   display: flex;
   justify-content: space-evenly;
   flex-wrap: wrap;
+  img {
+    width: 100vw;
+    max-width: 800px;
+  }
   .block-list {
     width: 45%;
     min-width: 320px;
@@ -113,8 +121,8 @@ img {
     border: solid 1px rgba(0, 0, 0, 0.05);
     line-height: 1.75em;
     margin-bottom: 10px;
-    background: rgba(255,255,255,0.8);
-    box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
     .block-head {
       display: flex;
       line-height: 1.25em;
@@ -132,7 +140,7 @@ img {
       display: flex;
       justify-content: flex-start;
       flex-wrap: wrap;
-      color: rgba(124,123,91,0.7);
+      color: rgba(124, 123, 91, 0.7);
       font-size: 14px;
       line-height: 1.5em;
       .block-content-icon {

@@ -1,18 +1,17 @@
 <template>
-  <div class="index" ref="scrollContainer">
+  <div class="block" ref="scrollContainer">
     <!-- 轮播图区域 -->
-    <van-swipe class="my-swipe" :autoplay="3000" indicator-color="white">
-      <van-swipe-item v-for="(slide, index) in slides" :key="index">
-        <img :src="slide.imageUrl" :alt="slide.altText" class="swipe-image" />
-      </van-swipe-item>
-    </van-swipe>
+    <div class="block-box">
+      <div class="block-img">
+        <img :src="slides.imageUrl" :alt="slides.altText" class="swipe-image" />
+      </div>
+      <div class="block-title">{{ getBlockName(Number(blockid)) }}</div>
+    </div>
 
     <van-notice-bar
       left-icon="volume-o"
       text="罗小黑妖灵论坛测试开发中，登录账户请注意账户安全"
     />
-
-    <div class="index-post-rule">最新发帖 最新回复</div>
 
     <!-- 帖子列表 -->
     <div v-if="postList.records && postList.records.length">
@@ -102,9 +101,13 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, onUnmounted, Ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import PostbarVue from "@/components/common/Postbar.vue";
-import { GetPostListAPI, GetBlockListAPI, GetGroupListAPI } from "@/api/index";
+import {
+  GetBlockPostListAPI,
+  GetBlockListAPI,
+  GetGroupListAPI,
+} from "@/api/index";
 import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon } from "vant";
 import parsedContent from "@/assets/js/parsedContent";
 import router from "@/router";
@@ -177,7 +180,6 @@ export default defineComponent({
     [Icon.name]: Icon,
   },
   setup() {
-    const router = useRouter();
     const scrollContainer = ref<HTMLDivElement>(null);
 
     const postList = ref<PostListResponse>({ records: [] });
@@ -190,10 +192,13 @@ export default defineComponent({
     const pageSize = ref(10);
     const hasMore = ref(true);
 
-    const slides = ref<SlideItem[]>([
-      { imageUrl: "https://i.imgs.ovh/2025/10/08/7DBO24.png", altText: "寒霜" },
-      { imageUrl: "https://i.imgs.ovh/2025/10/08/7DBZXA.png", altText: "寒霜" },
-    ]);
+    const route = useRoute();
+    const blockid = ref<Number>(Number(route.params.id));
+
+    const slides = ref<SlideItem>({
+      imageUrl: "https://i.imgs.ovh/2025/10/08/7DBO24.png",
+      altText: "寒霜",
+    });
 
     // 滚动事件处理函数
     const handleScroll = () => {
@@ -224,7 +229,8 @@ export default defineComponent({
           isLoading.value = true;
         }
 
-        const res: any = await GetPostListAPI({
+        const res: any = await GetBlockPostListAPI({
+          bid: Number(route.params.id),
           current: page,
           size: pageSize.value,
         });
@@ -329,6 +335,7 @@ export default defineComponent({
       slides,
       parsedContent,
       scrollContainer,
+      blockid,
       getBlockName,
     };
   },
@@ -341,7 +348,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.index {
+.block {
   background: rgba(255, 255, 255, 0.9);
   margin-top: 50px;
   margin-bottom: 60px;
@@ -350,7 +357,26 @@ export default defineComponent({
   line-height: 1.5em;
   height: calc(100vh - 140px);
   overflow-y: auto;
-
+  .block-box {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    .block-title {
+      padding-top: 20px;
+      height: 50px;
+      text-align: center;
+    }
+    .block-img {
+      padding: 5px 10px;
+      .swipe-image {
+        width: 100%;
+        height: 100%;
+        max-height: 300px;
+        border-radius: 15px;
+        object-fit: cover;
+      }
+    }
+  }
   .section-title {
     font-size: 16px;
     font-weight: bold;
@@ -368,12 +394,6 @@ export default defineComponent({
     .van-swipe-item {
       position: relative;
       background-color: #f5f5f5;
-
-      .swipe-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
     }
   }
 
