@@ -20,7 +20,7 @@
       <!-- 主帖 -->
       <div class="main-post">
         <div class="post-header">
-          <div class="author-info">
+          <div class="author-info" @click="gotoInfo(mainPost.authorid)">
             <!-- 头像 -->
             <el-avatar
               class="author-avatar"
@@ -131,6 +131,20 @@
           </div>
         </div>
       </div>
+      <!-- 帖子操作列表 -->
+      <div class="post-opa">
+        <el-button type="info" text>评分</el-button>
+        <el-button
+          v-if="judgmentPermission(mainPost.authorid)"
+          @click="PostClick(mainPost.pid)"
+          type="info"
+          text
+          >编辑</el-button
+        >
+        <el-button v-if="judgmentPermission(mainPost.authorid)" type="info" text
+          >删除</el-button
+        >
+      </div>
 
       <!-- 评论列表 -->
       <div class="comments-section">
@@ -145,7 +159,7 @@
             v-for="comment in comments"
             :key="comment.pid"
           >
-            <div class="comment-header">
+            <div class="comment-header"  @click="gotoInfo(comment.authorid)">
               <el-avatar
                 class="comment-avatar"
                 src="http://127.0.0.1:8081/api/attachment/200000/logo.png"
@@ -242,14 +256,24 @@
             </div>
 
             <div class="comment-actions">
-              <button class="action-btn">
-                <van-icon name="star-o" size="16" />
-                <span>评分</span>
-              </button>
-              <button class="action-btn">
-                <van-icon name="reply-o" size="16" />
-                <span>回复</span>
-              </button>
+              <el-button type="info" text>评分</el-button>
+              <el-button type="info" text>回复</el-button>
+            </div>
+            <!-- 帖子操作列表 -->
+            <div class="post-opa">
+              <el-button
+                v-if="judgmentPermission(comment.authorid)"
+                @click="PostClick(comment.pid)"
+                type="info"
+                text
+                >编辑</el-button
+              >
+              <el-button
+                v-if="judgmentPermission(comment.authorid)"
+                type="info"
+                text
+                >删除</el-button
+              >
             </div>
           </div>
         </div>
@@ -286,8 +310,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from "vue";
+import { defineComponent, ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import store from "@/store";
 import { Empty, Loading, Icon, Tag, Image as VanImage, Pagination } from "vant";
 
 import { GetPostAPI, GetBlockListAPI, GetGroupListAPI } from "@/api/index";
@@ -357,6 +382,8 @@ interface GroupItem {
   extgroupDo?: [];
 }
 
+const userData = store.state.user?.info?.user;
+
 export default defineComponent({
   name: "PostDetail",
   components: {
@@ -385,7 +412,7 @@ export default defineComponent({
     });
     const currentPage = ref(1);
     const pageSize = ref(10);
-
+    // 获取用户uid
     // 获取帖子ID
     const pidParam = route.params.pid;
     const postId = Array.isArray(pidParam) ? pidParam[0] : pidParam;
@@ -448,7 +475,19 @@ export default defineComponent({
     // 处理分页变化
     const handlePageChange = (page: number) => {
       currentPage.value = page;
+      updateRouteParams();
       getData(); // 重新加载当前页数据
+    };
+
+    const judgmentPermission = (authorid: number) => {
+      // 判断是否是管理员
+      if (userData.extgroupids == 1 || userData.extgroupids == 2) {
+        return true;
+      }
+      if (userData.uid == authorid) {
+        return true;
+      }
+      return false;
     };
 
     // 根据文件名获取对应的图标
@@ -533,10 +572,56 @@ export default defineComponent({
       return matchedBlock ? matchedBlock.name : "未知板块";
     };
 
+    const PostClick = (pid: number) => {
+      router.push("/editpost/" + pid);
+    };
+
+    // 从路由参数初始化页码和每页数量
+    const initFromRoute = () => {
+      const { current, size } = route.query;
+      if (current && !isNaN(Number(current))) {
+        currentPage.value = Number(current);
+      }
+      if (size && !isNaN(Number(size))) {
+        pageSize.value = Number(size);
+      }
+    };
+
+    // 更新路由参数
+    const updateRouteParams = () => {
+      router.push({
+        path: route.path,
+        query: {
+          ...route.query,
+          current: currentPage.value,
+          size: pageSize.value,
+        },
+      });
+    };
+
+    /**
+     * 罗小黑妖灵论坛跳转用户信息页面
+     * @param id 用户id
+     */
+    const gotoInfo = (id: number) => {
+      router.push({
+        path: `/info/${id}`,
+      });
+    };
+
     // 初始化加载数据
     getData();
     getBlockData();
     getGroupData();
+
+    watch(
+      () => [route.query.current, route.query.size],
+      () => {
+        initFromRoute();
+        getData();
+      },
+      { immediate: true }
+    );
 
     return {
       blockList,
@@ -550,6 +635,7 @@ export default defineComponent({
       attachSubmit,
       parsedContent,
       postUnknow,
+      userData,
       getAttachUrl,
       handlePageChange,
       getAttachIcon,
@@ -557,6 +643,9 @@ export default defineComponent({
       handleAttachSubmit,
       getImgUrl,
       getBlockName,
+      judgmentPermission,
+      PostClick,
+      gotoInfo,
     };
   },
 });
@@ -599,10 +688,8 @@ export default defineComponent({
 .main-post {
   padding: 15px;
   background-color: #fff;
-  border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-
+  border-radius: 10px;
   .post-header {
     display: flex;
     justify-content: space-between;
@@ -612,6 +699,7 @@ export default defineComponent({
     .author-info {
       display: flex;
       align-items: center;
+      cursor: pointer;
 
       .author-avatar {
         width: 40px;
@@ -680,6 +768,13 @@ export default defineComponent({
       font-size: 14px;
     }
   }
+}
+.post-opa {
+  margin-bottom: 30px;
+  text-align: right;
+  padding: 5px 10px;
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
 }
 
 // 附件样式
@@ -764,6 +859,7 @@ export default defineComponent({
       .comment-header {
         display: flex;
         margin-bottom: 8px;
+        cursor: pointer;
 
         .comment-avatar {
           width: 36px;
@@ -810,25 +906,6 @@ export default defineComponent({
       .comment-actions {
         display: flex;
         padding-left: 46px;
-
-        .action-btn {
-          display: flex;
-          align-items: center;
-          background: none;
-          border: none;
-          color: #888;
-          font-size: 12px;
-          margin-right: 15px;
-          cursor: pointer;
-
-          .van-icon {
-            margin-right: 3px;
-          }
-
-          &:hover {
-            color: #1989fa;
-          }
-        }
       }
     }
   }

@@ -15,6 +15,22 @@
 
     <!-- 帖子列表 -->
     <div v-if="postList.records && postList.records.length">
+
+      <!-- 置顶帖 -->
+      <div class="index-post-top">
+        <div
+          class="index-post"
+          v-for="(item, index) in postTopList"
+          :key="item.pid || index"
+          @click="PostClick(item)"
+        >
+          <div class="index-post-title">
+            <span class="index-post-title-block-top">置顶 </span
+            >{{ item.subject }}
+          </div>
+        </div>
+      </div>
+      
       <div
         class="index-post"
         v-for="(item, index) in postList.records"
@@ -23,9 +39,9 @@
       >
         <!-- 会馆 -->
         <div class="index-post-title">
-          <span class="index-post-title-block-top" v-if="item?.state == 4"
-            >置顶 </span
-          ><span class="index-post-title-block" v-if="item?.state != 4"
+          <span class="index-post-title-block-top" v-if="item?.state == 5"
+            >会馆置顶 </span
+          ><span class="index-post-title-block" v-if="item?.state != 5"
             >{{ getBlockName(item.fid) }} </span
           >{{ item.subject }}
         </div>
@@ -107,6 +123,7 @@ import {
   GetBlockPostListAPI,
   GetBlockListAPI,
   GetGroupListAPI,
+  GetPostTopAPI,
 } from "@/api/index";
 import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon } from "vant";
 import parsedContent from "@/assets/js/parsedContent";
@@ -122,7 +139,6 @@ interface PostItem {
   message: string;
   viewCount?: number;
   replyCount?: number;
-  likeCount?: number;
   groupid?: number;
   extgroupid?: number;
   // 其他可能的字段
@@ -139,6 +155,7 @@ interface PageResult<T> {
 
 // 定义帖子列表响应的接口
 type PostListResponse = PageResult<PostItem>;
+type PostTopResponse = PostItem[];
 
 // 轮播图接口
 interface SlideItem {
@@ -183,6 +200,7 @@ export default defineComponent({
     const scrollContainer = ref<HTMLDivElement>(null);
 
     const postList = ref<PostListResponse>({ records: [] });
+    const postTopList = ref<PostTopResponse>(null);
     const blockList = ref<BlockList>([]);
     const groupList = ref<GroupItem>(null);
 
@@ -266,6 +284,16 @@ export default defineComponent({
       }
     };
 
+    // 获取置顶帖数据
+    const getPostTopData = async () => {
+      const res: any = await GetPostTopAPI();
+      if (res.status == 200) {
+        postTopList.value = res.data;
+      } else {
+        console.error("置顶数据获取失败");
+      }
+    };
+
     // 加载下一页数据
     const loadNextPage = () => {
       if (hasMore.value) {
@@ -310,6 +338,7 @@ export default defineComponent({
     getData();
     getBlockData();
     getGroupData();
+    getPostTopData();
 
     // 监听滚动事件
     onMounted(() => {
@@ -336,6 +365,7 @@ export default defineComponent({
       parsedContent,
       scrollContainer,
       blockid,
+      postTopList,
       getBlockName,
     };
   },

@@ -7,7 +7,15 @@
         您没有登录,立即登录
       </div>
     </div>
-    <van-cell icon="user-circle-o" title="个人信息" is-link to="info" />
+    <van-cell
+      icon="user-circle-o"
+      title="个人信息"
+      is-link
+      :to="{
+        name: 'info',
+        params: { id: uid },
+      }"
+    />
     <van-cell icon="medal-o" title="勋章" is-link to="invitation" />
     <van-cell icon="todo-list-o" title="誓言录" is-link to="invitation" />
     <van-cell icon="coupon-o" title="邀请码" is-link to="invitation" />
@@ -32,6 +40,7 @@ export default {
   data() {
     return {
       imgUrl: config.imgUrl,
+      uid: store.state.user?.info?.user?.uid,
     };
   },
   computed: {

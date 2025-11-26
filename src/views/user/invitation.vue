@@ -417,7 +417,7 @@ export default {
     gap: 8px;
 
     .code-text {
-      flex: 0.9;
+      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;

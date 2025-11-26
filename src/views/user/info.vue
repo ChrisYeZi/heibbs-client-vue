@@ -1,7 +1,16 @@
 <template>
-  <div class="user-info-page">
+  <div class="user-info-page" v-loading="isLoading">
+    <!-- 错误提示 -->
+    <van-empty 
+      v-if="hasError" 
+      description="获取用户信息失败"
+      class="error-empty"
+    >
+      <van-button type="primary" @click="fetchUserInfo">重新加载</van-button>
+    </van-empty>
+
     <!-- 用户信息卡片 -->
-    <div class="user-card">
+    <div class="user-card" v-if="!hasError">
       <!-- 头像区域 -->
       <div class="avatar-container">
         <img src="../../assets/img/avatar.png" alt="用户头像" class="avatar" />
@@ -13,6 +22,7 @@
           {{ userdata?.username }}
           <van-badge :text="userGroup" class="group-badge" />
         </h2>
+        <p class="user-status" :class="statusClass">{{ statusText }}</p>
       </div>
 
       <!-- 注册信息 -->
@@ -29,25 +39,28 @@
     </div>
 
     <!-- 主要内容区 -->
-    <div class="content-container">
+    <div class="content-container" v-if="!hasError">
       <!-- 基本信息卡片 -->
       <van-cell-group class="info-group">
         <van-cell title="用户ID" :value="userdata?.uid" />
-        <van-cell title="邮箱" :value="userdata?.email" is-link>
+        <!-- <van-cell title="邮箱" :value="userdata?.email" is-link>
           <template #label>
+            邮箱
             <van-badge
               :text="emailstatus ? '已验证' : '未验证'"
               :color="emailstatus ? '#4cd263' : '#ff9f43'"
               class="email-badge"
             />
           </template>
-        </van-cell>
+        </van-cell> -->
         <van-cell title="注册IP" :value="userdata?.regip" />
         <van-cell title="最后登录IP" :value="userdata?.lastip" />
         <van-cell
           title="私信设置"
           :value="onlyacceptfriendpm ? '仅接受好友私信' : '接受所有人私信'"
         />
+        <van-cell title="用户组" :value="userGroup" />
+        <van-cell title="积分" :value="userdata?.credits" />
       </van-cell-group>
 
       <!-- 积分详情 -->
@@ -57,22 +70,26 @@
             <van-cell
               title="灵气"
               :value="count?.extcredits1"
-              label="论坛内基础积分，每日登录签到可获取，代表用户活跃度"
             />
             <van-cell
               title="妖灵币"
               :value="count?.extcredits2"
-              label="论坛内基础流通货币，用于道具购买、会馆创建等"
             />
             <van-cell
               title="值钱玉佩"
               :value="count?.extcredits3"
-              label="活动货币，通过参与各项活动获取，可兑换特殊物品"
             />
             <van-cell
               title="天明珠"
               :value="count?.extcredits4"
-              label="贡献点，对论坛有贡献的内容将会被给予"
+            />
+            <van-cell
+              title="关注数"
+              :value="count?.follow"
+            />
+            <van-cell
+              title="发帖数"
+              :value="count?.posts"
             />
           </van-cell-group>
         </van-collapse-item>
@@ -82,18 +99,67 @@
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed } from "vue";
-import store from "@/store";
+import { ref, defineComponent, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import {
   Icon,
   Badge,
   Cell,
   CellGroup,
-  Grid,
-  GridItem,
   Collapse,
   CollapseItem,
+  Empty,
+  Button,
+  Loading,
 } from "vant";
+import { GetUserInformationAPI } from "@/api/index";
+import { ElMessage } from "element-plus";
+
+// 定义用户数据接口
+interface UserData {
+  uid?: number;
+  username?: string;
+  email?: string;
+  status?: number;
+  emailstatus?: number;
+  groupid?: number;
+  extgroupids?: number;
+  regdate?: number;
+  regip?: string;
+  credits?: number;
+  newpm?: string;
+  newprompt?: number;
+  onlyacceptfriendpm?: number;
+  lastvisit?: number;
+  lastip?: string;
+  userRegdate?: string;
+  userLastvisit?: string;
+}
+
+// 定义统计数据接口
+interface CountData {
+  uid?: number;
+  extcredits1?: number;
+  extcredits2?: number;
+  extcredits3?: number;
+  extcredits4?: number;
+  extcredits5?: number;
+  extcredits6?: number;
+  extcredits7?: number;
+  extcredits8?: number;
+  follow?: number;
+  posts?: number;
+}
+
+// 定义API响应接口
+interface ApiResponse {
+  status: number;
+  msg: string;
+  data: {
+    user: UserData;
+    count: CountData;
+  };
+}
 
 // 定义用户组信息接口
 interface GroupInfo {
@@ -107,16 +173,18 @@ export default defineComponent({
     [Badge.name]: Badge,
     [Cell.name]: Cell,
     [CellGroup.name]: CellGroup,
-    [Grid.name]: Grid,
-    [GridItem.name]: GridItem,
     [Collapse.name]: Collapse,
     [CollapseItem.name]: CollapseItem,
+    [Empty.name]: Empty,
+    [Button.name]: Button,
+    [Loading.name]: Loading,
   },
   setup() {
-    // 从store获取用户数据（修复数据获取路径）
-    const userState = store.state.user || {};
-    const userdata = store.state.user?.info?.user || {};
-    const count = store.state.user?.info?.count || {};
+    const route = useRoute();
+    const userdata = ref<UserData>({});
+    const count = ref<CountData>({});
+    const isLoading = ref(true);
+    const hasError = ref(false);
     const activeNames = ref(["1"]);
 
     // 用户组信息映射
@@ -131,37 +199,90 @@ export default defineComponent({
       8: "神灵",
     };
 
+    // 获取用户信息
+const fetchUserInfo = async () => {
+  try {
+    isLoading.value = true;
+    hasError.value = false;
+    
+    // 获取路由参数中的用户ID并转为数字
+    const userIdStr = route.params.id as string;
+    if (!userIdStr) {
+      throw new Error("用户ID不存在");
+    }
+    const userId = parseInt(userIdStr);
+    if (isNaN(userId)) {
+      throw new Error("用户ID格式错误");
+    }
+    
+    // 调用API时传递id参数
+    const response = await GetUserInformationAPI({ id: userId }) as ApiResponse;
+    
+    if (response.status === 200 && response.data) {
+      userdata.value = response.data.user || {};
+      count.value = response.data.count || {};
+    } else {
+      const errorMsg = response?.msg ? String(response.msg) : "获取用户信息失败";
+      throw new Error(errorMsg);
+    }
+  } catch (error) {
+    console.error("获取用户信息失败:", error);
+    hasError.value = true;
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+        ? error 
+        : "获取用户信息失败";
+    ElMessage.error(errorMessage);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
     // 计算属性 - 用户组名称
     const userGroup = computed(() => {
-      return groupMap[userdata.groupid] || "普通用户";
+      return groupMap[userdata.value.groupid || 0] || "普通用户";
     });
 
     // 计算属性 - 状态文本
     const statusText = computed(() => {
-      return userdata.status === 0 ? "正常" : "禁用";
+      return userdata.value.status === 0 ? "正常" : "禁用";
     });
 
     // 计算属性 - 状态样式
     const statusClass = computed(() => {
-      return userdata.status === 0 ? "status-normal" : "status-banned";
+      return userdata.value.status === 0 ? "status-normal" : "status-banned";
     });
 
     // 计算属性 - 新私信数量
     const newPmCount = computed(() => {
       try {
-        const pmData = JSON.parse(userdata.newpm || "[]");
-        return pmData.length;
+        const pmData = JSON.parse(userdata.value.newpm || "[]");
+        return Array.isArray(pmData) ? pmData.length : 0;
       } catch (e) {
         return 0;
       }
     });
 
     // 解构用户数据方便使用
-    const { emailstatus = 0, onlyacceptfriendpm = 0 } = userdata;
+    const emailstatus = computed(() => userdata.value.emailstatus || 0);
+    const onlyacceptfriendpm = computed(() => userdata.value.onlyacceptfriendpm || 0);
+
+    // 页面加载时获取用户信息
+    onMounted(() => {
+      fetchUserInfo();
+      
+      // 监听路由参数变化，重新获取数据
+      if (route.params.id) {
+        fetchUserInfo();
+      }
+    });
 
     return {
       userdata,
       count,
+      isLoading,
+      hasError,
       userGroup,
       statusText,
       statusClass,
@@ -169,6 +290,7 @@ export default defineComponent({
       emailstatus,
       onlyacceptfriendpm,
       activeNames,
+      fetchUserInfo,
     };
   },
 });
@@ -181,6 +303,13 @@ export default defineComponent({
   margin: 110px 10px 20px 10px;
   max-width: calc(800px - 20px);
   margin: 110px auto;
+  padding-bottom: 20px;
+}
+
+// 错误提示样式
+.error-empty {
+  padding: 40px 20px;
+  text-align: center;
 }
 
 // 用户卡片
@@ -272,7 +401,7 @@ export default defineComponent({
   overflow: hidden;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 
-  >>> .van-cell {
+  :deep(.van-cell) {
     padding-left: 15px;
     padding-right: 15px;
     font-size: 14px;
@@ -288,28 +417,6 @@ export default defineComponent({
   margin-left: 5px;
 }
 
-// 统计网格
-.stats-grid {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 10px 0;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-
-  >>> .van-grid-item {
-    padding: 10px 0;
-
-    >>> .van-grid-item__icon {
-      font-size: 20px;
-      margin-bottom: 5px;
-    }
-
-    >>> .van-grid-item__text {
-      font-size: 12px;
-      color: #86909c;
-    }
-  }
-}
-
 // 积分详情
 .credits-detail {
   background-color: #fff;
@@ -317,18 +424,24 @@ export default defineComponent({
   overflow: hidden;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 
-  >>> .van-collapse-item__content {
+  :deep(.van-collapse-item__content) {
     padding: 0;
   }
 
-  >>> .van-cell {
+  :deep(.van-cell) {
     font-size: 14px;
   }
 
-  >>> .van-cell__label {
+  :deep(.van-cell__label) {
     font-size: 12px;
     color: #86909c;
     line-height: 1.4;
   }
+}
+
+// 加载状态样式
+:deep(.van-loading) {
+  display: block;
+  margin: 40px auto;
 }
 </style>

@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'; // 需安装：npm install dompurify @types/dompurify
+import baseApi from '@/config/index'
 
 // 定义表情映射类型（TypeScript 类型约束）
 type EmojiMap = Record<string, string>;
@@ -107,10 +108,10 @@ const convertTables = (html: string): string => {
     const style: string[] = [];
     if (width) style.push(`width: ${width}`);
     if (bgColor) style.push(`background-color: ${bgColor}`);
-    
+
     const processedContent = convertTables(content); // 递归处理嵌套表格
     const processedRows = convertRows(processedContent);
-    
+
     return `<table class="discuz-table" style="${style.join('; ')}">${processedRows}</table>`;
   });
 
@@ -242,16 +243,16 @@ export const parsedIndexContent = (content: string): string => {
   // 5. 轻量媒体（仅图片和附件）
   html = html
     // 附件标签 [attach]
-    .replace(/\[attach\](\d+)\[\/attach\]/g, (match, attachId) => {
-      return `<img src="/api/attachments/${attachId}" alt="附件${attachId}" class="discuz-attach" loading="lazy" />`;
-    })
-    // 图片标签 [img]
-    .replace(/\[img=(\d+),(\d+)\]([\s\S]*?)\[\/img\]/g, (match, width, height, src) => {
-      return `<img src="${src}" width="${width}" height="${height}" alt="图片" class="discuz-img" loading="lazy" />`;
-    })
-    .replace(/\[img\]([\s\S]*?)\[\/img\]/g, (match, src) => {
-      return `<img src="${src}" alt="图片" class="discuz-img" width="100%" loading="lazy" />`;
-    });
+    // .replace(/\[attach\](\d+)\[\/attach\]/g, (match, attachId) => {
+    //   return `<img src="${baseApi}/attachments/${attachId}" alt="附件${attachId}" class="discuz-attach" loading="lazy" />`;
+    // })
+    // // 图片标签 [img]
+    // .replace(/\[img=(\d+),(\d+)\]([\s\S]*?)\[\/img\]/g, (match, width, height, src) => {
+    //   return `<img src="${src}" width="${width}" height="${height}" alt="图片" class="discuz-img" loading="lazy" />`;
+    // })
+    // .replace(/\[img\]([\s\S]*?)\[\/img\]/g, (match, src) => {
+    //   return `<img src="${src}" alt="图片" class="discuz-img" width="100%" loading="lazy" />`;
+    // });
 
   // 6. 特殊标签（表情等）
   const emojiMap: EmojiMap = {

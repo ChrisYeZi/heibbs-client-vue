@@ -60,6 +60,19 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
+        path: "/editpost/:pid",
+        name: "editpost",
+        component: () => import("../views/main/editpost.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: false,
+          NavReturnbar: true,
+          Login: false,
+          Copyright: true,
+          title: "编辑帖子",
+        },
+      },
+      {
         path: "/chatlist",
         name: "chatlist",
         component: () => import("../views/main/chatlist.vue"),
@@ -148,7 +161,7 @@ const routes: Array<RouteRecordRaw> = [
       },
 
       {
-        path: "/info",
+        path: "/info/:id",
         name: "info",
         component: () => import("../views/user/info.vue"),
         meta: {
@@ -198,6 +211,99 @@ const routes: Array<RouteRecordRaw> = [
           Copyright: true,
           title: "设置",
         },
+      },
+
+
+      {
+        path: "/admin",
+        name: "admin",
+        component: () => import("../views/admin/admin-layout.vue"),
+        meta: {
+          Login: true,
+          NavReturnbar: true,
+          Copyright: true,
+          title: "管理面板",
+        },
+        redirect: "/admin/index",
+        children: [
+          {
+            path: "/admin/index",
+            name: "admin-index",
+            component: () => import("../views/admin/admin-index.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 主页",
+            },
+          },
+          {
+            path: "/admin/user",
+            name: "admin-user",
+            component: () => import("../views/admin/admin-user.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 用户管理",
+            },
+          },
+          {
+            path: "/admin/post",
+            name: "admin-post",
+            component: () => import("../views/admin/admin-post.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 帖子管理",
+            },
+          },
+          {
+            path: "/admin/block",
+            name: "admin-block",
+            component: () => import("../views/admin/admin-block.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 会馆管理",
+            },
+          },
+          {
+            path: "/admin/group",
+            name: "admin-group",
+            component: () => import("../views/admin/admin-group.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 用户组管理",
+            },
+          },
+          {
+            path: "/admin/permission",
+            name: "admin-permission",
+            component: () => import("../views/admin/admin-permission.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 权限管理",
+            },
+          },
+          {
+            path: "/admin/message",
+            name: "admin-message",
+            component: () => import("../views/admin/admin-message.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 消息管理",
+            },
+          },
+        ]
       },
     ]
   },
