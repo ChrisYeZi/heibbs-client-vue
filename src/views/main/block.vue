@@ -1,11 +1,47 @@
 <template>
   <div class="block" ref="scrollContainer">
-    <!-- 轮播图区域 -->
+    <!-- 板块头部区域 -->
     <div class="block-box">
-      <div class="block-img">
-        <img :src="slides.imageUrl" :alt="slides.altText" class="swipe-image" />
+      <!-- 板块图标 -->
+      <div class="block-icon">
+        <img 
+          :src="currentBlock.imgUrl || slides.imageUrl" 
+          :alt="currentBlock.name || slides.altText" 
+          class="icon-image" 
+        />
       </div>
-      <div class="block-title">{{ getBlockName(Number(blockid)) }}</div>
+      
+      <!-- 横幅图片 -->
+      <div class="block-banner">
+        <img 
+          src="https://i.imgs.ovh/2025/10/08/7DBO24.png" 
+          alt="板块横幅" 
+          class="banner-image" 
+        />
+      </div>
+      
+      <!-- 板块名称 -->
+      <div class="block-title">{{ currentBlock.name || '未知板块' }}</div>
+      
+      <!-- 板块管理者 -->
+      <div class="block-managers" v-if="blockManagers.length">
+        <span class="manager-label">馆长：</span>
+        <span 
+          class="manager-name" 
+          v-for="manager in blockManagers" 
+          :key="manager"
+          @click="gotoManagerInfo(manager)"
+        >
+          {{ manager }}
+        </span>
+      </div>
+      
+      <!-- 功能按钮区域 -->
+      <div class="block-buttons">
+        <van-button type="primary" size="normal" @click="placeholder('会馆发帖')">会馆发帖</van-button>
+        <van-button type="default" size="normal" @click="placeholder('加入会馆')">加入会馆</van-button>
+        <van-button type="warning" size="normal" @click="placeholder('管理会馆')" v-if="isManagerOrAdmin">管理会馆</van-button>
+      </div>
     </div>
 
     <van-notice-bar
@@ -15,7 +51,6 @@
 
     <!-- 帖子列表 -->
     <div v-if="postList.records && postList.records.length">
-
       <!-- 置顶帖 -->
       <div class="index-post-top">
         <div
@@ -98,7 +133,7 @@
     />
     <van-empty
       image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
-      :image-size="[250, 280]"
+      :image-size="[200, 220]"
       v-if="!isLoading && (!postList.records || postList.records.length === 0)"
       description="暂无帖子内容"
     />
@@ -116,20 +151,22 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onUnmounted, Ref } from "vue";
+import { defineComponent, ref, onMounted, onUnmounted, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useStore } from "vuex";
 import PostbarVue from "@/components/common/Postbar.vue";
 import {
   GetBlockPostListAPI,
   GetBlockListAPI,
   GetGroupListAPI,
   GetPostTopAPI,
+  GetUsernameInformationAPI // 导入用户名获取用户信息API
 } from "@/api/index";
-import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon } from "vant";
+import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon, Button } from "vant";
 import parsedContent from "@/assets/js/parsedContent";
 import router from "@/router";
 
-// 定义帖子项的接口
+// 定义接口
 interface PostItem {
   pid?: string | number;
   fid?: number;
@@ -141,23 +178,20 @@ interface PostItem {
   replyCount?: number;
   groupid?: number;
   extgroupid?: number;
-  // 其他可能的字段
+  state?: number;
 }
 
-// 定义分页结果接口
 interface PageResult<T> {
-  records: T[]; // 数据列表
-  total?: number; // 总条数
-  size?: number; // 每页条数
-  current?: number; // 当前页
-  pages?: number; // 总页数
+  records: T[];
+  total?: number;
+  size?: number;
+  current?: number;
+  pages?: number;
 }
 
-// 定义帖子列表响应的接口
 type PostListResponse = PageResult<PostItem>;
 type PostTopResponse = PostItem[];
 
-// 轮播图接口
 interface SlideItem {
   imageUrl: string;
   altText: string;
@@ -167,22 +201,28 @@ interface SlideItem {
 interface BlockItem {
   id?: number;
   name?: string;
-  management?: [];
-  license?: boolean;
+  management?: string;
+  license?: number;
   type?: number;
   repost?: boolean;
   finance?: number;
   taxRate?: number;
-  title?: [];
+  title?: string;
   imgUrl?: string;
+  bindex?: number;
+  bannerurl?: string | null;
+  players?: string | null;
 }
 
 interface GroupItem {
-  groupDo?: [];
-  extgroupDo?: [];
+  groupDo?: any[];
+  extgroupDo?: any[];
 }
 
 type BlockList = BlockItem[];
+
+// 管理员用户组ID（根据实际业务定义）
+const ADMIN_GROUP_IDS = [1, 8]; // 假设1是禁灵（管理员），8是神灵（超级管理员）
 
 export default defineComponent({
   name: "Index",
@@ -195,9 +235,13 @@ export default defineComponent({
     [Empty.name]: Empty,
     [Loading.name]: Loading,
     [Icon.name]: Icon,
+    [Button.name]: Button,
   },
   setup() {
     const scrollContainer = ref<HTMLDivElement>(null);
+    const route = useRoute();
+    const store = useStore();
+    const router = useRouter();
 
     const postList = ref<PostListResponse>({ records: [] });
     const postTopList = ref<PostTopResponse>(null);
@@ -209,8 +253,8 @@ export default defineComponent({
     const currentPage = ref(1);
     const pageSize = ref(10);
     const hasMore = ref(true);
+    const isRequesting = ref(false); // 请求锁，防止并发请求
 
-    const route = useRoute();
     const blockid = ref<Number>(Number(route.params.id));
 
     const slides = ref<SlideItem>({
@@ -218,29 +262,109 @@ export default defineComponent({
       altText: "寒霜",
     });
 
-    // 滚动事件处理函数
+    // 当前用户信息（从Vuex获取）
+    const currentUser = computed(() => {
+      return store.state.user?.info?.user || {};
+    });
+
+    // 当前用户ID（从Vuex获取）
+    const currentUserId = computed(() => {
+      return store.state.user?.info?.user?.uid;
+    });
+
+    // 当前板块信息
+    const currentBlock = computed(() => {
+      return blockList.value.find(block => block.id === Number(blockid.value)) || {};
+    });
+
+    // 板块管理者列表
+    const blockManagers = computed(() => {
+      if (!currentBlock.value.management) return [];
+      return currentBlock.value.management.split(',').map(m => m.trim());
+    });
+
+    // 判断是否是板块管理者或管理员用户组
+    const isManagerOrAdmin = computed(() => {
+      const username = currentUser.value.username;
+      if (!username) return false;
+
+      // 检查是否是板块管理者
+      const isBlockManager = blockManagers.value.includes(username);
+      
+      // 检查是否是管理员用户组
+      const userGroupId = currentUser.value.groupid;
+      const userExtGroupId = currentUser.value.extgroupids;
+      const isAdminGroup = ADMIN_GROUP_IDS.includes(userGroupId) || 
+                          (userExtGroupId && ADMIN_GROUP_IDS.includes(userExtGroupId));
+
+      return isBlockManager || isAdminGroup;
+    });
+
+    // 按钮占位函数
+    const placeholder = (action: string) => {
+      console.log(`${action}功能开发中...`);
+    };
+
+    // 跳转管理者个人页面（使用API获取用户信息）
+    const gotoManagerInfo = async (username: string) => {
+      try {
+        // 如果是当前用户自己，直接用当前用户ID跳转
+        if (username === currentUser.value.username && currentUserId.value) {
+          gotoInfo(currentUserId.value);
+          return;
+        }
+        
+        // 调用API获取用户信息
+        const res = await GetUsernameInformationAPI({ username });
+        if (res.status === 200 && res.data?.user?.uid) {
+          gotoInfo(res.data.user.uid);
+        } else {
+          console.error("获取用户信息失败:", res.msg);
+          alert("获取用户信息失败");
+        }
+      } catch (error) {
+        console.error("获取用户信息出错:", error);
+        alert("获取用户信息失败，请重试");
+      }
+    };
+
+    // 跳转用户信息页面
+    const gotoInfo = (id: number) => {
+      router.push({
+        path: `/info/${id}`,
+      });
+    };
+
+    // 滚动事件处理（增加多重防护）
     const handleScroll = () => {
+      // 多重防护：无容器/加载中/无更多数据/请求中/无数据 → 直接返回
       if (
         !scrollContainer.value ||
         isLoading.value ||
         isLoadingMore.value ||
-        !hasMore.value
+        !hasMore.value ||
+        isRequesting.value ||
+        (!postList.value.records || postList.value.records.length === 0)
       ) {
         return;
       }
 
       const { scrollTop, clientHeight, scrollHeight } = scrollContainer.value;
-
-      // 当滚动到距离底部200px以内时加载下一页
-      if (scrollHeight - scrollTop - clientHeight <= 200) {
+      
+      // 只有内容高度大于容器高度且滚动到底部200px内才触发
+      if (scrollHeight > clientHeight && scrollHeight - scrollTop - clientHeight <= 200) {
         loadNextPage();
       }
     };
 
-    // 获取帖子列表数据
+    // 获取数据方法（增加请求锁和严格的hasMore判断）
     const getData = async (page: number = 1, isAppend: boolean = false) => {
+      // 请求锁：已有请求在处理时直接返回
+      if (isRequesting.value) return;
+
       try {
-        // 如果是加载更多，设置isLoadingMore
+        isRequesting.value = true; // 上锁
+        
         if (isAppend) {
           isLoadingMore.value = true;
         } else {
@@ -254,37 +378,42 @@ export default defineComponent({
         });
 
         if (res.status === 200) {
-          const newData = res.data;
+          const newData = res.data || { records: [], total: 0, pages: 0, current: page };
+          const records = newData.records || [];
+          
+          // 严格判断是否还有更多数据
+          const currentPageNum = newData.current || page;
+          const totalPages = newData.pages || Math.ceil((newData.total || 0) / pageSize.value) || 0;
+          
+          // 更新hasMore：当前页 < 总页数 且 返回数据不为空
+          hasMore.value = currentPageNum < totalPages && records.length > 0;
 
-          // 判断是否还有更多数据
-          hasMore.value = (newData.current || 0) < (newData.pages || Infinity);
-
-          // 如果是加载更多，追加数据；否则替换数据
           if (isAppend && postList.value.records) {
+            // 加载更多：合并数据
             postList.value = {
               ...newData,
-              records: [...postList.value.records, ...newData.records],
+              records: [...postList.value.records, ...records],
             };
           } else {
+            // 首次加载：直接赋值
             postList.value = newData;
           }
 
-          // 更新当前页码
-          currentPage.value = newData.current || page;
+          currentPage.value = currentPageNum;
         } else {
           console.error("获取帖子列表失败:", res.msg);
-          hasMore.value = false;
+          hasMore.value = false; // 请求失败时设为无更多数据
         }
       } catch (error) {
         console.error("获取帖子列表出错:", error);
-        hasMore.value = false;
+        hasMore.value = false; // 请求异常时设为无更多数据
       } finally {
+        isRequesting.value = false; // 解锁
         isLoading.value = false;
         isLoadingMore.value = false;
       }
     };
 
-    // 获取置顶帖数据
     const getPostTopData = async () => {
       const res: any = await GetPostTopAPI();
       if (res.status == 200) {
@@ -294,14 +423,14 @@ export default defineComponent({
       }
     };
 
-    // 加载下一页数据
     const loadNextPage = () => {
-      if (hasMore.value) {
-        getData(currentPage.value + 1, true);
-      }
+      // 防护：无更多数据或请求中时不执行
+      if (!hasMore.value || isRequesting.value) return;
+      
+      const nextPage = currentPage.value + 1;
+      getData(nextPage, true);
     };
 
-    // 获取板块信息
     const getBlockData = async () => {
       const res: any = await GetBlockListAPI();
       if (res.status == 200) {
@@ -311,7 +440,6 @@ export default defineComponent({
       }
     };
 
-    // 获取用户组信息
     const getGroupData = async () => {
       const res: any = await GetGroupListAPI();
       if (res.status == 200) {
@@ -321,33 +449,36 @@ export default defineComponent({
       }
     };
 
-    /**
-     * 根据fid获取板块名称
-     * @param fid 帖子的板块ID（对应 BlockItem 的 id）
-     * @param blockList 板块数组（必须是数组类型）
-     * @returns 匹配的板块名称，未找到则返回“未知板块”
-     */
     const getBlockName = (fid: number): string => {
-      // 在板块列表中查找id等于fid的板块
       const matchedBlock = blockList.value.find((block) => block.id === fid);
-      // 找到返回名称，未找到返回"未知板块"
       return matchedBlock ? matchedBlock.name : "未知板块";
     };
 
-    // 初始化加载数据
-    getData();
-    getBlockData();
-    getGroupData();
-    getPostTopData();
+    // 初始化数据
+    const initData = async () => {
+      try {
+        await Promise.all([
+          getBlockData(),
+          getGroupData(),
+          getPostTopData()
+        ]);
+        await getData();
+      } catch (error) {
+        console.error("初始化数据失败:", error);
+        isLoading.value = false;
+        hasMore.value = false; // 初始化失败时设为无更多数据
+      }
+    };
 
-    // 监听滚动事件
+    initData();
+
+    // 监听滚动
     onMounted(() => {
       if (scrollContainer.value) {
         scrollContainer.value.addEventListener("scroll", handleScroll);
       }
     });
 
-    // 移除滚动事件监听
     onUnmounted(() => {
       if (scrollContainer.value) {
         scrollContainer.value.removeEventListener("scroll", handleScroll);
@@ -367,6 +498,14 @@ export default defineComponent({
       blockid,
       postTopList,
       getBlockName,
+      currentBlock,
+      blockManagers,
+      isManagerOrAdmin,
+      placeholder,
+      gotoManagerInfo,
+      gotoInfo,
+      currentUser,
+      currentUserId
     };
   },
   methods: {
@@ -384,54 +523,110 @@ export default defineComponent({
   margin-bottom: 60px;
   margin: 50px 10px 60px 10px;
   padding: 15px 10px;
-  line-height: 1.5em;
   height: calc(100vh - 140px);
   overflow-y: auto;
+  
   .block-box {
     border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 10px;
     margin-bottom: 10px;
-    .block-title {
-      padding-top: 20px;
-      height: 50px;
-      text-align: center;
-    }
-    .block-img {
-      padding: 5px 10px;
-      .swipe-image {
-        width: 100%;
-        height: 100%;
-        max-height: 300px;
-        border-radius: 15px;
+    background: #fff;
+    position: relative;
+    
+    // 板块图标（叠加在横幅上方）
+    .block-icon {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      
+      .icon-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         object-fit: cover;
       }
     }
-  }
-  .section-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin: 15px 0;
-    color: rgba(0, 0, 0, 0.7);
-    padding-left: 5px;
-  }
-
-  .my-swipe {
-    border-radius: 10px;
-    overflow: hidden;
-    height: 180px;
-    margin: 15px 5px;
-
-    .van-swipe-item {
-      position: relative;
-      background-color: #f5f5f5;
+    
+    // 横幅图片
+    .block-banner {
+      width: 100%;
+      height: 260px;
+      overflow: hidden;
+      border-radius: 10px;
+      
+      .banner-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px 10px 0 0;
+      }
+    }
+    
+    .block-title {
+      padding: 10px 0 10px; // 留出图标空间
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+      letter-spacing: 1px;
+    }
+    
+    // 板块管理者
+    .block-managers {
+      text-align: center;
+      padding: 5px 0 15px;
+      font-size: 14px;
+      color: #666;
+      
+      .manager-label {
+        margin-right: 5px;
+        color: #888;
+      }
+      
+      .manager-name {
+        margin: 0 5px;
+        color: #1989fa;
+        cursor: pointer;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+        
+        &:not(:last-child)::after {
+          content: "|";
+          color: #ccc;
+          margin-left: 8px;
+        }
+      }
+    }
+    
+    .block-buttons {
+      display: flex;
+      gap: 12px;
+      padding: 0 15px 15px;
+      justify-content: center;
+      
+      .van-button {
+        flex: 1;
+        max-width: 120px;
+        border-radius: 8px;
+        font-size: 14px;
+      }
     }
   }
 
-  .post-list {
-    border: 1px solid #eee;
-    border-radius: 5px;
-    padding: 10px;
-    margin-bottom: 20px;
+  .van-notice-bar {
+    margin-bottom: 15px;
+    --background-color: #fef7e3;
+    --color: #ed8936;
+  }
+
+  .index-post-top {
+    margin-bottom: 10px;
   }
 
   .index-post {
@@ -457,6 +652,7 @@ export default defineComponent({
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      
       .index-post-title-block {
         color: rgba(255, 255, 255, 1);
         background: rgba(244, 170, 41, 0.7);
@@ -464,7 +660,9 @@ export default defineComponent({
         margin-right: 5px;
         border-radius: 5px;
         padding: 2px 4px;
+        font-size: 12px;
       }
+      
       .index-post-title-block-top {
         color: rgba(255, 255, 255, 1);
         background: rgba(244, 48, 41, 0.7);
@@ -472,6 +670,7 @@ export default defineComponent({
         margin-right: 5px;
         border-radius: 5px;
         padding: 2px 4px;
+        font-size: 12px;
       }
     }
 
@@ -481,17 +680,14 @@ export default defineComponent({
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
-      .index-post-meta-group {
-        color: rgba(255, 255, 255, 1);
-        margin-right: 5px;
-        border-radius: 5px;
-        padding: 2px 4px;
-      }
+      
+      .index-post-meta-group,
       .index-post-meta-admingroup {
         color: rgba(255, 255, 255, 1);
         margin-right: 5px;
         border-radius: 5px;
         padding: 2px 4px;
+        font-size: 11px;
       }
     }
 
@@ -503,7 +699,6 @@ export default defineComponent({
       overflow: hidden;
       text-overflow: ellipsis;
 
-      // 自定义标签样式
       .bili-link {
         color: #fb7299;
         text-decoration: none;

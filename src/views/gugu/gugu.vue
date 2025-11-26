@@ -1,6 +1,6 @@
 <template>
   <div class="gugu">咕咕之门{{ content }}
-    <button @click="test()">测试</button>
+    <button @click="test()">不要点</button>
   </div>
 </template>
 

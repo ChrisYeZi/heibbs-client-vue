@@ -127,7 +127,7 @@ const routes: Array<RouteRecordRaw> = [
         name: "blocklist",
         component: () => import("../views/main/blocklist.vue"),
         meta: {
-          Navbar: false,
+          Navbar: true,
           Tabbar: true,
           Login: false,
           NavReturnbar: false,

@@ -1,4 +1,5 @@
 <template>
+  <!-- 保持原有模板不变 -->
   <div class="post-detail">
     <!-- 加载状态 -->
     <van-loading v-if="isLoading" color="#1989fa" class="loading-indicator" />
@@ -14,22 +15,28 @@
 
     <!-- 帖子内容 -->
     <div v-if="!isLoading && mainPost">
-      <div class="post-block">
+      <!-- 板块名称（可点击跳转） -->
+      <div
+        class="post-block"
+        @click="gotoBlock(mainPost.fid)"
+        :class="{ clickable: !!mainPost.fid }"
+      >
         <span class="post-block-tag">{{ getBlockName(mainPost.fid) }} </span>
+        <van-icon name="arrow-right" size="14" v-if="!!mainPost.fid" />
       </div>
+
       <!-- 主帖 -->
       <div class="main-post">
+        <!-- 主帖内容保持不变 -->
         <div class="post-header">
-          <div class="author-info" @click="gotoInfo(mainPost.authorid)">
-            <!-- 头像 -->
+          <div class="author-info">
             <el-avatar
               class="author-avatar"
               src="http://www.heibbs.net:8081/api/attachment/200000/logo.png"
+              @click="gotoInfo(mainPost.authorid)"
             />
             <div class="author-details">
-              <!-- 作者 -->
               <div class="author-name">
-                <!-- 用户组 -->
                 <span
                   class="post-meta-group"
                   :style="{
@@ -48,7 +55,6 @@
                 >
                 {{ mainPost.author }}
               </div>
-              <!-- 时间 -->
               <div class="post-time">{{ mainPost.formattedCreateTime }}</div>
             </div>
           </div>
@@ -92,13 +98,11 @@
             >
           </div>
           <div class="attach-list">
-            <!-- 遍历所有附件 -->
             <div
               v-for="attach in mainPost.attachments"
               :key="attach.aid"
               class="attach-item"
             >
-              <!-- 图片类型 -->
               <van-image
                 v-if="attach.isimage === 1"
                 :src="getAttachUrl(attach)"
@@ -107,8 +111,6 @@
                 preview-group
                 @click.stop
               />
-
-              <!-- 非图片类型（视频、压缩包等） -->
               <a
                 v-else
                 :href="getAttachUrl(attach)"
@@ -131,19 +133,41 @@
           </div>
         </div>
       </div>
-      <!-- 帖子操作列表 -->
-      <div class="post-opa">
+
+      <!-- 主帖操作按钮（使用原生下拉菜单替代Element Plus） -->
+      <div class="post-actions-container">
+        <el-button type="info" text @click="showPostReply = true">回复</el-button>
         <el-button type="info" text>评分</el-button>
-        <el-button
-          v-if="judgmentPermission(mainPost.authorid)"
-          @click="PostClick(mainPost.pid)"
-          type="info"
-          text
-          >编辑</el-button
-        >
-        <el-button v-if="judgmentPermission(mainPost.authorid)" type="info" text
-          >删除</el-button
-        >
+        
+        <!-- 使用原生下拉菜单 -->
+        <div class="dropdown-container">
+          <button class="dropdown-btn" @click="(e) => toggleMainPostDropdown(e)">
+            更多
+            <span class="dropdown-icon">▼</span>
+          </button>
+          <div class="dropdown-menu" v-if="showMainPostDropdown">
+            <div class="dropdown-item" @click="handleMainPostAction('operate')">操作</div>
+            <div class="dropdown-item" @click="handleMainPostAction('report')">举报</div>
+            <div class="dropdown-item" @click="handleMainPostAction('share')">分享</div>
+            <div class="dropdown-divider" v-if="judgmentPermission(mainPost.authorid)"></div>
+            <div class="dropdown-item" v-if="judgmentPermission(mainPost.authorid)" @click="handleMainPostAction('edit')">编辑</div>
+            <div class="dropdown-item danger" v-if="judgmentPermission(mainPost.authorid)" @click="handleMainPostAction('delete')">删除</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主帖回复框 -->
+      <div class="reply-container" v-if="showPostReply">
+        <textarea
+          v-model="replyContent"
+          class="reply-textarea"
+          placeholder="请输入回复内容..."
+          rows="4"
+        ></textarea>
+        <div class="reply-actions">
+          <el-button type="warning" @click="submitPostReply">回复</el-button>
+          <el-button @click="cancelReply">取消</el-button>
+        </div>
       </div>
 
       <!-- 评论列表 -->
@@ -156,17 +180,18 @@
         <div class="comment-list">
           <div
             class="comment-item"
-            v-for="comment in comments"
+            v-for="(comment, index) in comments"
             :key="comment.pid"
           >
-            <div class="comment-header"  @click="gotoInfo(comment.authorid)">
+            <!-- 评论内容保持不变 -->
+            <div class="comment-header">
               <el-avatar
                 class="comment-avatar"
-                src="http://127.0.0.1:8081/api/attachment/200000/logo.png"
+                src=""
+                @click="gotoInfo(comment.authorid)"
               />
               <div class="comment-author-info">
                 <div class="comment-author">
-                  <!-- 用户组 -->
                   <span
                     class="comment-meta-group"
                     :style="{
@@ -189,18 +214,35 @@
                   >
                   {{ comment.author }}
                 </div>
-                <div class="comment-time">
-                  {{ comment.formattedCreateTime }}
-                </div>
+                <div class="comment-time">{{ comment.formattedCreateTime }}</div>
               </div>
             </div>
-            <div
-              class="comment-content"
-              v-html="parsedContent.parsedContent(comment.message)"
-            ></div>
+
+            <div v-if="editCommentId !== comment.pid" class="comment-content">
+              <div v-html="parsedContent.parsedContent(comment.message)"></div>
+            </div>
+            <div v-else class="comment-edit-container">
+              <textarea
+                v-model="editContent"
+                class="comment-edit-textarea"
+                placeholder="请输入评论内容..."
+                rows="4"
+              ></textarea>
+              <div class="comment-edit-actions">
+                <el-button
+                  type="warning"
+                  size="small"
+                  @click="handleSubmitEdit(comment)"
+                  >修改</el-button
+                >
+                <el-button size="small" @click="cancelEdit">取消</el-button>
+                <el-button type="primary" size="small" @click="gotoAdvancedEdit(comment.pid)"
+                  >高级编辑</el-button
+                >
+              </div>
+            </div>
 
             <!-- 评论附件展示 -->
-            <!-- 评论附件展示（同样修改） -->
             <div
               class="attachments"
               v-if="comment.attachments && comment.attachments.length"
@@ -232,7 +274,6 @@
                     preview-group
                     @click.stop
                   />
-
                   <a
                     v-else
                     :href="getAttachUrl(attach)"
@@ -255,25 +296,47 @@
               </div>
             </div>
 
-            <div class="comment-actions">
+            <!-- 评论操作按钮（使用原生下拉菜单） -->
+            <div class="comment-actions-container">
+              <el-button type="info" text @click="showCommentReply(comment, index)">回复</el-button>
               <el-button type="info" text>评分</el-button>
-              <el-button type="info" text>回复</el-button>
+              
+              <div class="dropdown-container">
+                <button class="dropdown-btn" @click="(e) => toggleCommentDropdown(index, e)">
+                  更多
+                  <span class="dropdown-icon">▼</span>
+                </button>
+                <div class="dropdown-menu" v-if="showCommentDropdown === index">
+                  <div class="dropdown-item" @click="handleCommentAction('operate', comment)">操作</div>
+                  <div class="dropdown-item" @click="handleCommentAction('report', comment)">举报</div>
+                  <div class="dropdown-item" @click="handleCommentAction('share', comment)">分享</div>
+                  <div class="dropdown-divider" v-if="judgmentPermission(comment.authorid)"></div>
+                  <div class="dropdown-item" v-if="judgmentPermission(comment.authorid)" @click="handleCommentAction('edit', comment)">编辑</div>
+                  <div class="dropdown-item danger" v-if="judgmentPermission(comment.authorid)" @click="handleCommentAction('delete', comment)">删除</div>
+                </div>
+              </div>
             </div>
-            <!-- 帖子操作列表 -->
-            <div class="post-opa">
-              <el-button
-                v-if="judgmentPermission(comment.authorid)"
-                @click="PostClick(comment.pid)"
-                type="info"
-                text
-                >编辑</el-button
-              >
-              <el-button
-                v-if="judgmentPermission(comment.authorid)"
-                type="info"
-                text
-                >删除</el-button
-              >
+
+            <!-- 评论回复框 -->
+            <div class="reply-container" v-if="replyToComment && replyToIndex === index">
+              <div class="quote-content" v-if="replyToComment">
+                <div class="quote-header">
+                  @{{ replyToComment.author }} {{ replyToComment.formattedCreateTime }}
+                </div>
+                <div class="quote-text">
+                  {{ getShortContent(replyToComment.message) }}
+                </div>
+              </div>
+              <textarea
+                v-model="replyContent"
+                class="reply-textarea"
+                placeholder="请输入回复内容..."
+                rows="4"
+              ></textarea>
+              <div class="reply-actions">
+                <el-button type="warning" @click="submitCommentReply">回复</el-button>
+                <el-button @click="cancelReply">取消</el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -289,23 +352,10 @@
           />
         </div>
       </div>
-
-      <!-- 底部操作栏 -->
-      <!-- <div class="post-actions">
-        <button class="action-button">
-          <van-icon name="star-o" />
-          <span>评分</span>
-        </button>
-        <button class="action-button">
-          <van-icon name="chat-o" />
-          <span>评论</span>
-        </button>
-        <button class="action-button">
-          <van-icon name="share-o" />
-          <span>分享</span>
-        </button>
-      </div> -->
     </div>
+
+    <!-- 点击外部关闭下拉菜单 -->
+    <div class="dropdown-backdrop" v-if="showMainPostDropdown || showCommentDropdown !== null" @click="closeAllDropdowns"></div>
   </div>
 </template>
 
@@ -314,11 +364,32 @@ import { defineComponent, ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import store from "@/store";
 import { Empty, Loading, Icon, Tag, Image as VanImage, Pagination } from "vant";
+import { ElMessage, ElMessageBox, ElAvatar, ElButton } from "element-plus";
 
-import { GetPostAPI, GetBlockListAPI, GetGroupListAPI } from "@/api/index";
+import {
+  GetPostAPI,
+  GetBlockListAPI,
+  GetGroupListAPI,
+  EditPostDataAPI,
+  InsertPostAPI // 导入回复接口
+} from "@/api/index";
 import parsedContent from "@/assets/js/parsedContent";
 
-// 定义附件接口
+// 定义接口保持不变
+interface PostDo {
+  pid: number;
+  fid: number;
+  tid: number;
+  first: number | null;
+  author: string;
+  authorid: number;
+  subject: string | null;
+  dateline: number;
+  message: string;
+  state: number;
+  viewCount: number;
+}
+
 interface Attachment {
   aid: number;
   tid: number;
@@ -330,36 +401,21 @@ interface Attachment {
   attachment: string;
   isimage: number;
   formattedDateline: string;
-  // 其他附件字段...
 }
 
-// 定义帖子数据接口
-interface PostItem {
-  pid: number;
-  fid: number;
-  tid: number;
-  first: number | null;
-  author: string;
-  authorid: number;
-  subject: string | null;
-  dateline: number;
-  message: string;
-  state: number;
+interface PostItem extends PostDo {
   attachments: Attachment[];
   formattedCreateTime: string;
-  viewCount: number;
   groupid?: number;
   extgroupid?: number;
 }
 
-// 定义分页响应接口
 interface ReplyPage {
   records: PostItem[];
   total: number;
   size: number;
   current: number;
   pages: number;
-  // 其他分页字段...
 }
 
 interface BlockItem {
@@ -382,6 +438,18 @@ interface GroupItem {
   extgroupDo?: [];
 }
 
+// 回复接口参数类型
+interface InsertPostQuery {
+  // 板块id（必填）
+  fid: number;
+  // 主题id，带tid即为回复，不带即为发帖（可选）
+  tid?: number;
+  // 标题，不带标题为回复，带标题为发帖（可选）
+  subject?: string;
+  // 发帖内容（必填）
+  message: string;
+}
+
 const userData = store.state.user?.info?.user;
 
 export default defineComponent({
@@ -393,6 +461,8 @@ export default defineComponent({
     [Tag.name]: Tag,
     [VanImage.name]: VanImage,
     [Pagination.name]: Pagination,
+    ElAvatar,
+    ElButton
   },
   setup() {
     const router = useRouter();
@@ -412,23 +482,271 @@ export default defineComponent({
     });
     const currentPage = ref(1);
     const pageSize = ref(10);
-    // 获取用户uid
-    // 获取帖子ID
+    const editCommentId = ref<number | null>(null);
+    const editContent = ref<string>("");
+
+    // 回复相关状态
+    const showPostReply = ref(false);
+    const replyToComment = ref<PostItem | null>(null);
+    const replyToIndex = ref<number | null>(null);
+    const replyContent = ref("");
+    const isSubmitting = ref(false); // 防止重复提交
+
+    // 下拉菜单状态
+    const showMainPostDropdown = ref(false);
+    const showCommentDropdown = ref<number | null>(null); // 使用索引标识当前打开的评论下拉菜单
+
     const pidParam = route.params.pid;
     const postId = Array.isArray(pidParam) ? pidParam[0] : pidParam;
 
-    // 过滤评论列表（排除主帖）
     const comments = computed(() => {
       return replyPage.value.records.filter((item) => item.first !== 1);
     });
 
-    // // 生成附件图片URL（根据实际项目的附件路径规则调整）
-    // const getAttachUrl = (attach: Attachment) => {
-    //   // 假设附件存储在项目的/static/attachments/路径下
-    //   return `/attachments/${attach.attachment}`;
-    // };
+    // 获取简短内容（用于引用）
+    const getShortContent = (content: string) => {
+      // 移除HTML标签
+      const text = content.replace(/<[^>]*>/g, '');
+      // 如果内容过长，截取前50个字符
+      return text.length > 50 ? text.substring(0, 50) + '...' : text;
+    };
 
-    // 获取帖子数据（支持分页）
+    // 显示评论回复框
+    const showCommentReply = (comment: PostItem, index: number) => {
+      replyToComment.value = comment;
+      replyToIndex.value = index;
+      // 构造引用内容
+      const quotedContent = `[quote]@${comment.author} ${comment.formattedCreateTime}\n${getShortContent(comment.message)}[/quote]\n`;
+      replyContent.value = quotedContent;
+    };
+
+    // 提交主帖回复
+    const submitPostReply = async () => {
+      if (!mainPost.value) return;
+      if (!replyContent.value.trim()) {
+        ElMessage.warning("回复内容不能为空");
+        return;
+      }
+      if (isSubmitting.value) return;
+
+      try {
+        isSubmitting.value = true;
+        
+        // 构造回复参数
+        const postData: InsertPostQuery = {
+          fid: mainPost.value.fid,
+          tid: mainPost.value.tid || mainPost.value.pid, // 使用主帖的tid或pid作为主题ID
+          message: replyContent.value.trim()
+        };
+
+        // 调用回复接口
+        const res = await InsertPostAPI(postData);
+        
+        if (res.status === 200) {
+          ElMessage.success("回复成功！");
+          showPostReply.value = false;
+          replyContent.value = "";
+          
+          // 刷新评论列表
+          await getData();
+          // 跳转到最后一页
+          if (replyPage.value.pages > 1) {
+            currentPage.value = replyPage.value.pages;
+            await getData();
+          }
+        } else {
+          ElMessage.error(`回复失败: ${res.msg || "服务器错误"}`);
+        }
+      } catch (error: any) {
+        console.error("提交回复失败:", error);
+        ElMessage.error(`回复失败: ${error.message || "网络错误"}`);
+      } finally {
+        isSubmitting.value = false;
+      }
+    };
+
+    // 提交评论回复
+    const submitCommentReply = async () => {
+      if (!mainPost.value || !replyToComment.value) return;
+      if (!replyContent.value.trim()) {
+        ElMessage.warning("回复内容不能为空");
+        return;
+      }
+      if (isSubmitting.value) return;
+
+      try {
+        isSubmitting.value = true;
+        
+        // 构造回复参数
+        const postData: InsertPostQuery = {
+          fid: mainPost.value.fid,
+          tid: mainPost.value.tid || mainPost.value.pid, // 使用主帖的tid或pid作为主题ID
+          message: replyContent.value.trim()
+        };
+
+        // 调用回复接口
+        const res = await InsertPostAPI(postData);
+        
+        if (res.status === 200) {
+          ElMessage.success("回复成功！");
+          replyToComment.value = null;
+          replyToIndex.value = null;
+          replyContent.value = "";
+          
+          // 刷新评论列表
+          await getData();
+          // 跳转到最后一页
+          if (replyPage.value.pages > 1) {
+            currentPage.value = replyPage.value.pages;
+            await getData();
+          }
+        } else {
+          ElMessage.error(`回复失败: ${res.msg || "服务器错误"}`);
+        }
+      } catch (error: any) {
+        console.error("提交回复失败:", error);
+        ElMessage.error(`回复失败: ${error.message || "网络错误"}`);
+      } finally {
+        isSubmitting.value = false;
+      }
+    };
+
+    // 取消回复
+    const cancelReply = () => {
+      showPostReply.value = false;
+      replyToComment.value = null;
+      replyToIndex.value = null;
+      replyContent.value = "";
+    };
+
+    // 切换主帖下拉菜单
+    const toggleMainPostDropdown = (e: Event) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      showMainPostDropdown.value = !showMainPostDropdown.value;
+      showCommentDropdown.value = null; // 关闭其他下拉菜单
+    };
+
+    // 切换评论下拉菜单
+    const toggleCommentDropdown = (index: number, e: Event) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      if (showCommentDropdown.value === index) {
+        showCommentDropdown.value = null;
+      } else {
+        showCommentDropdown.value = index;
+        showMainPostDropdown.value = false; // 关闭其他下拉菜单
+      }
+    };
+
+    // 关闭所有下拉菜单
+    const closeAllDropdowns = () => {
+      showMainPostDropdown.value = false;
+      showCommentDropdown.value = null;
+    };
+
+    // 处理主帖操作
+    const handleMainPostAction = (action: string) => {
+      closeAllDropdowns();
+      
+      if (!mainPost.value) return;
+      
+      switch (action) {
+        case 'operate':
+          ElMessage.info('执行主帖操作功能');
+          break;
+        case 'report':
+          ElMessage.info('举报主帖功能已触发');
+          break;
+        case 'share':
+          navigator.clipboard.writeText(window.location.href)
+            .then(() => ElMessage.success('分享链接已复制到剪贴板'))
+            .catch(() => ElMessage.success('主帖链接已复制'));
+          break;
+        case 'edit':
+          PostClick(mainPost.value.pid);
+          break;
+        case 'delete':
+          ElMessageBox.confirm(
+            '此操作将永久删除该帖子，是否继续？',
+            '提示',
+            {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }
+          ).then(() => {
+            ElMessage({
+              type: 'success',
+              message: '删除成功!'
+            });
+            // 这里可以添加实际的删除API调用
+          }).catch(() => {
+            ElMessage({
+              type: 'info',
+              message: '已取消删除'
+            });
+          });
+          break;
+      }
+    };
+
+    // 处理评论操作
+    const handleCommentAction = (action: string, comment: PostItem) => {
+      closeAllDropdowns();
+      
+      switch (action) {
+        case 'operate':
+          ElMessage.info('执行评论操作功能');
+          break;
+        case 'report':
+          ElMessage.info('举报评论功能已触发');
+          break;
+        case 'share':
+          const commentUrl = `${window.location.href}#comment-${comment.pid}`;
+          navigator.clipboard.writeText(commentUrl)
+            .then(() => ElMessage.success('评论链接已复制到剪贴板'))
+            .catch(() => ElMessage.success('评论链接已复制'));
+          break;
+        case 'edit':
+          handleEditComment(comment);
+          break;
+        case 'delete':
+          ElMessageBox.confirm(
+            '此操作将永久删除该评论，是否继续？',
+            '提示',
+            {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }
+          ).then(() => {
+            ElMessage({
+              type: 'success',
+              message: '删除成功!'
+            });
+            // 这里可以添加实际的删除API调用
+          }).catch(() => {
+            ElMessage({
+              type: 'info',
+              message: '已取消删除'
+            });
+          });
+          break;
+      }
+    };
+
+    // 其他方法保持不变
+    const gotoBlock = (fid: number) => {
+      if (fid) {
+        router.push({
+          path: `/block/${fid}`,
+        });
+      }
+    };
+
     const getData = async () => {
       try {
         isLoading.value = true;
@@ -437,7 +755,6 @@ export default defineComponent({
           throw new Error("无效的帖子ID");
         }
 
-        // 调用接口时传入分页参数
         const res: any = await GetPostAPI({
           pid: postId,
           current: currentPage.value,
@@ -447,11 +764,8 @@ export default defineComponent({
         if (res.status === 200 && res.data) {
           mainPost.value = res.data.mainPost;
           replyPage.value = res.data.replyPage;
-
-          // 更新当前页码（同步接口返回的current）
           currentPage.value = res.data.replyPage.current;
 
-          // 设置页面标题
           const pageTitle = mainPost.value?.subject || "帖子详情";
           document.title = pageTitle + " - 罗小黑妖灵论坛 ʕ•͡-•ʔฅ ~ heibbs.net";
           router.currentRoute.value.meta.title = pageTitle;
@@ -467,41 +781,34 @@ export default defineComponent({
       }
     };
 
-    // 处理图片列表展开收缩
     const handleAttachSubmit = () => {
       attachSubmit.value = !attachSubmit.value;
     };
 
-    // 处理分页变化
     const handlePageChange = (page: number) => {
       currentPage.value = page;
       updateRouteParams();
-      getData(); // 重新加载当前页数据
+      getData();
     };
 
     const judgmentPermission = (authorid: number) => {
-      // 判断是否是管理员
-      if (userData.extgroupids == 1 || userData.extgroupids == 2) {
+      if (userData?.extgroupids == 1 || userData?.extgroupids == 2) {
         return true;
       }
-      if (userData.uid == authorid) {
+      if (userData?.uid == authorid) {
         return true;
       }
       return false;
     };
 
-    // 根据文件名获取对应的图标
     const getAttachIcon = (filename: string) => {
       const ext = filename.split(".").pop()?.toLowerCase() || "";
-      // 视频类型
       if (["mp4", "avi", "mov", "mkv", "flv"].includes(ext)) {
         return "video-o";
       }
-      // 压缩包类型
       if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) {
         return "file-zip-o";
       }
-      // 文档类型
       if (
         ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf", "txt"].includes(
           ext
@@ -509,26 +816,19 @@ export default defineComponent({
       ) {
         return "file-text-o";
       }
-      // 默认文件图标
       return "file-o";
     };
 
-    // 生成附件URL（使用正确的基础路径）
     const getAttachUrl = (attach: Attachment) => {
-      // 基础URL（实际项目中建议放在环境变量中）
       const baseUrl = "http://127.0.0.1:8081/api/attachment/";
-      // 拼接附件路径（假设attach.attachment已经包含日期目录部分，如"202001/21/xxx.jpg"）
       return baseUrl + attach.attachment;
     };
 
     const getImgUrl = (url: any) => {
-      // 基础URL（实际项目中建议放在环境变量中）
       const baseUrl = "http://127.0.0.1:8081/api/attachment/";
-      // 拼接附件路径（假设attach.attachment已经包含日期目录部分，如"202001/21/xxx.jpg"）
       return baseUrl + url;
     };
 
-    // 格式化文件大小（字节转KB/MB）
     const formatFileSize = (bytes: number) => {
       if (bytes < 1024) {
         return `${bytes} B`;
@@ -539,7 +839,6 @@ export default defineComponent({
       }
     };
 
-    // 获取板块信息
     const getBlockData = async () => {
       const res: any = await GetBlockListAPI();
       if (res.status == 200) {
@@ -549,7 +848,6 @@ export default defineComponent({
       }
     };
 
-    // 获取用户组信息
     const getGroupData = async () => {
       const res: any = await GetGroupListAPI();
       if (res.status == 200) {
@@ -559,16 +857,8 @@ export default defineComponent({
       }
     };
 
-    /**
-     * 根据fid获取板块名称
-     * @param fid 帖子的板块ID（对应 BlockItem 的 id）
-     * @param blockList 板块数组（必须是数组类型）
-     * @returns 匹配的板块名称，未找到则返回“未知板块”
-     */
     const getBlockName = (fid: number): string => {
-      // 在板块列表中查找id等于fid的板块
       const matchedBlock = blockList.value.find((block) => block.id === fid);
-      // 找到返回名称，未找到返回"未知板块"
       return matchedBlock ? matchedBlock.name : "未知板块";
     };
 
@@ -576,7 +866,6 @@ export default defineComponent({
       router.push("/editpost/" + pid);
     };
 
-    // 从路由参数初始化页码和每页数量
     const initFromRoute = () => {
       const { current, size } = route.query;
       if (current && !isNaN(Number(current))) {
@@ -587,7 +876,6 @@ export default defineComponent({
       }
     };
 
-    // 更新路由参数
     const updateRouteParams = () => {
       router.push({
         path: route.path,
@@ -599,17 +887,70 @@ export default defineComponent({
       });
     };
 
-    /**
-     * 罗小黑妖灵论坛跳转用户信息页面
-     * @param id 用户id
-     */
     const gotoInfo = (id: number) => {
       router.push({
         path: `/info/${id}`,
       });
     };
 
-    // 初始化加载数据
+    const handleEditComment = (comment: PostItem) => {
+      editCommentId.value = comment.pid;
+      editContent.value = comment.message;
+    };
+
+    const cancelEdit = () => {
+      editCommentId.value = null;
+      editContent.value = "";
+    };
+
+    const handleSubmitEdit = async (comment: PostItem) => {
+      if (!editContent.value.trim()) {
+        ElMessage.warning("评论内容不能为空");
+        return;
+      }
+
+      try {
+        const postData: PostDo = {
+          pid: comment.pid,
+          fid: comment.fid,
+          tid: comment.tid,
+          first: comment.first,
+          author: comment.author,
+          authorid: comment.authorid,
+          subject: comment.subject,
+          dateline: comment.dateline,
+          message: editContent.value,
+          state: comment.state,
+          viewCount: comment.viewCount,
+        };
+
+        const res = await EditPostDataAPI(postData);
+
+        if (res.status === 200) {
+          const commentIndex = replyPage.value.records.findIndex(
+            (item) => item.pid === comment.pid
+          );
+          if (commentIndex !== -1) {
+            replyPage.value.records[commentIndex].message = editContent.value;
+          }
+
+          ElMessage.success("评论修改成功");
+          cancelEdit();
+        } else {
+          ElMessage.error(`修改失败: ${res.msg || "服务器错误"}`);
+        }
+      } catch (error) {
+        console.error("编辑评论失败:", error);
+        ElMessage.error("修改失败，请重试");
+      }
+    };
+
+    const gotoAdvancedEdit = (pid: number) => {
+      router.push(`/editpost/${pid}`);
+      cancelEdit();
+    };
+
+    // 初始化数据
     getData();
     getBlockData();
     getGroupData();
@@ -646,12 +987,39 @@ export default defineComponent({
       judgmentPermission,
       PostClick,
       gotoInfo,
+      gotoBlock,
+      editCommentId,
+      editContent,
+      handleEditComment,
+      cancelEdit,
+      handleSubmitEdit,
+      gotoAdvancedEdit,
+      // 下拉菜单相关
+      showMainPostDropdown,
+      showCommentDropdown,
+      toggleMainPostDropdown,
+      toggleCommentDropdown,
+      closeAllDropdowns,
+      handleMainPostAction,
+      handleCommentAction,
+      // 回复相关
+      showPostReply,
+      replyToComment,
+      replyToIndex,
+      replyContent,
+      isSubmitting,
+      showCommentReply,
+      submitPostReply,
+      submitCommentReply,
+      cancelReply,
+      getShortContent
     };
   },
 });
 </script>
 
 <style lang="scss" scoped>
+/* 原有样式保持不变 */
 .post-detail {
   background: rgba(255, 255, 255, 0.9);
   min-height: calc(100vh - 730px);
@@ -659,6 +1027,8 @@ export default defineComponent({
   border-radius: 10px;
   line-height: 1.6em;
   margin: 70px 10px 0px 10px;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-indicator {
@@ -673,6 +1043,20 @@ export default defineComponent({
   padding: 10px;
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  &.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(25, 137, 250, 0.05);
+    }
+  }
+
   .post-block-tag {
     color: rgb(94, 91, 86);
     font-weight: 500;
@@ -684,7 +1068,6 @@ export default defineComponent({
   }
 }
 
-// 主帖样式
 .main-post {
   padding: 15px;
   background-color: #fff;
@@ -741,17 +1124,15 @@ export default defineComponent({
     border-bottom: 1px solid #f5f5f5;
   }
   .discuz-img {
-    max-width: 100% !important; // 关键：图片最大宽度 = 容器宽度
-    height: auto !important; // 高度随宽度等比例缩放，避免变形
-    border-radius: 4px; // 可选：优化视觉效果
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: 4px;
   }
   .post-content {
     color: #555;
     font-size: 15px;
     margin-bottom: 15px;
-    // 允许长文本在任意字符处换行（解决无空格长URL问题）
     word-break: break-all;
-    // 同时兼容中文/英文换行（备选，根据内容调整）
     word-wrap: break-word;
 
     .post-image {
@@ -769,12 +1150,94 @@ export default defineComponent({
     }
   }
 }
-.post-opa {
+
+// 操作按钮容器
+.post-actions-container,
+.comment-actions-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: flex-end;
   margin-bottom: 30px;
-  text-align: right;
   padding: 5px 10px;
-  border-bottom-right-radius: 10px;
-  border-bottom-left-radius: 10px;
+  
+  &.comment-actions-container {
+    margin-bottom: 0;
+    padding-left: 46px;
+    margin-top: 8px;
+  }
+}
+
+// 自定义下拉菜单样式
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+  
+  .dropdown-btn {
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    
+    &:hover {
+      background-color: rgba(64, 158, 255, 0.1);
+    }
+    
+    .dropdown-icon {
+      font-size: 12px;
+      transition: transform 0.2s;
+    }
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    min-width: 120px;
+    z-index: 1000;
+    margin-top: 5px;
+    
+    .dropdown-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+      
+      &:hover {
+        background-color: #f5f7fa;
+      }
+      
+      &.danger {
+        color: #f56c6c;
+      }
+    }
+    
+    .dropdown-divider {
+      height: 1px;
+      background-color: #e6e6e6;
+      margin: 4px 0;
+    }
+  }
+}
+
+// 下拉菜单背景层
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
 }
 
 // 附件样式
@@ -808,13 +1271,9 @@ export default defineComponent({
     border: 1px solid #f0f0f0;
   }
   .attach-image-open {
-    /* 宽度自适应父容器 */
     width: 100%;
-    /* 高度自动，根据图片原有比例计算，避免固定正方形 */
     height: auto;
-    /* 确保图片完整显示，不被裁剪（可选，根据需求调整） */
     object-fit: contain;
-    /* 可选：限制最大宽度，避免图片过宽 */
     max-width: 100%;
   }
 
@@ -846,7 +1305,6 @@ export default defineComponent({
     }
   }
 
-  // 评论
   .comment-list {
     .comment-item {
       padding: 10px 0;
@@ -897,25 +1355,98 @@ export default defineComponent({
         color: #555;
         margin-bottom: 8px;
         padding-left: 46px;
-        // 允许长文本在任意字符处换行（解决无空格长URL问题）
         word-break: break-all;
-        // 同时兼容中文/英文换行（备选，根据内容调整）
         word-wrap: break-word;
       }
 
-      .comment-actions {
-        display: flex;
+      .comment-edit-container {
         padding-left: 46px;
+        margin-bottom: 8px;
+
+        .comment-edit-textarea {
+          width: 100%;
+          padding: 8px 10px;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          font-size: 14px;
+          line-height: 1.5;
+          resize: vertical;
+          transition: border-color 0.2s;
+
+          &:focus {
+            outline: none;
+            border-color: #1989fa;
+            box-shadow: 0 0 0 2px rgba(25, 137, 250, 0.1);
+          }
+        }
+
+        .comment-edit-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 10px;
+          justify-content: flex-end;
+        }
       }
     }
   }
 
-  // 分页样式
   .pagination {
     margin-top: 20px;
     text-align: center;
     padding: 10px 0;
   }
+}
+
+// 回复框样式
+.reply-container {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  
+  .quote-content {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    
+    .quote-header {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    .quote-text {
+      font-size: 13px;
+      color: #888;
+      line-height: 1.4;
+    }
+  }
+  
+  .reply-textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  
+  .reply-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+}
+
+// 提交按钮禁用状态
+.el-button.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 // 底部操作栏
@@ -962,7 +1493,6 @@ export default defineComponent({
     align-items: center;
   }
 
-  // 文件类型附件样式
   .file-attach {
     display: flex;
     align-items: center;
@@ -1000,7 +1530,6 @@ export default defineComponent({
     }
   }
 
-  // 评论区附件调整
   .comment-attach-item {
     width: 80px;
     height: 80px;

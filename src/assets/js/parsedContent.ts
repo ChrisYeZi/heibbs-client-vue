@@ -146,7 +146,6 @@ const convertCells = (html: string): string => {
   return html;
 };
 
-// -------------------------- 核心转换函数（对外暴露） --------------------------
 /**
  * 完整内容转换（含所有标签：表格、媒体、附件、水平线等）
  */
@@ -221,6 +220,7 @@ export const parsedContent = (content: string): string => {
     ALLOW_UNKNOWN_PROTOCOLS: true
   });
 };
+
 
 /**
  * 首页内容转换（轻量版，不含视频/音频）

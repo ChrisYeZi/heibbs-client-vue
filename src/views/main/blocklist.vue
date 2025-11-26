@@ -22,7 +22,7 @@
         <div class="block-head-avatar">
           <el-avatar
             class="author-avatar"
-            src="http://www.heibbs.net:8081/api/attachment/200000/logo.png"
+            :src="item?.imgUrl"
           />
         </div>
         <div class="block-head-title">
@@ -102,7 +102,7 @@ export default defineComponent({
 .block {
   margin: -80px 0px 0px 0px;
   background: rgba(255, 255, 255, 0.8);
-  padding-top: 80px;
+  padding-top: 150px;
   padding-bottom: 10px;
   border-radius: 10px;
   display: flex;

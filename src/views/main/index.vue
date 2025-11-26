@@ -1,9 +1,18 @@
 <template>
   <div class="index" ref="scrollContainer">
     <!-- 轮播图区域 -->
-    <van-swipe class="my-swipe" :autoplay="3000" indicator-color="white">
-      <van-swipe-item v-for="(slide, index) in slides" :key="index">
-        <img :src="slide.imageUrl" :alt="slide.altText" class="swipe-image" />
+    <van-swipe 
+      v-if="slides.length" 
+      class="my-swipe" 
+      :autoplay="3000" 
+      indicator-color="white"
+    >
+      <van-swipe-item 
+        v-for="(slide, index) in slides" 
+        :key="slide.id || index"
+        @click="handleBannerClick(slide)"
+      >
+        <img :src="slide.url" :alt="slide.title" class="swipe-image" />
       </van-swipe-item>
     </van-swipe>
 
@@ -118,7 +127,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onUnmounted, Ref } from "vue";
+import { defineComponent, ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import PostbarVue from "@/components/common/Postbar.vue";
 import {
@@ -126,6 +135,7 @@ import {
   GetBlockListAPI,
   GetGroupListAPI,
   GetPostTopAPI,
+  GetAdminBannerAPI // 导入Banner接口
 } from "@/api/index";
 import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon } from "vant";
 import parsedContent from "@/assets/js/parsedContent";
@@ -160,11 +170,14 @@ interface PageResult<T> {
 type PostListResponse = PageResult<PostItem>;
 type PostTopResponse = PostItem[];
 
-// 轮播图接口
-interface SlideItem {
-  imageUrl: string;
-  altText: string;
-  link?: string;
+// Banner轮播图接口（对应BannerDo）
+interface BannerItem {
+  id: number; // 主键ID
+  title: string; // Banner标题
+  pid?: number; // 跳转目标帖ID
+  url: string; // 展示图片地址
+  status: number; // 是否启用（0-禁用，1-启用）
+  bindex: number; // 排序优先级（数值越高越靠前）
 }
 
 interface BlockItem {
@@ -207,6 +220,7 @@ export default defineComponent({
     const postTopList = ref<PostTopResponse>(null);
     const blockList = ref<BlockList>([]);
     const groupList = ref<GroupItem>(null);
+    const slides = ref<BannerItem[]>([]); // 修改为BannerItem类型
 
     const isLoading = ref(true);
     const isLoadingMore = ref(false);
@@ -214,10 +228,31 @@ export default defineComponent({
     const pageSize = ref(10);
     const hasMore = ref(true);
 
-    const slides = ref<SlideItem[]>([
-      { imageUrl: "https://i.imgs.ovh/2025/10/08/7DBO24.png", altText: "寒霜" },
-      { imageUrl: "https://i.imgs.ovh/2025/10/08/7DBZXA.png", altText: "寒霜" },
-    ]);
+    // 处理Banner点击事件
+    const handleBannerClick = (banner: BannerItem) => {
+      if (banner.pid) {
+        // 跳转到对应的帖子详情页
+        router.push(`/post/${banner.pid}`);
+      }
+      // 如果需要支持其他链接类型，可以在这里扩展
+    };
+
+    // 获取Banner数据
+    const getBannerData = async () => {
+      try {
+        const res: any = await GetAdminBannerAPI();
+        if (res.status === 200 && res.data) {
+          // 过滤启用的Banner，按index降序排序
+          const activeBanners = res.data
+            .filter((banner: BannerItem) => banner.status === 1)
+            .sort((a: BannerItem, b: BannerItem) => b.bindex - a.bindex);
+          
+          slides.value = activeBanners;
+        }
+      } catch (error) {
+        console.error("获取Banner数据失败:", error);
+      }
+    };
 
     // 滚动事件处理函数
     const handleScroll = () => {
@@ -345,13 +380,19 @@ export default defineComponent({
     };
 
     // 初始化加载数据
-    getData();
-    getBlockData();
-    getGroupData();
-    getPostTopData();
+    const initData = async () => {
+      await Promise.all([
+        getBannerData(),    // 获取Banner数据
+        getBlockData(),     // 获取板块数据
+        getGroupData(),     // 获取用户组数据
+        getPostTopData()    // 获取置顶帖数据
+      ]);
+      await getData();     // 获取帖子列表数据
+    };
 
     // 监听滚动事件
     onMounted(() => {
+      initData(); // 初始化所有数据
       if (scrollContainer.value) {
         scrollContainer.value.addEventListener("scroll", handleScroll);
       }
@@ -377,6 +418,7 @@ export default defineComponent({
       postTopList,
       getBlockName,
       gotoInfo,
+      handleBannerClick // 导出Banner点击处理方法
     };
   },
   methods: {
@@ -415,6 +457,7 @@ export default defineComponent({
     .van-swipe-item {
       position: relative;
       background-color: #f5f5f5;
+      cursor: pointer; // 添加指针光标提示可点击
 
       .swipe-image {
         width: 100%;

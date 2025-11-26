@@ -142,6 +142,23 @@ export const SearchPostAPI = (params?: SearchParams): Res<String> => {
   return instance.get("/post/searchPost", { params: requestParams });
 };
 
+// 请求参数类型定义
+interface InsertPostQuery {
+  // 板块id（必填）
+  fid: number;
+  // 主题id，带tid即为回复，不带即为发帖（可选）
+  tid?: number;
+  // 标题，不带标题为回复，带标题为发帖（可选）
+  subject?: string;
+  // 发帖内容（必填）
+  message: string;
+}
+
+// 发布/回复帖子API
+export const InsertPostAPI = (data: InsertPostQuery): Res<String> => {
+  return instance.post("/post/insetpost", data);
+};
+
 
 // ——————User 用户模块
 //登录接口封装 
@@ -166,7 +183,10 @@ interface ForgotPassword {
 export const UpdateForgotPasswordAPI = (data: ForgotPassword): Res<String> => instance.post("/user/forgetPassword", data)
 
 //获取用户信息
-export const GetUserInformationAPI = (params: { id?: string | number }): Res<any> => instance.get(`/user/get-userinfo`, { params });
+export const GetUserInformationAPI = (params: { id?: number }): Res<any> => instance.get(`/user/get-userinfo`, { params });
+
+//获取用户信息
+export const GetUsernameInformationAPI = (params: { username?: string }): Res<any> => instance.get(`/user/get-usernameinfo`, { params });
 
 
 // ——————Count 积分模块
