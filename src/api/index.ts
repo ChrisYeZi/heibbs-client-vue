@@ -80,7 +80,11 @@ interface GetPostListParams {
 }
 
 // ——————Post 帖子模块
-//获取所有帖子数据（支持传递分页参数）
+/**
+ * 罗小黑妖灵论坛 获取主题帖列表（最新发帖）
+ * @param params 分页数据
+ * @returns 列表数据
+ */
 export const GetPostListAPI = (params?: GetPostListParams): Res<PostDo[]> => {
   // 拼接默认参数：若前端未传，则使用与后端一致的默认值（current=1，size=10）
   const requestParams = {
@@ -90,6 +94,22 @@ export const GetPostListAPI = (params?: GetPostListParams): Res<PostDo[]> => {
   };
 
   return instance.get("/post/getlist", { params: requestParams });
+};
+
+/**
+ * 罗小黑妖灵论坛 获取主题帖列表（最新回帖）
+ * @param params 分页数据
+ * @returns 列表数据
+ */
+export const GetPostListReplyAPI = (params?: GetPostListParams): Res<PostDo[]> => {
+  // 拼接默认参数：若前端未传，则使用与后端一致的默认值（current=1，size=10）
+  const requestParams = {
+    current: 1,
+    size: 10,
+    ...params // 前端传递的参数会覆盖默认值
+  };
+
+  return instance.get("/post/getlistreply", { params: requestParams });
 };
 
 //获取会馆所有帖子数据（支持传递分页参数）
@@ -188,6 +208,33 @@ export const GetUserInformationAPI = (params: { id?: number }): Res<any> => inst
 //获取用户信息
 export const GetUsernameInformationAPI = (params: { username?: string }): Res<any> => instance.get(`/user/get-usernameinfo`, { params });
 
+/**
+ * 获取用户头像（相对地址）
+ * @param params uid: 用户ID
+ */
+export const GetUserAvatarAPI = (uid: number): Res<string> => {
+  return instance.get("/user/get-useravatar", { params: { uid } });
+};
+
+
+
+/**
+ * 上传用户头像（从token解析uid，前端仅传文件）
+ * @param file 头像文件（File类型）
+ */
+export const UploadAvatarAPI = (file: File): Res<string> => {
+  // 构建FormData（匹配后端MultipartFile接收）
+  const formData = new FormData();
+  formData.append("file", file); // 字段名需与@RequestParam("file")一致
+
+  // 上传需设置Content-Type为multipart/form-data（axios会自动处理）
+  return instance.post("/attachment/upload/avatar", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
+}
+
 
 // ——————Count 积分模块
 //获取旧论坛积分（暂时 以后会废除）
@@ -196,6 +243,51 @@ export const GetUserQYCountAPI = (): Res<String> => instance.get("/count/getqyco
 //旧论坛积分转换（暂时 以后会废除）
 export const ChangeUserQYCountAPI = (): Res<String> => instance.get("/count/changeqycount")
 
+/**
+ * 罗小黑妖灵论坛获取积分规则
+ * @returns 积分规则List
+ */
+export const GetCountExtreditsRules = (): Res<String> => instance.get("/count/ratingrules")
+
+/**
+ * 评分记录实体类 (对应 ExtcreditsRecordDo)
+ * 定义用户进行评分操作时，需要发送给后端的数据结构。
+ * 注意：只有需要变动的积分字段才需要包含。
+ */
+interface ExtcreditsRecordDo {
+  // id, time 等字段通常由后端处理或自动生成，前端发送时不需要
+
+  /** 被评分的帖子 PID (目标贴) - 必须 */
+  pid: number;
+  /** 评分留言/理由 (评分消息) - 必须 */
+  message: string;
+  /** 操作方 UID (评分人) - 通常由 Token 解析，但保险起见可以包含 */
+  uid?: number;
+  /** 用户名 (操作方) - 通常由 Token 解析，但保险起见可以包含 */
+  username?: string;
+  /** 积分类型 变动值 (可以为正/负) */
+  extcredits1: number | null;
+  extcredits2: number | null;
+  extcredits3: number | null;
+  extcredits4: number | null;
+  extcredits5: number | null;
+  extcredits6: number | null;
+  extcredits7: number | null;
+  extcredits8: number | null;
+}
+
+/**
+ * 罗小黑妖灵论坛评分接口
+ * @param extcreditsRecordDo 评分实体类
+ * @return RestFul接口 (返回成功/失败消息，类型为 String)
+ */
+export const UserExtcreditsChangeAPI = (data: ExtcreditsRecordDo): Res<string> => instance.post("/count/rating", data);
+
+/**
+ * 罗小黑妖灵论坛获取积分列表接口
+ * @returns 论坛的积分及启用情况
+ */
+export const UserExtreditsListAPI = (): Res<String> => instance.get("/count/extreditslist")
 
 // ——————Block 会馆板块模块
 //获取会馆列表
@@ -246,14 +338,14 @@ interface BannerItem {
   pid?: number; // 跳转目标帖ID
   url: string; // 展示图片地址
   status: number; // 是否启用（0-禁用，1-启用）
-  index: number; // 排序优先级（数值越高越靠前）
+  bindex: number; // 排序优先级（数值越高越靠前）
 }
 
 // 获取展示Banner
 export const GetAdminBannerAPI = (): Res<String> => instance.get("/admin/get-banner");
 
 // 后台获取所有Banner
-export const SelectBannerAPI = (): Res<String> => instance.get("/admin/select-banner");
+export const SelectBannerAPI = (): Res<BannerItem[]> => instance.get("/admin/select-banner");
 
 // 增加Banner
 export const InsertBannerAPI = (data: BannerItem): Res<String> => instance.post("/admin/insert-banner", data);
@@ -421,6 +513,8 @@ export const SearchUserAPI = (params?: SearchParams): Res<String> => {
   };
   return instance.get("/admin/search-user", { params: requestParams });
 };
+
+
 
 // ——————Invitation 后台邀请码管理模块
 // 邀请码列表查询参数

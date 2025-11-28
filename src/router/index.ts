@@ -60,6 +60,19 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
+        path: "/newpost/:bid",
+        name: "newpost",
+        component: () => import("../views/main/newpost.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: false,
+          NavReturnbar: true,
+          Login: false,
+          Copyright: true,
+          title: "发帖",
+        },
+      },
+      {
         path: "/editpost/:pid",
         name: "editpost",
         component: () => import("../views/main/editpost.vue"),
@@ -301,6 +314,17 @@ const routes: Array<RouteRecordRaw> = [
               NavReturnbar: true,
               Copyright: true,
               title: "管理面板 - 消息管理",
+            },
+          },
+          {
+            path: "/admin/banner",
+            name: "admin-banner",
+            component: () => import("../views/admin/admin-banner.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - Banner管理",
             },
           },
         ]

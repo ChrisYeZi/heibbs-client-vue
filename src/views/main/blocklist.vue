@@ -36,7 +36,6 @@
         <div class="block-content-icon">
           <van-icon name="gold-coin-o">妖灵币: {{ item?.finance }}</van-icon>
         </div>
-        简单占位，还不想写
       </div>
     </div>
   </div>

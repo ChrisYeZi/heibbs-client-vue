@@ -20,29 +20,29 @@
     <div class="editpost-box">
       <!-- 工具栏 + 切换按钮 -->
       <div class="editor-toolbar">
-        <!-- 原 WangEditor 工具栏（仅可视化视图显示） -->
+        <!-- WangEditor 工具栏） -->
         <Toolbar
           style="border-bottom: 1px solid #ccc"
           :editor="editorRef"
           :defaultConfig="toolbarConfig"
           :mode="mode"
         />
-        <!-- 代码视图切换按钮（始终显示） -->
-        <el-button
-          type="text"
-          size="small"
-          @click="toggleCodeView"
-          :disabled="isSubmitting"
-          class="code-view-btn"
-        >
-          {{ isCodeView ? "可视化视图" : "查看代码视图" }}
-        </el-button>
       </div>
+      <!-- 代码视图切换按钮） -->
+      <el-button
+        type="text"
+        size="small"
+        @click="toggleCodeView"
+        :disabled="isSubmitting"
+        class="code-view-btn"
+      >
+        {{ isCodeView ? "可视化视图" : "查看代码视图" }}
+      </el-button>
 
-      <!-- 1. 可视化编辑视图（默认显示） -->
+      <!-- 可视化编辑视图（默认显示） -->
       <Editor
         v-if="!isCodeView"
-        style="height: 70vh; overflow-y: hidden"
+        style="min-height: 100px; overflow-y: hidden"
         v-model="valueHtml"
         :defaultConfig="editorConfig"
         :mode="mode"
@@ -50,7 +50,7 @@
         @error="handleEditorError"
       />
 
-      <!-- 2. 代码视图（切换后显示） -->
+      <!-- 代码视图（切换后显示） -->
       <div v-else class="code-view-container">
         <pre class="code-view-pre">
           <textarea
@@ -146,11 +146,11 @@ export default defineComponent({
     const valueHtml = ref("<p>加载中...</p>");
     const isSubmitting = ref(false);
 
-    // 核心：代码视图状态管理
+    // 代码视图状态管理
     const isCodeView = ref(false); // 是否显示代码视图
     const codeContent = ref(""); // 代码视图的 HTML 内容
 
-    // 1. 切换代码视图/可视化视图
+    // 切换代码视图/可视化视图
     const toggleCodeView = () => {
       if (isCodeView.value) {
         // 退出代码视图：将 codeContent 同步回编辑器
@@ -159,7 +159,7 @@ export default defineComponent({
           valueHtml.value = codeContent.value; // 同步 v-model
         }
       } else {
-        // 进入代码视图：从编辑器获取原始 HTML
+        // 代码视图从编辑器获取原始 HTML
         if (editorRef.value) {
           const rawHtml = editorRef.value.getHtml(); // 获取编辑器原始 HTML
           codeContent.value = rawHtml; // 赋值给代码视图
@@ -211,15 +211,15 @@ export default defineComponent({
       }
     };
 
-    // 提交编辑：优先用代码视图内容（如果处于代码视图）
+    // 优先用代码视图内容（如果处于代码视图）
     const handleSubmit = async () => {
-      // 1. 标题验证
+      // 标题验证
       if (!postData.value.subject?.trim()) {
         ElMessage.warning("请输入帖子标题");
         return;
       }
 
-      // 2. 内容获取：代码视图优先
+      // 内容获取：代码视图优先
       let finalContent = "";
       if (isCodeView.value) {
         finalContent = codeContent.value.trim();
@@ -229,13 +229,13 @@ export default defineComponent({
           : valueHtml.value.trim();
       }
 
-      // 3. 内容验证
+      // 内容验证
       if (!finalContent) {
         ElMessage.warning("请输入帖子内容");
         return;
       }
 
-      // 4. 提交数据
+      // 提交数据
       const submitData = {
         pid: Number(postData.value.pid),
         fid: Number(postData.value.fid) || 0,
@@ -355,42 +355,45 @@ export default defineComponent({
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #ccc;
-    padding-right: 16px;
   }
 
   /* 代码视图切换按钮 */
   .code-view-btn {
-    color: #4775f0 !important;
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    color: #d69034 !important;
     margin: 0 !important;
     padding: 8px 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   }
 
   /* 代码视图容器 */
   .code-view-container {
     overflow: hidden;
-    height: 70vh;
-  }
+    // height: 70vh;
+    min-height: 100px;
+    .code-view-pre {
+      margin: 0;
+      height: 100%;
+      border: none;
+      overflow: hidden;
+      display: flex;
+    }
 
-  .code-view-pre {
-    margin: 0;
-    height: 100%;
-    border: none;
-    overflow: hidden;
-    display: flex;
-  }
-
-  .code-view-textarea {
-    width: 100%;
-    height: 100%;
-    padding: 12px;
-    border: none;
-    font-family: "Consolas", "Monaco", monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: none;
-    outline: none;
-    box-sizing: border-box;
+    .code-view-textarea {
+      width: 100%;
+      height: 100%;
+      padding: 12px;
+      border: none;
+      font-family: "微软雅黑", "Monaco", monospace;
+      font-size: 16px;
+      color: rgba(0, 0, 0, 0.9);
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+    }
   }
 
   .editpost-footer {

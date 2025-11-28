@@ -1,18 +1,22 @@
 <template>
   <div class="index" ref="scrollContainer">
     <!-- 轮播图区域 -->
-    <van-swipe 
-      v-if="slides.length" 
-      class="my-swipe" 
-      :autoplay="3000" 
+    <van-swipe
+      v-if="slides.length"
+      class="my-swipe"
+      :autoplay="3500"
       indicator-color="white"
     >
-      <van-swipe-item 
-        v-for="(slide, index) in slides" 
+      <van-swipe-item
+        v-for="(slide, index) in slides"
         :key="slide.id || index"
         @click="handleBannerClick(slide)"
       >
-        <img :src="slide.url" :alt="slide.title" class="swipe-image" />
+        <div class="swipe-container">
+          <img :src="slide.url" :alt="slide.title" class="swipe-image" />
+          <!-- Banner标题层 -->
+          <div class="swipe-title">{{ slide.title }}</div>
+        </div>
       </van-swipe-item>
     </van-swipe>
 
@@ -21,7 +25,21 @@
       text="罗小黑妖灵论坛测试开发中，登录账户请注意账户安全"
     />
 
-    <div class="index-post-rule">最新发帖 最新回复</div>
+    <!-- 排序切换标签 -->
+    <div class="index-post-rule">
+      <span
+        class="sort-tab"
+        :class="{ active: sortType === 'latestPost' }"
+        @click="changeSortType('latestPost')"
+        >最新发帖</span
+      >
+      <span
+        class="sort-tab"
+        :class="{ active: sortType === 'latestReply' }"
+        @click="changeSortType('latestReply')"
+        >最新回复</span
+      >
+    </div>
 
     <!-- 帖子列表 -->
     <div v-if="postList.records && postList.records.length">
@@ -74,7 +92,7 @@
               }"
               >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
             >
-            <!-- 用户名  @click="gotoInfo(item.authorid)" 暂时不在首页跳转-->
+            <!-- 用户名 -->
             <span class="post-username">{{ item.author }}</span>
             <!-- 勋章占位 -->
             <van-icon
@@ -132,10 +150,12 @@ import { useRouter } from "vue-router";
 import PostbarVue from "@/components/common/Postbar.vue";
 import {
   GetPostListAPI,
+  GetPostListReplyAPI, // 导入最新回帖接口
   GetBlockListAPI,
   GetGroupListAPI,
   GetPostTopAPI,
-  GetAdminBannerAPI // 导入Banner接口
+  GetAdminBannerAPI,
+  GetUserAvatarAPI,
 } from "@/api/index";
 import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon } from "vant";
 import parsedContent from "@/assets/js/parsedContent";
@@ -220,21 +240,21 @@ export default defineComponent({
     const postTopList = ref<PostTopResponse>(null);
     const blockList = ref<BlockList>([]);
     const groupList = ref<GroupItem>(null);
-    const slides = ref<BannerItem[]>([]); // 修改为BannerItem类型
+    const slides = ref<BannerItem[]>([]);
 
     const isLoading = ref(true);
     const isLoadingMore = ref(false);
     const currentPage = ref(1);
     const pageSize = ref(10);
     const hasMore = ref(true);
+    // 排序类型：latestPost（最新发帖）/latestReply（最新回复），默认最新回复
+    const sortType = ref<"latestPost" | "latestReply">("latestReply");
 
     // 处理Banner点击事件
     const handleBannerClick = (banner: BannerItem) => {
       if (banner.pid) {
-        // 跳转到对应的帖子详情页
         router.push(`/post/${banner.pid}`);
       }
-      // 如果需要支持其他链接类型，可以在这里扩展
     };
 
     // 获取Banner数据
@@ -242,11 +262,9 @@ export default defineComponent({
       try {
         const res: any = await GetAdminBannerAPI();
         if (res.status === 200 && res.data) {
-          // 过滤启用的Banner，按index降序排序
           const activeBanners = res.data
             .filter((banner: BannerItem) => banner.status === 1)
             .sort((a: BannerItem, b: BannerItem) => b.bindex - a.bindex);
-          
           slides.value = activeBanners;
         }
       } catch (error) {
@@ -266,24 +284,27 @@ export default defineComponent({
       }
 
       const { scrollTop, clientHeight, scrollHeight } = scrollContainer.value;
-
-      // 当滚动到距离底部200px以内时加载下一页
       if (scrollHeight - scrollTop - clientHeight <= 200) {
         loadNextPage();
       }
     };
 
-    // 获取帖子列表数据
+    // 获取帖子列表数据（根据排序类型切换API）
     const getData = async (page: number = 1, isAppend: boolean = false) => {
       try {
-        // 如果是加载更多，设置isLoadingMore
         if (isAppend) {
           isLoadingMore.value = true;
         } else {
           isLoading.value = true;
         }
 
-        const res: any = await GetPostListAPI({
+        // 根据排序类型选择对应的API
+        const api =
+          sortType.value === "latestReply"
+            ? GetPostListReplyAPI
+            : GetPostListAPI;
+
+        const res: any = await api({
           current: page,
           size: pageSize.value,
         });
@@ -291,10 +312,8 @@ export default defineComponent({
         if (res.status === 200) {
           const newData = res.data;
 
-          // 判断是否还有更多数据
           hasMore.value = (newData.current || 0) < (newData.pages || Infinity);
 
-          // 如果是加载更多，追加数据；否则替换数据
           if (isAppend && postList.value.records) {
             postList.value = {
               ...newData,
@@ -304,19 +323,34 @@ export default defineComponent({
             postList.value = newData;
           }
 
-          // 更新当前页码
           currentPage.value = newData.current || page;
         } else {
-          console.error("获取帖子列表失败:", res.msg);
+          const typeText =
+            sortType.value === "latestReply" ? "最新回帖" : "最新发帖";
+          console.error(`获取${typeText}列表失败:`, res.msg);
           hasMore.value = false;
         }
       } catch (error) {
-        console.error("获取帖子列表出错:", error);
+        const typeText =
+          sortType.value === "latestReply" ? "最新回帖" : "最新发帖";
+        console.error(`获取${typeText}列表出错:`, error);
         hasMore.value = false;
       } finally {
         isLoading.value = false;
         isLoadingMore.value = false;
       }
+    };
+
+    // 切换排序类型
+    const changeSortType = (type: "latestPost" | "latestReply") => {
+      if (sortType.value === type) return;
+      sortType.value = type;
+      // 重置分页状态
+      currentPage.value = 1;
+      hasMore.value = true;
+      postList.value = { records: [] };
+      // 重新加载数据
+      getData();
     };
 
     // 获取置顶帖数据
@@ -358,20 +392,14 @@ export default defineComponent({
 
     /**
      * 根据fid获取板块名称
-     * @param fid 帖子的板块ID（对应 BlockItem 的 id）
-     * @param blockList 板块数组（必须是数组类型）
-     * @returns 匹配的板块名称，未找到则返回“未知板块”
      */
     const getBlockName = (fid: number): string => {
-      // 在板块列表中查找id等于fid的板块
       const matchedBlock = blockList.value.find((block) => block.id === fid);
-      // 找到返回名称，未找到返回"未知板块"
       return matchedBlock ? matchedBlock.name : "未知板块";
     };
 
     /**
-     * 罗小黑妖灵论坛跳转用户信息页面
-     * @param id 用户id
+     * 跳转用户信息页面
      */
     const gotoInfo = (id: number) => {
       router.push({
@@ -382,17 +410,17 @@ export default defineComponent({
     // 初始化加载数据
     const initData = async () => {
       await Promise.all([
-        getBannerData(),    // 获取Banner数据
-        getBlockData(),     // 获取板块数据
-        getGroupData(),     // 获取用户组数据
-        getPostTopData()    // 获取置顶帖数据
+        getBannerData(),
+        getBlockData(),
+        getGroupData(),
+        getPostTopData(),
       ]);
-      await getData();     // 获取帖子列表数据
+      await getData(); // 默认加载最新回帖
     };
 
     // 监听滚动事件
     onMounted(() => {
-      initData(); // 初始化所有数据
+      initData();
       if (scrollContainer.value) {
         scrollContainer.value.addEventListener("scroll", handleScroll);
       }
@@ -418,7 +446,9 @@ export default defineComponent({
       postTopList,
       getBlockName,
       gotoInfo,
-      handleBannerClick // 导出Banner点击处理方法
+      handleBannerClick,
+      sortType, // 导出排序类型
+      changeSortType, // 导出切换方法
     };
   },
   methods: {
@@ -457,12 +487,63 @@ export default defineComponent({
     .van-swipe-item {
       position: relative;
       background-color: #f5f5f5;
-      cursor: pointer; // 添加指针光标提示可点击
+      cursor: pointer;
+
+      .swipe-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
 
       .swipe-image {
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+
+      .swipe-title {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.5);
+        color: #ffffff;
+        font-size: 14px;
+        line-height: 1.4;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  // 排序标签样式
+  .index-post-rule {
+    display: flex;
+    gap: 20px;
+    padding: 10px 5px;
+    justify-content: flex-end;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 15px;
+    font-size: 15px;
+
+    .sort-tab {
+      cursor: pointer;
+      padding: 5px 12px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+
+      &.active {
+        background-color: #fa7e19;
+        color: #fff;
+        font-weight: 500;
+      }
+
+      &:hover:not(.active) {
+        color: #fa7e19;
+        background-color: #f0f7ff;
       }
     }
   }
@@ -497,6 +578,7 @@ export default defineComponent({
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
+
       .index-post-title-block {
         color: rgba(255, 255, 255, 1);
         background: rgba(244, 170, 41, 0.7);
@@ -505,6 +587,7 @@ export default defineComponent({
         border-radius: 5px;
         padding: 2px 4px;
       }
+
       .index-post-title-block-top {
         color: rgba(255, 255, 255, 1);
         background: rgba(244, 48, 41, 0.7);
@@ -521,12 +604,14 @@ export default defineComponent({
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
+
       .index-post-meta-group {
         color: rgba(255, 255, 255, 1);
         margin-right: 5px;
         border-radius: 5px;
         padding: 2px 4px;
       }
+
       .index-post-meta-admingroup {
         color: rgba(255, 255, 255, 1);
         margin-right: 5px;
@@ -543,7 +628,6 @@ export default defineComponent({
       overflow: hidden;
       text-overflow: ellipsis;
 
-      // 自定义标签样式
       .bili-link {
         color: #fb7299;
         text-decoration: none;

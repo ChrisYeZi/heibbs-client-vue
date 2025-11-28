@@ -22,6 +22,24 @@
       <!-- 序号列 -->
       <el-table-column label="ID" prop="id" width="80" align="center" />
 
+      <!-- 会馆图标列 -->
+      <el-table-column label="会馆图标" width="100" align="center">
+        <template #default="scope">
+          <div class="block-icon-container">
+            <el-image
+              v-if="scope.row.imgUrl"
+              :src="scope.row.imgUrl"
+              :preview-src-list="[scope.row.imgUrl]"
+              fit="cover"
+              class="block-icon"
+              placeholder="加载中..."
+              fallback="https://via.placeholder.com/40x40?text=无图标"
+            />
+            <div v-else class="no-icon">无图标</div>
+          </div>
+        </template>
+      </el-table-column>
+
       <!-- 会馆名称 -->
       <el-table-column
         label="会馆名称"
@@ -103,7 +121,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'add' ? '添加会馆' : '编辑会馆'"
-      width="600px"
+      width="700px"
     >
       <el-form
         ref="blockForm"
@@ -160,6 +178,7 @@
             v-model="formData.finance"
             :min="0"
             placeholder="请输入财政金额"
+            style="width: 100%"
           />
         </el-form-item>
 
@@ -169,6 +188,7 @@
             :min="0"
             :max="100"
             placeholder="请输入税率"
+            style="width: 100%"
           />
         </el-form-item>
 
@@ -194,15 +214,52 @@
             v-model="formData.bindex"
             :min="0"
             placeholder="数值越高越靠前"
+            style="width: 100%"
           />
         </el-form-item>
 
-        <el-form-item label="图标地址" prop="imgUrl">
-          <el-input v-model="formData.imgUrl" placeholder="请输入图标URL" />
+        <el-form-item label="会馆图标" prop="imgUrl">
+          <div class="form-item-media">
+            <el-input 
+              v-model="formData.imgUrl" 
+              placeholder="请输入图标URL（建议尺寸40x40）" 
+              style="width: 70%"
+            />
+            <!-- 图标预览 -->
+            <div class="media-preview">
+              <el-image
+                v-if="formData.imgUrl"
+                :src="formData.imgUrl"
+                :preview-src-list="[formData.imgUrl]"
+                fit="cover"
+                class="icon-preview"
+                fallback="https://via.placeholder.com/40x40?text=预览"
+              />
+              <div v-else class="no-preview">暂无预览</div>
+            </div>
+          </div>
         </el-form-item>
 
-        <el-form-item label="横幅地址" prop="bannerurl">
-          <el-input v-model="formData.bannerurl" placeholder="请输入横幅URL" />
+        <el-form-item label="横幅图片" prop="bannerurl">
+          <div class="form-item-media">
+            <el-input 
+              v-model="formData.bannerurl" 
+              placeholder="请输入横幅URL（建议尺寸1200x300）" 
+              style="width: 70%"
+            />
+            <!-- 横幅预览 -->
+            <div class="media-preview banner-preview-container">
+              <el-image
+                v-if="formData.bannerurl"
+                :src="formData.bannerurl"
+                :preview-src-list="[formData.bannerurl]"
+                fit="cover"
+                class="banner-preview"
+                fallback="https://via.placeholder.com/200x60?text=横幅预览"
+              />
+              <div v-else class="no-preview">暂无预览</div>
+            </div>
+          </div>
         </el-form-item>
         
         <el-form-item label="标题" prop="title">
@@ -236,6 +293,7 @@ import {
   ElInputNumber,
   ElMessageBox,
   ElDialog,
+  ElImage,
 } from "element-plus";
 import { Plus } from "@element-plus/icons-vue";
 import {
@@ -306,6 +364,8 @@ const formRules = {
   license: [{ required: true, message: "请选择权限设置", trigger: "change" }],
   bindex: [{ required: true, message: "请输入排序值", trigger: "blur" }],
   title: [],
+  imgUrl: [],
+  bannerurl: [],
 };
 
 export default defineComponent({
@@ -324,6 +384,7 @@ export default defineComponent({
     ElSwitch,
     ElInputNumber,
     ElDialog,
+    ElImage,
     Plus,
   },
   setup() {
@@ -562,6 +623,8 @@ export default defineComponent({
         taxRate: row.taxRate || 0,
         bindex: row.bindex || 0,
         repost: row.repost || false,
+        imgUrl: row.imgUrl || "",
+        bannerurl: row.bannerurl || "",
       });
 
       dialogVisible.value = true;
@@ -723,6 +786,77 @@ export default defineComponent({
 .page-info {
   color: #666;
   font-size: 14px;
+}
+
+// 会馆图标样式
+.block-icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  .block-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid #eee;
+  }
+  
+  .no-icon {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+    background: #f5f5f5;
+    color: #999;
+    font-size: 10px;
+    border-radius: 50%;
+  }
+}
+
+// 表单媒体项样式
+.form-item-media {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  .media-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    .icon-preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+    
+    .no-preview {
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
+      text-align: center;
+      background: #f5f5f5;
+      color: #999;
+      font-size: 10px;
+      border-radius: 4px;
+    }
+  }
+  
+  .banner-preview-container {
+    .banner-preview {
+      width: 120px;
+      height: 30px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+    
+    .no-preview {
+      width: 120px;
+      height: 30px;
+      line-height: 30px;
+    }
+  }
 }
 
 // 多选选择框样式优化

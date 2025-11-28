@@ -29,6 +29,9 @@
         <el-menu-item index="message" @click="routerGoto('/admin/message')"
           >消息</el-menu-item
         >
+        <el-menu-item index="banner" @click="routerGoto('/admin/banner')"
+          >横幅</el-menu-item
+        >
         <el-menu-item index="unknowed" @click="routerGoto('/admin/unknowed')"
           >附件</el-menu-item
         >

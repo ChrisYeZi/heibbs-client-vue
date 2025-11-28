@@ -32,7 +32,7 @@
           <div class="author-info">
             <el-avatar
               class="author-avatar"
-              src="http://www.heibbs.net:8081/api/attachment/200000/logo.png"
+              :src="avatarUrls[mainPost.authorid] || defaultAvatar"
               @click="gotoInfo(mainPost.authorid)"
             />
             <div class="author-details">
@@ -133,25 +133,73 @@
           </div>
         </div>
       </div>
-
+      <!-- 主帖评分记录 -->
+      <div
+        class="extcredits-records"
+        v-if="mainPost.extcreditsRecords && mainPost.extcreditsRecords.length"
+      >
+        <div class="records-title">评分记录</div>
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>用户</th>
+              <th>消息</th>
+              <th>积分</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="record in mainPost.extcreditsRecords" :key="record.id">
+              <td>{{ record.username }}</td>
+              <td>{{ record.message }}</td>
+              <td>{{ getExtcreditsDesc(record) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <!-- 主帖操作按钮（使用原生下拉菜单替代Element Plus） -->
       <div class="post-actions-container">
-        <el-button type="info" text @click="showPostReply = true">回复</el-button>
+        <el-button type="info" text @click="showPostReply = true"
+          >回复</el-button
+        >
         <el-button type="info" text>评分</el-button>
-        
+
         <!-- 使用原生下拉菜单 -->
         <div class="dropdown-container">
-          <button class="dropdown-btn" @click="(e) => toggleMainPostDropdown(e)">
+          <button
+            class="dropdown-btn"
+            @click="(e) => toggleMainPostDropdown(e)"
+          >
             更多
             <span class="dropdown-icon">▼</span>
           </button>
           <div class="dropdown-menu" v-if="showMainPostDropdown">
-            <div class="dropdown-item" @click="handleMainPostAction('operate')">操作</div>
-            <div class="dropdown-item" @click="handleMainPostAction('report')">举报</div>
-            <div class="dropdown-item" @click="handleMainPostAction('share')">分享</div>
-            <div class="dropdown-divider" v-if="judgmentPermission(mainPost.authorid)"></div>
-            <div class="dropdown-item" v-if="judgmentPermission(mainPost.authorid)" @click="handleMainPostAction('edit')">编辑</div>
-            <div class="dropdown-item danger" v-if="judgmentPermission(mainPost.authorid)" @click="handleMainPostAction('delete')">删除</div>
+            <div class="dropdown-item" @click="handleMainPostAction('operate')">
+              操作
+            </div>
+            <div class="dropdown-item" @click="handleMainPostAction('report')">
+              举报
+            </div>
+            <div class="dropdown-item" @click="handleMainPostAction('share')">
+              分享
+            </div>
+            <div
+              class="dropdown-divider"
+              v-if="judgmentPermission(mainPost.authorid)"
+            ></div>
+            <div
+              class="dropdown-item"
+              v-if="judgmentPermission(mainPost.authorid)"
+              @click="handleMainPostAction('edit')"
+            >
+              编辑
+            </div>
+            <div
+              class="dropdown-item danger"
+              v-if="judgmentPermission(mainPost.authorid)"
+              @click="handleMainPostAction('delete')"
+            >
+              删除
+            </div>
           </div>
         </div>
       </div>
@@ -187,7 +235,7 @@
             <div class="comment-header">
               <el-avatar
                 class="comment-avatar"
-                src=""
+                :src="avatarUrls[comment.authorid] || defaultAvatar"
                 @click="gotoInfo(comment.authorid)"
               />
               <div class="comment-author-info">
@@ -214,7 +262,9 @@
                   >
                   {{ comment.author }}
                 </div>
-                <div class="comment-time">{{ comment.formattedCreateTime }}</div>
+                <div class="comment-time">
+                  {{ comment.formattedCreateTime }}
+                </div>
               </div>
             </div>
 
@@ -236,7 +286,10 @@
                   >修改</el-button
                 >
                 <el-button size="small" @click="cancelEdit">取消</el-button>
-                <el-button type="primary" size="small" @click="gotoAdvancedEdit(comment.pid)"
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="gotoAdvancedEdit(comment.pid)"
                   >高级编辑</el-button
                 >
               </div>
@@ -296,32 +349,103 @@
               </div>
             </div>
 
+            <!-- 评论评分记录 -->
+            <div
+              class="extcredits-records"
+              v-if="
+                comment.extcreditsRecords && comment.extcreditsRecords.length
+              "
+            >
+              <div class="records-title">评分记录</div>
+              <table class="records-table">
+                <thead>
+                  <tr>
+                    <th>用户名</th>
+                    <th>评分信息</th>
+                    <th>积分变化</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="record in comment.extcreditsRecords"
+                    :key="record.id"
+                  >
+                    <td>{{ record.username }}</td>
+                    <td>{{ record.message }}</td>
+                    <td>{{ getExtcreditsDesc(record) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
             <!-- 评论操作按钮（使用原生下拉菜单） -->
             <div class="comment-actions-container">
-              <el-button type="info" text @click="showCommentReply(comment, index)">回复</el-button>
+              <el-button
+                type="info"
+                text
+                @click="showCommentReply(comment, index)"
+                >回复</el-button
+              >
               <el-button type="info" text>评分</el-button>
-              
+
               <div class="dropdown-container">
-                <button class="dropdown-btn" @click="(e) => toggleCommentDropdown(index, e)">
+                <button
+                  class="dropdown-btn"
+                  @click="(e) => toggleCommentDropdown(index, e)"
+                >
                   更多
                   <span class="dropdown-icon">▼</span>
                 </button>
                 <div class="dropdown-menu" v-if="showCommentDropdown === index">
-                  <div class="dropdown-item" @click="handleCommentAction('operate', comment)">操作</div>
-                  <div class="dropdown-item" @click="handleCommentAction('report', comment)">举报</div>
-                  <div class="dropdown-item" @click="handleCommentAction('share', comment)">分享</div>
-                  <div class="dropdown-divider" v-if="judgmentPermission(comment.authorid)"></div>
-                  <div class="dropdown-item" v-if="judgmentPermission(comment.authorid)" @click="handleCommentAction('edit', comment)">编辑</div>
-                  <div class="dropdown-item danger" v-if="judgmentPermission(comment.authorid)" @click="handleCommentAction('delete', comment)">删除</div>
+                  <div
+                    class="dropdown-item"
+                    @click="handleCommentAction('operate', comment)"
+                  >
+                    操作
+                  </div>
+                  <div
+                    class="dropdown-item"
+                    @click="handleCommentAction('report', comment)"
+                  >
+                    举报
+                  </div>
+                  <div
+                    class="dropdown-item"
+                    @click="handleCommentAction('share', comment)"
+                  >
+                    分享
+                  </div>
+                  <div
+                    class="dropdown-divider"
+                    v-if="judgmentPermission(comment.authorid)"
+                  ></div>
+                  <div
+                    class="dropdown-item"
+                    v-if="judgmentPermission(comment.authorid)"
+                    @click="handleCommentAction('edit', comment)"
+                  >
+                    编辑
+                  </div>
+                  <div
+                    class="dropdown-item danger"
+                    v-if="judgmentPermission(comment.authorid)"
+                    @click="handleCommentAction('delete', comment)"
+                  >
+                    删除
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- 评论回复框 -->
-            <div class="reply-container" v-if="replyToComment && replyToIndex === index">
+            <div
+              class="reply-container"
+              v-if="replyToComment && replyToIndex === index"
+            >
               <div class="quote-content" v-if="replyToComment">
                 <div class="quote-header">
-                  @{{ replyToComment.author }} {{ replyToComment.formattedCreateTime }}
+                  @{{ replyToComment.author }}
+                  {{ replyToComment.formattedCreateTime }}
                 </div>
                 <div class="quote-text">
                   {{ getShortContent(replyToComment.message) }}
@@ -334,7 +458,9 @@
                 rows="4"
               ></textarea>
               <div class="reply-actions">
-                <el-button type="warning" @click="submitCommentReply">回复</el-button>
+                <el-button type="warning" @click="submitCommentReply"
+                  >回复</el-button
+                >
                 <el-button @click="cancelReply">取消</el-button>
               </div>
             </div>
@@ -355,7 +481,11 @@
     </div>
 
     <!-- 点击外部关闭下拉菜单 -->
-    <div class="dropdown-backdrop" v-if="showMainPostDropdown || showCommentDropdown !== null" @click="closeAllDropdowns"></div>
+    <div
+      class="dropdown-backdrop"
+      v-if="showMainPostDropdown || showCommentDropdown !== null"
+      @click="closeAllDropdowns"
+    ></div>
   </div>
 </template>
 
@@ -365,13 +495,15 @@ import { useRouter, useRoute } from "vue-router";
 import store from "@/store";
 import { Empty, Loading, Icon, Tag, Image as VanImage, Pagination } from "vant";
 import { ElMessage, ElMessageBox, ElAvatar, ElButton } from "element-plus";
+import config from "@/config/index";
 
 import {
   GetPostAPI,
   GetBlockListAPI,
   GetGroupListAPI,
   EditPostDataAPI,
-  InsertPostAPI // 导入回复接口
+  InsertPostAPI,
+  GetUserAvatarAPI,
 } from "@/api/index";
 import parsedContent from "@/assets/js/parsedContent";
 
@@ -403,11 +535,31 @@ interface Attachment {
   formattedDateline: string;
 }
 
+// 积分记录接口
+interface ExtcreditsRecord {
+  id: number;
+  uid: number;
+  username: string;
+  pid: number;
+  message: string;
+  time: string;
+  extcredits1: number | null;
+  extcredits2: number | null;
+  extcredits3: number | null;
+  extcredits4: number | null;
+  extcredits5: number | null;
+  extcredits6: number | null;
+  extcredits7: number | null;
+  extcredits8: number | null;
+}
+
 interface PostItem extends PostDo {
   attachments: Attachment[];
   formattedCreateTime: string;
   groupid?: number;
   extgroupid?: number;
+  extcreditsRecords: ExtcreditsRecord[];
+  replyCount?: number;
 }
 
 interface ReplyPage {
@@ -416,6 +568,12 @@ interface ReplyPage {
   size: number;
   current: number;
   pages: number;
+  orders?: [];
+  optimizeCountSql?: boolean;
+  hitCount?: boolean;
+  countId?: null;
+  maxLimit?: null;
+  searchCount?: boolean;
 }
 
 interface BlockItem {
@@ -462,7 +620,7 @@ export default defineComponent({
     [VanImage.name]: VanImage,
     [Pagination.name]: Pagination,
     ElAvatar,
-    ElButton
+    ElButton,
   },
   setup() {
     const router = useRouter();
@@ -485,6 +643,10 @@ export default defineComponent({
     const editCommentId = ref<number | null>(null);
     const editContent = ref<string>("");
 
+    // 头像相关
+    const avatarUrls = ref<Record<number, string>>({}); // 存储用户头像URL映射
+    const defaultAvatar = `${config.avatarUrl}/user/avatar/default.png`; // 默认头像地址
+
     // 回复相关状态
     const showPostReply = ref(false);
     const replyToComment = ref<PostItem | null>(null);
@@ -503,12 +665,97 @@ export default defineComponent({
       return replyPage.value.records.filter((item) => item.first !== 1);
     });
 
+    // 获取用户头像
+    const loadUserAvatar = async (uid: number) => {
+      try {
+        // 如果已经加载过，直接返回
+        if (avatarUrls.value[uid]) return;
+
+        const res: any = await GetUserAvatarAPI(uid);
+        if (res.status === 200 && res.data) {
+          // 拼接完整的头像URL
+          avatarUrls.value[uid] = `${config.avatarUrl}${res.data}`;
+        } else {
+          // 使用默认头像
+          avatarUrls.value[uid] = defaultAvatar;
+        }
+      } catch (error) {
+        console.error(`加载用户${uid}头像失败:`, error);
+        avatarUrls.value[uid] = defaultAvatar;
+      }
+    };
+
+    // 批量加载头像
+    const loadAllAvatars = async () => {
+      if (!mainPost.value) return;
+
+      // 加载主帖作者头像
+      await loadUserAvatar(mainPost.value.authorid);
+
+      // 加载所有评论作者头像
+      const commentAuthors = replyPage.value.records.map(
+        (item) => item.authorid
+      );
+      const uniqueAuthors = [...new Set(commentAuthors)]; // 去重
+
+      // 并行加载所有头像
+      await Promise.all(uniqueAuthors.map((uid) => loadUserAvatar(uid)));
+    };
+
     // 获取简短内容（用于引用）
     const getShortContent = (content: string) => {
       // 移除HTML标签
-      const text = content.replace(/<[^>]*>/g, '');
+      const text = content.replace(/<[^>]*>/g, "");
       // 如果内容过长，截取前50个字符
-      return text.length > 50 ? text.substring(0, 50) + '...' : text;
+      return text.length > 50 ? text.substring(0, 50) + "..." : text;
+    };
+
+    // 生成积分变化描述
+    const getExtcreditsDesc = (record: ExtcreditsRecord) => {
+      const descParts = [];
+
+      if (record.extcredits1 !== null && record.extcredits1 !== undefined) {
+        descParts.push(
+          `灵气${record.extcredits1 > 0 ? "+" : ""}${record.extcredits1}`
+        );
+      }
+      if (record.extcredits2 !== null && record.extcredits2 !== undefined) {
+        descParts.push(
+          `妖灵币${record.extcredits2 > 0 ? "+" : ""}${record.extcredits2}`
+        );
+      }
+      if (record.extcredits3 !== null && record.extcredits3 !== undefined) {
+        descParts.push(
+          `值钱玉佩${record.extcredits3 > 0 ? "+" : ""}${record.extcredits3}`
+        );
+      }
+      if (record.extcredits4 !== null && record.extcredits4 !== undefined) {
+        descParts.push(
+          `天明珠${record.extcredits4 > 0 ? "+" : ""}${record.extcredits4}`
+        );
+      }
+      if (record.extcredits5 !== null && record.extcredits5 !== undefined) {
+        descParts.push(
+          `积分5${record.extcredits5 > 0 ? "+" : ""}${record.extcredits5}`
+        );
+      }
+      if (record.extcredits6 !== null && record.extcredits6 !== undefined) {
+        descParts.push(
+          `积分6${record.extcredits6 > 0 ? "+" : ""}${record.extcredits6}`
+        );
+      }
+      if (record.extcredits7 !== null && record.extcredits7 !== undefined) {
+        descParts.push(
+          `积分7${record.extcredits7 > 0 ? "+" : ""}${record.extcredits7}`
+        );
+      }
+      if (record.extcredits8 !== null && record.extcredits8 !== undefined) {
+        descParts.push(
+          `积分8${record.extcredits8 > 0 ? "+" : ""}${record.extcredits8}`
+        );
+      }
+
+      return descParts.join("，");
     };
 
     // 显示评论回复框
@@ -516,7 +763,9 @@ export default defineComponent({
       replyToComment.value = comment;
       replyToIndex.value = index;
       // 构造引用内容
-      const quotedContent = `[quote]@${comment.author} ${comment.formattedCreateTime}\n${getShortContent(comment.message)}[/quote]\n`;
+      const quotedContent = `[quote]@${comment.author} ${
+        comment.formattedCreateTime
+      }\n${getShortContent(comment.message)}[/quote]\n`;
       replyContent.value = quotedContent;
     };
 
@@ -531,22 +780,22 @@ export default defineComponent({
 
       try {
         isSubmitting.value = true;
-        
+
         // 构造回复参数
         const postData: InsertPostQuery = {
           fid: mainPost.value.fid,
           tid: mainPost.value.tid || mainPost.value.pid, // 使用主帖的tid或pid作为主题ID
-          message: replyContent.value.trim()
+          message: replyContent.value.trim(),
         };
 
         // 调用回复接口
         const res = await InsertPostAPI(postData);
-        
+
         if (res.status === 200) {
           ElMessage.success("回复成功！");
           showPostReply.value = false;
           replyContent.value = "";
-          
+
           // 刷新评论列表
           await getData();
           // 跳转到最后一页
@@ -576,23 +825,23 @@ export default defineComponent({
 
       try {
         isSubmitting.value = true;
-        
+
         // 构造回复参数
         const postData: InsertPostQuery = {
           fid: mainPost.value.fid,
           tid: mainPost.value.tid || mainPost.value.pid, // 使用主帖的tid或pid作为主题ID
-          message: replyContent.value.trim()
+          message: replyContent.value.trim(),
         };
 
         // 调用回复接口
         const res = await InsertPostAPI(postData);
-        
+
         if (res.status === 200) {
           ElMessage.success("回复成功！");
           replyToComment.value = null;
           replyToIndex.value = null;
           replyContent.value = "";
-          
+
           // 刷新评论列表
           await getData();
           // 跳转到最后一页
@@ -650,45 +899,44 @@ export default defineComponent({
     // 处理主帖操作
     const handleMainPostAction = (action: string) => {
       closeAllDropdowns();
-      
+
       if (!mainPost.value) return;
-      
+
       switch (action) {
-        case 'operate':
-          ElMessage.info('执行主帖操作功能');
+        case "operate":
+          ElMessage.info("执行主帖操作功能");
           break;
-        case 'report':
-          ElMessage.info('举报主帖功能已触发');
+        case "report":
+          ElMessage.info("举报主帖功能已触发");
           break;
-        case 'share':
-          navigator.clipboard.writeText(window.location.href)
-            .then(() => ElMessage.success('分享链接已复制到剪贴板'))
-            .catch(() => ElMessage.success('主帖链接已复制'));
+        case "share":
+          navigator.clipboard
+            .writeText(window.location.href)
+            .then(() => ElMessage.success("分享链接已复制到剪贴板"))
+            .catch(() => ElMessage.success("主帖链接已复制"));
           break;
-        case 'edit':
+        case "edit":
           PostClick(mainPost.value.pid);
           break;
-        case 'delete':
-          ElMessageBox.confirm(
-            '此操作将永久删除该帖子，是否继续？',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning'
-            }
-          ).then(() => {
-            ElMessage({
-              type: 'success',
-              message: '删除成功!'
+        case "delete":
+          ElMessageBox.confirm("此操作将永久删除该帖子，是否继续？", "提示", {
+            confirmButtonText: "确定",
+            cancelButtonText: "取消",
+            type: "warning",
+          })
+            .then(() => {
+              ElMessage({
+                type: "success",
+                message: "删除成功!",
+              });
+              // 这里可以添加实际的删除API调用
+            })
+            .catch(() => {
+              ElMessage({
+                type: "info",
+                message: "已取消删除",
+              });
             });
-            // 这里可以添加实际的删除API调用
-          }).catch(() => {
-            ElMessage({
-              type: 'info',
-              message: '已取消删除'
-            });
-          });
           break;
       }
     };
@@ -696,44 +944,43 @@ export default defineComponent({
     // 处理评论操作
     const handleCommentAction = (action: string, comment: PostItem) => {
       closeAllDropdowns();
-      
+
       switch (action) {
-        case 'operate':
-          ElMessage.info('执行评论操作功能');
+        case "operate":
+          ElMessage.info("执行评论操作功能");
           break;
-        case 'report':
-          ElMessage.info('举报评论功能已触发');
+        case "report":
+          ElMessage.info("举报评论功能已触发");
           break;
-        case 'share':
+        case "share":
           const commentUrl = `${window.location.href}#comment-${comment.pid}`;
-          navigator.clipboard.writeText(commentUrl)
-            .then(() => ElMessage.success('评论链接已复制到剪贴板'))
-            .catch(() => ElMessage.success('评论链接已复制'));
+          navigator.clipboard
+            .writeText(commentUrl)
+            .then(() => ElMessage.success("评论链接已复制到剪贴板"))
+            .catch(() => ElMessage.success("评论链接已复制"));
           break;
-        case 'edit':
+        case "edit":
           handleEditComment(comment);
           break;
-        case 'delete':
-          ElMessageBox.confirm(
-            '此操作将永久删除该评论，是否继续？',
-            '提示',
-            {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning'
-            }
-          ).then(() => {
-            ElMessage({
-              type: 'success',
-              message: '删除成功!'
+        case "delete":
+          ElMessageBox.confirm("此操作将永久删除该评论，是否继续？", "提示", {
+            confirmButtonText: "确定",
+            cancelButtonText: "取消",
+            type: "warning",
+          })
+            .then(() => {
+              ElMessage({
+                type: "success",
+                message: "删除成功!",
+              });
+              // 这里可以添加实际的删除API调用
+            })
+            .catch(() => {
+              ElMessage({
+                type: "info",
+                message: "已取消删除",
+              });
             });
-            // 这里可以添加实际的删除API调用
-          }).catch(() => {
-            ElMessage({
-              type: 'info',
-              message: '已取消删除'
-            });
-          });
           break;
       }
     };
@@ -769,6 +1016,9 @@ export default defineComponent({
           const pageTitle = mainPost.value?.subject || "帖子详情";
           document.title = pageTitle + " - 罗小黑妖灵论坛 ʕ•͡-•ʔฅ ~ heibbs.net";
           router.currentRoute.value.meta.title = pageTitle;
+
+          // 加载所有用户头像
+          await loadAllAvatars();
         } else {
           console.error("获取帖子失败:", res.data);
           postUnknow.value = res.data || "获取帖子失败";
@@ -1012,14 +1262,18 @@ export default defineComponent({
       submitPostReply,
       submitCommentReply,
       cancelReply,
-      getShortContent
+      getShortContent,
+      // 头像相关
+      avatarUrls,
+      defaultAvatar,
+      // 积分相关
+      getExtcreditsDesc,
     };
   },
 });
 </script>
 
 <style lang="scss" scoped>
-/* 原有样式保持不变 */
 .post-detail {
   background: rgba(255, 255, 255, 0.9);
   min-height: calc(100vh - 730px);
@@ -1070,8 +1324,7 @@ export default defineComponent({
 
 .main-post {
   padding: 15px;
-  background-color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.03);
   border-radius: 10px;
   .post-header {
     display: flex;
@@ -1160,7 +1413,7 @@ export default defineComponent({
   justify-content: flex-end;
   margin-bottom: 30px;
   padding: 5px 10px;
-  
+
   &.comment-actions-container {
     margin-bottom: 0;
     padding-left: 46px;
@@ -1172,7 +1425,7 @@ export default defineComponent({
 .dropdown-container {
   position: relative;
   display: inline-block;
-  
+
   .dropdown-btn {
     background: transparent;
     border: none;
@@ -1183,17 +1436,17 @@ export default defineComponent({
     gap: 5px;
     padding: 8px 12px;
     border-radius: 4px;
-    
+
     &:hover {
       background-color: rgba(64, 158, 255, 0.1);
     }
-    
+
     .dropdown-icon {
       font-size: 12px;
       transition: transform 0.2s;
     }
   }
-  
+
   .dropdown-menu {
     position: absolute;
     top: 100%;
@@ -1205,22 +1458,22 @@ export default defineComponent({
     min-width: 120px;
     z-index: 1000;
     margin-top: 5px;
-    
+
     .dropdown-item {
       padding: 8px 16px;
       cursor: pointer;
       font-size: 14px;
       color: #333;
-      
+
       &:hover {
         background-color: #f5f7fa;
       }
-      
+
       &.danger {
         color: #f56c6c;
       }
     }
-    
+
     .dropdown-divider {
       height: 1px;
       background-color: #e6e6e6;
@@ -1280,6 +1533,43 @@ export default defineComponent({
   .comment-attach {
     width: 80px;
     height: 80px;
+  }
+}
+
+// 评分记录样式
+.extcredits-records {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #fdfcfb;
+  border-radius: 6px;
+
+  .records-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #27231a;
+    margin-bottom: 8px;
+  }
+
+  .records-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+
+    th,
+    td {
+      padding: 8px 10px;
+      text-align: left;
+      border: 1px solid #f8f5e8;
+    }
+
+    th {
+      background-color: #fffbf1;
+      color: #666;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fafafa;
+    }
   }
 }
 
@@ -1404,30 +1694,29 @@ export default defineComponent({
   padding: 15px;
   background-color: #f9f9f9;
   border-radius: 6px;
-  
+
   .quote-content {
     margin-bottom: 10px;
     padding: 10px;
     background-color: #f0f0f0;
     border-radius: 4px;
-    
+
     .quote-header {
       font-size: 12px;
       color: #666;
       margin-bottom: 5px;
       font-weight: bold;
     }
-    
+
     .quote-text {
       font-size: 13px;
       color: #888;
       line-height: 1.4;
     }
   }
-  
+
   .reply-textarea {
     width: 100%;
-    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
@@ -1435,7 +1724,7 @@ export default defineComponent({
     line-height: 1.5;
     margin-bottom: 10px;
   }
-  
+
   .reply-actions {
     display: flex;
     gap: 10px;

@@ -1,8 +1,8 @@
 <template>
   <div class="user-info-page" v-loading="isLoading">
     <!-- 错误提示 -->
-    <van-empty 
-      v-if="hasError" 
+    <van-empty
+      v-if="hasError"
       description="获取用户信息失败"
       class="error-empty"
     >
@@ -13,14 +13,40 @@
     <div class="user-card" v-if="!hasError">
       <!-- 头像区域 -->
       <div class="avatar-container">
-        <img src="../../assets/img/avatar.png" alt="用户头像" class="avatar" />
+        <img :src="avatarUrl" alt="用户头像" class="avatar" />
       </div>
 
       <!-- 用户名和状态 -->
       <div class="user-basic">
         <h2 class="username">
-          {{ userdata?.username }}
+          <!-- 用户组标签（与首页样式一致） -->
+          <span
+            class="index-post-meta-group"
+            v-if="userdata?.extgroupids == 0 || !userdata?.extgroupids"
+            :style="{
+              backgroundColor:
+                groupList?.groupDo?.[userdata?.groupid - 1]?.color,
+            }"
+          >
+            {{
+              groupList?.groupDo?.[userdata?.groupid - 1]?.gname || "普通用户"
+            }}
+          </span>
+          <span
+            class="index-post-meta-admingroup"
+            v-if="userdata?.extgroupids != 0 && userdata?.extgroupids"
+            :style="{
+              backgroundColor:
+                groupList?.extgroupDo?.[userdata?.extgroupids - 1]?.color,
+            }"
+          >
+            {{
+              groupList?.extgroupDo?.[userdata?.extgroupids - 1]?.gname ||
+              "特殊用户组"
+            }}
+          </span>
           <van-badge :text="userGroup" class="group-badge" />
+          {{ userdata?.username }}
         </h2>
         <p class="user-status" :class="statusClass">{{ statusText }}</p>
       </div>
@@ -43,16 +69,6 @@
       <!-- 基本信息卡片 -->
       <van-cell-group class="info-group">
         <van-cell title="用户ID" :value="userdata?.uid" />
-        <!-- <van-cell title="邮箱" :value="userdata?.email" is-link>
-          <template #label>
-            邮箱
-            <van-badge
-              :text="emailstatus ? '已验证' : '未验证'"
-              :color="emailstatus ? '#4cd263' : '#ff9f43'"
-              class="email-badge"
-            />
-          </template>
-        </van-cell> -->
         <van-cell title="注册IP" :value="userdata?.regip" />
         <van-cell title="最后登录IP" :value="userdata?.lastip" />
         <van-cell
@@ -67,30 +83,12 @@
       <van-collapse v-model="activeNames" class="credits-detail">
         <van-collapse-item name="1" title="积分详情">
           <van-cell-group>
-            <van-cell
-              title="灵气"
-              :value="count?.extcredits1"
-            />
-            <van-cell
-              title="妖灵币"
-              :value="count?.extcredits2"
-            />
-            <van-cell
-              title="值钱玉佩"
-              :value="count?.extcredits3"
-            />
-            <van-cell
-              title="天明珠"
-              :value="count?.extcredits4"
-            />
-            <van-cell
-              title="关注数"
-              :value="count?.follow"
-            />
-            <van-cell
-              title="发帖数"
-              :value="count?.posts"
-            />
+            <van-cell title="灵气" :value="count?.extcredits1" />
+            <van-cell title="妖灵币" :value="count?.extcredits2" />
+            <van-cell title="值钱玉佩" :value="count?.extcredits3" />
+            <van-cell title="天明珠" :value="count?.extcredits4" />
+            <van-cell title="关注数" :value="count?.follow" />
+            <van-cell title="发帖数" :value="count?.posts" />
           </van-cell-group>
         </van-collapse-item>
       </van-collapse>
@@ -112,7 +110,12 @@ import {
   Button,
   Loading,
 } from "vant";
-import { GetUserInformationAPI } from "@/api/index";
+import config from "@/config/index"; // 导入config配置
+import {
+  GetUserInformationAPI,
+  GetUserAvatarAPI, // 引入头像接口
+  GetGroupListAPI, // 引入用户组接口
+} from "@/api/index";
 import { ElMessage } from "element-plus";
 
 // 定义用户数据接口
@@ -161,7 +164,21 @@ interface ApiResponse {
   };
 }
 
-// 定义用户组信息接口
+// 定义用户组信息接口（与首页一致）
+interface GroupItem {
+  groupDo?: Array<{
+    id?: number;
+    gname?: string;
+    color?: string;
+  }>;
+  extgroupDo?: Array<{
+    id?: number;
+    gname?: string;
+    color?: string;
+  }>;
+}
+
+// 定义用户组信息映射（备用）
 interface GroupInfo {
   [key: number]: string;
 }
@@ -186,8 +203,10 @@ export default defineComponent({
     const isLoading = ref(true);
     const hasError = ref(false);
     const activeNames = ref(["1"]);
+    const avatarUrl = ref<string>("../../assets/img/avatar.png"); // 头像地址
+    const groupList = ref<GroupItem>(null); // 用户组列表（与首页一致）
 
-    // 用户组信息映射
+    // 用户组信息映射（备用）
     const groupMap: GroupInfo = {
       1: "禁灵",
       2: "锁灵",
@@ -199,49 +218,110 @@ export default defineComponent({
       8: "神灵",
     };
 
+    // 获取用户组列表
+    const getGroupData = async () => {
+      try {
+        const res: any = await GetGroupListAPI();
+        if (res.status === 200) {
+          groupList.value = res.data;
+        }
+      } catch (error) {
+        console.error("获取用户组数据失败:", error);
+      }
+    };
+
+    // 获取用户头像
+    const getUserAvatar = async (userId: number) => {
+      try {
+        const res = await GetUserAvatarAPI(userId);
+        if (res.status === 200 && res.data) {
+          // 使用config中的avatarUrl配置，移除import.meta.env
+          avatarUrl.value = `${config.avatarUrl}${res.data}`;
+        }
+      } catch (error) {
+        console.error("获取用户头像失败:", error);
+        avatarUrl.value = "../../assets/img/avatar.png";
+      }
+    };
+
     // 获取用户信息
-const fetchUserInfo = async () => {
-  try {
-    isLoading.value = true;
-    hasError.value = false;
-    
-    // 获取路由参数中的用户ID并转为数字
-    const userIdStr = route.params.id as string;
-    if (!userIdStr) {
-      throw new Error("用户ID不存在");
-    }
-    const userId = parseInt(userIdStr);
-    if (isNaN(userId)) {
-      throw new Error("用户ID格式错误");
-    }
-    
-    // 调用API时传递id参数
-    const response = await GetUserInformationAPI({ id: userId }) as ApiResponse;
-    
-    if (response.status === 200 && response.data) {
-      userdata.value = response.data.user || {};
-      count.value = response.data.count || {};
-    } else {
-      const errorMsg = response?.msg ? String(response.msg) : "获取用户信息失败";
-      throw new Error(errorMsg);
-    }
-  } catch (error) {
-    console.error("获取用户信息失败:", error);
-    hasError.value = true;
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : typeof error === 'string' 
-        ? error 
-        : "获取用户信息失败";
-    ElMessage.error(errorMessage);
-  } finally {
-    isLoading.value = false;
-  }
-};
+    const fetchUserInfo = async () => {
+      try {
+        isLoading.value = true;
+        hasError.value = false;
+
+        // 获取路由参数中的用户ID并转为数字
+        const userIdStr = route.params.id as string;
+        if (!userIdStr) {
+          throw new Error("用户ID不存在");
+        }
+        const userId = parseInt(userIdStr);
+        if (isNaN(userId)) {
+          throw new Error("用户ID格式错误");
+        }
+
+        // 并行获取用户组列表和用户头像
+        await Promise.all([
+          getGroupData(), // 获取用户组数据
+          getUserAvatar(userId), // 获取用户头像
+        ]);
+
+        // 调用API时传递id参数
+        const response = (await GetUserInformationAPI({
+          id: userId,
+        })) as ApiResponse;
+
+        if (response.status === 200 && response.data) {
+          userdata.value = response.data.user || {};
+          count.value = response.data.count || {};
+
+          // 如果用户组数据未加载完成，再次尝试获取
+          if (!groupList.value) {
+            await getGroupData();
+          }
+        } else {
+          const errorMsg = response?.msg
+            ? String(response.msg)
+            : "获取用户信息失败";
+          throw new Error(errorMsg);
+        }
+      } catch (error) {
+        console.error("获取用户信息失败:", error);
+        hasError.value = true;
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === "string"
+            ? error
+            : "获取用户信息失败";
+        ElMessage.error(errorMessage);
+      } finally {
+        isLoading.value = false;
+      }
+    };
 
     // 计算属性 - 用户组名称
     const userGroup = computed(() => {
-      return groupMap[userdata.value.groupid || 0] || "普通用户";
+      // 优先从用户组列表获取名称
+      if (
+        userdata.value.extgroupids != 0 &&
+        userdata.value.extgroupids &&
+        groupList.value?.extgroupDo
+      ) {
+        return (
+          groupList.value.extgroupDo[userdata.value.extgroupids - 1]?.gname ||
+          groupMap[userdata.value.extgroupids] ||
+          "特殊用户组"
+        );
+      }
+      if (userdata.value.groupid && groupList.value?.groupDo) {
+        return (
+          groupList.value.groupDo[userdata.value.groupid - 1]?.gname ||
+          groupMap[userdata.value.groupid] ||
+          "普通用户"
+        );
+      }
+      return "普通用户";
     });
 
     // 计算属性 - 状态文本
@@ -266,12 +346,14 @@ const fetchUserInfo = async () => {
 
     // 解构用户数据方便使用
     const emailstatus = computed(() => userdata.value.emailstatus || 0);
-    const onlyacceptfriendpm = computed(() => userdata.value.onlyacceptfriendpm || 0);
+    const onlyacceptfriendpm = computed(
+      () => userdata.value.onlyacceptfriendpm || 0
+    );
 
     // 页面加载时获取用户信息
     onMounted(() => {
       fetchUserInfo();
-      
+
       // 监听路由参数变化，重新获取数据
       if (route.params.id) {
         fetchUserInfo();
@@ -290,6 +372,8 @@ const fetchUserInfo = async () => {
       emailstatus,
       onlyacceptfriendpm,
       activeNames,
+      avatarUrl, // 导出头像地址
+      groupList, // 导出用户组列表
       fetchUserInfo,
     };
   },
@@ -352,7 +436,19 @@ const fetchUserInfo = async () => {
   margin-bottom: 5px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+// 用户组标签样式（与首页一致）
+.index-post-meta-group,
+.index-post-meta-admingroup {
+  color: rgba(255, 255, 255, 1);
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .user-status {
@@ -443,5 +539,9 @@ const fetchUserInfo = async () => {
 :deep(.van-loading) {
   display: block;
   margin: 40px auto;
+}
+
+.group-badge {
+  display: none; // 隐藏原有的van-badge，使用新的用户组标签
 }
 </style>

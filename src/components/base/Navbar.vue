@@ -4,7 +4,7 @@
     <van-row justify="space-between">
       <!-- 头像 -->
       <div class="avatar" @click="showAvatar()">
-        <img src="../../assets/img/avatar.png" width="35" />
+        <img :src="avatarUrl" width="35" />
         <div class="Navbar-username">{{ username }}</div>
       </div>
       <!-- Search框
@@ -42,12 +42,14 @@
   </div>
 </template>
 
-<!-- 这里不适合用ts -->
 <script>
 import config from "@/config/index";
 import NavbarUserVue from "../user/NavbarUser.vue";
 import store from "@/store";
 import router from "@/router";
+// 引入头像接口
+import { GetUserAvatarAPI } from "@/api/index";
+
 export default {
   name: "Navbar",
   components: { NavbarUserVue },
@@ -57,6 +59,8 @@ export default {
       test: null,
       searchShow: false,
       avatarShow: false,
+      // 头像地址（默认使用本地图片）
+      avatarUrl: "../../assets/img/avatar.png",
     };
   },
   computed: {
@@ -66,8 +70,47 @@ export default {
     username() {
       return store.state.user?.info?.user?.username;
     },
+    // 获取用户ID
+    userId() {
+      return store.state.user?.info?.user?.uid;
+    },
+  },
+  watch: {
+    // 监听登录状态和用户ID变化，重新加载头像
+    login: {
+      handler: "loadUserAvatar",
+      immediate: true,
+    },
+    userId: {
+      handler: "loadUserAvatar",
+      immediate: true,
+    },
   },
   methods: {
+    // 加载用户头像
+    loadUserAvatar() {
+      // 未登录时使用默认头像
+      if (!this.login || !this.userId) {
+        this.avatarUrl = "../../assets/img/avatar.png";
+        return;
+      }
+
+      // 调用接口获取头像
+      GetUserAvatarAPI(this.userId)
+        .then((res) => {
+          if (res.status === 200 && res.data) {
+            // 拼接完整头像地址
+            this.avatarUrl = config.avatarUrl + res.data;
+          } else {
+            // 接口返回异常时使用默认头像
+            this.avatarUrl = "../../assets/img/avatar.png";
+          }
+        })
+        .catch(() => {
+          // 请求失败时使用默认头像
+          this.avatarUrl = "../../assets/img/avatar.png";
+        });
+    },
     showSearch() {
       this.searchShow = true;
     },
@@ -94,11 +137,16 @@ export default {
   z-index: 999;
   .avatar {
     margin-left: 10px;
+    display: flex;
+    align-items: center;
+    img {
+      box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.1);
+      border-radius: 30px;
+    }
     .Navbar-username {
-      float: right;
       font-size: 16px;
       margin-left: 12px;
-      line-height: 2.5em;
+      // 移除float，用flex布局更合理
     }
   }
   .search {
