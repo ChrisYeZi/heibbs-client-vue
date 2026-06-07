@@ -18,6 +18,7 @@ import 'element-plus/dist/index.css'  // Element Plus 样式
 import axios from 'axios'
 // axios.defaults.baseURL = 'https://127.0.0.1:8081/api'  // 按需开启
 app.config.globalProperties.$axios = axios
+app.config.globalProperties.$version = "alpha-0.1.0"
 
 // 注册所有插件
 app.use(store)

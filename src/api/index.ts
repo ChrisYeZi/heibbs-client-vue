@@ -34,22 +34,7 @@ interface SearchParams {
   keyword?: string;
 }
 
-// 注册请求验证码
-interface RegisterCaptcha {
-  email: String
-  invitation: String
-}
-export const GetRegisterCaptchaAPI = (data: RegisterCaptcha): Res<String> => instance.post("/member/getRegisterCaptcha", data)
 
-// 注册
-interface Register {
-  username: String
-  email: String
-  password: String
-  invitation: String
-  captcha: String
-}
-export const RegisterAPI = (data: Register): Res<String> => instance.post("/member/register", data)
 
 
 // 获取当前用户所有消息
@@ -179,9 +164,138 @@ export const InsertPostAPI = (data: InsertPostQuery): Res<String> => {
   return instance.post("/post/insetpost", data);
 };
 
+/**
+ * 罗小黑妖灵论坛 管理员设置帖子状态
+ * @param data 包含 pid 和 state 的对象
+ * state: 0正常、1隐藏内容、2关闭、3屏蔽并关闭、4全局置顶、5板块内置顶
+ */
+export const SetPostStateAPI = (data: { pid: number; state: number }): Res<String> =>
+  instance.post("/post/setstate", data);
+
+/**
+ * 罗小黑妖灵论坛 管理员移动帖子到目标板块
+ * @param data 包含 pid 和 targetFid 的对象
+ */
+export const MovePostAPI = (data: { pid: number; targetFid: number }): Res<String> =>
+  instance.post("/post/movepost", data);
+
+/**
+ * 罗小黑妖灵论坛 管理员删除帖子
+ * @param pid 帖子ID
+ */
+export const DeletePostAPI = (pid: number): Res<String> =>
+  instance.delete(`/post/deletepost/${pid}`);
+
+
+// ——————Like 点赞模块
+// 点赞操作返回结果接口
+interface LikeToggleResult {
+  liked: boolean;    // 当前是否已点赞
+  likeCount: number; // 最新点赞数
+}
+
+/**
+ * 罗小黑妖灵论坛 切换帖子点赞状态（点赞/取消点赞）
+ * @param pid 帖子ID
+ * @returns 操作结果（liked状态 + 最新点赞数）
+ */
+export const ToggleLikeAPI = (pid: number): Res<LikeToggleResult> =>
+  instance.post(`/like/toggle/${pid}`);
+
+/**
+ * 罗小黑妖灵论坛 获取帖子点赞数
+ * @param pid 帖子ID
+ * @returns 点赞数
+ */
+export const GetLikeCountAPI = (pid: number): Res<number> =>
+  instance.get(`/like/count/${pid}`);
+
+/**
+ * 罗小黑妖灵论坛 获取当前用户点赞过的帖子ID列表
+ * @returns 帖子ID列表
+ */
+export const GetMyLikesAPI = (): Res<number[]> =>
+  instance.get("/like/mylikes");
+
+
+// ——————Report 举报模块
+// 举报实体接口
+interface ReportItem {
+  id: number;
+  pid: number;
+  reporterUid: number;
+  reason: string;
+  status: number;      // 0-待处理 1-已处理 2-已驳回
+  handlerUid?: number;
+  handleMsg?: string;
+  dateline: number;
+  handleTime?: number;
+}
+
+/**
+ * 罗小黑妖灵论坛 用户提交举报
+ * @param data 包含 pid(帖子ID) 和 reason(举报原因)
+ */
+export const SubmitReportAPI = (data: { pid: number; reason: string }): Res<String> =>
+  instance.post("/report/submit", data);
+
+/**
+ * 罗小黑妖灵论坛 管理员获取举报列表
+ * @param params 分页参数和可选的status筛选
+ */
+export const GetReportListAPI = (params?: {
+  pageNum?: number;
+  pageSize?: number;
+  status?: number;
+}): Res<PageResult<ReportItem>> => {
+  const requestParams = { pageNum: 1, pageSize: 30, ...params };
+  return instance.get("/report/list", { params: requestParams });
+};
+
+/**
+ * 罗小黑妖灵论坛 管理员处理举报
+ * @param data 包含 id, status(1已处理/2已驳回), handleMsg
+ */
+export const HandleReportAPI = (data: {
+  id: number;
+  status: number;
+  handleMsg?: string;
+}): Res<String> => instance.post("/report/handle", data);
+
+
+// ——————Notification 通知模块
+interface NotificationItem {
+  id: number;
+  uid: number;
+  type: string;
+  title: string;
+  content: string;
+  relatedPid?: number;
+  fromUid?: number;
+  isRead: number;
+  dateline: number;
+}
+
+export const GetNotificationListAPI = (params?: {
+  pageNum?: number;
+  pageSize?: number;
+}): Res<PageResult<NotificationItem>> => {
+  const requestParams = { pageNum: 1, pageSize: 20, ...params };
+  return instance.get("/notification/list", { params: requestParams });
+};
+
+export const GetUnreadCountAPI = (): Res<number> =>
+  instance.get("/notification/unread-count");
+
+export const ReadNotificationAPI = (id: number): Res<String> =>
+  instance.post(`/notification/read/${id}`);
+
+export const ReadAllNotificationAPI = (): Res<String> =>
+  instance.post("/notification/read-all");
+
 
 // ——————User 用户模块
-//登录接口封装 
+//登录接口封装
 interface Login {
   username: String
   password: String
@@ -202,6 +316,23 @@ interface ForgotPassword {
 }
 export const UpdateForgotPasswordAPI = (data: ForgotPassword): Res<String> => instance.post("/user/forgetPassword", data)
 
+// 注册请求验证码
+interface RegisterCaptcha {
+  email: String
+  invitation: String
+}
+export const GetRegisterCaptchaAPI = (data: RegisterCaptcha): Res<String> => instance.post("/user/getRegisterCaptcha", data)
+
+// 注册
+interface Register {
+  username: String
+  email: String
+  password: String
+  invitation: String
+  captcha: String
+}
+export const RegisterAPI = (data: Register): Res<String> => instance.post("/user/register", data)
+
 //获取用户信息
 export const GetUserInformationAPI = (params: { id?: number }): Res<any> => instance.get(`/user/get-userinfo`, { params });
 
@@ -215,8 +346,6 @@ export const GetUsernameInformationAPI = (params: { username?: string }): Res<an
 export const GetUserAvatarAPI = (uid: number): Res<string> => {
   return instance.get("/user/get-useravatar", { params: { uid } });
 };
-
-
 
 /**
  * 上传用户头像（从token解析uid，前端仅传文件）
@@ -235,6 +364,28 @@ export const UploadAvatarAPI = (file: File): Res<string> => {
   });
 }
 
+// 修改密码啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊
+interface ChangeUserPasswordItem {
+  oldPassword: String // 旧密码
+  newPassword: String // 新密码
+}
+/**
+ * 罗小黑妖灵论坛 已登录用户修改账户密码
+ * @param data ChangeUserPasswordItem
+ * @returns 是否修改成功
+ */
+export const ChangeUserPassword = (data: ChangeUserPasswordItem): Res<String> => instance.post("/user/change-password", data)
+
+/**|　 碎觉觉啦！　 |
+＼　　　　　　　　/
+　￣￣￣￣∨￣￣
+　　　　　　　。
+　　　∧ ∧　.・
+　|￣￣( ´Д｀)￣|
+|＼⌒⌒⌒⌒⌒⌒＼
+|　 ＼⌒⌒⌒⌒⌒⌒＼
+＼　｜⌒⌒⌒⌒⌒⌒⌒|
+ */
 
 // ——————Count 积分模块
 //获取旧论坛积分（暂时 以后会废除）
@@ -283,11 +434,62 @@ interface ExtcreditsRecordDo {
  */
 export const UserExtcreditsChangeAPI = (data: ExtcreditsRecordDo): Res<string> => instance.post("/count/rating", data);
 
+// 获取评分剩余额度
+interface RatingRemainingItem {
+  name: string;
+  usedPositive: number;
+  usedNegative: number;
+  dailyLimit: number;
+  singleMax: number;
+  remainingPositive: number;
+}
+export const GetRatingRemainingAPI = (): Res<Record<string, RatingRemainingItem>> =>
+  instance.get("/count/rating-remaining");
+
 /**
  * 罗小黑妖灵论坛获取积分列表接口
  * @returns 论坛的积分及启用情况
  */
 export const UserExtreditsListAPI = (): Res<String> => instance.get("/count/extreditslist")
+
+// ——————Announcement 公告模块
+interface AnnouncementItem {
+  id?: number;
+  title: string;
+  content: string;
+  authorid?: number;
+  fid?: number;         // 0=全局公告
+  status?: number;      // 0-禁用 1-启用
+  displayOrder?: number;
+  dateline?: number;
+}
+
+/**
+ * 罗小黑妖灵论坛 获取启用公告列表
+ * @param fid 板块ID（可选，默认0=全局公告）
+ */
+export const GetAnnouncementListAPI = (fid?: number): Res<AnnouncementItem[]> =>
+  instance.get("/announcement/list", { params: { fid } });
+
+/**
+ * 罗小黑妖灵论坛 后台获取公告列表
+ */
+export const SelectAnnouncementAPI = (params?: {
+  pageNum?: number;
+  pageSize?: number;
+}): Res<PageResult<AnnouncementItem>> => {
+  const requestParams = { pageNum: 1, pageSize: 30, ...params };
+  return instance.get("/admin/select-announcement", { params: requestParams });
+};
+
+export const InsertAnnouncementAPI = (data: AnnouncementItem): Res<String> =>
+  instance.post("/admin/insert-announcement", data);
+
+export const UpdateAnnouncementAPI = (data: AnnouncementItem): Res<String> =>
+  instance.post("/admin/update-announcement", data);
+
+export const DeleteAnnouncementAPI = (id: number): Res<String> =>
+  instance.get("/admin/delete-announcement", { params: { id } });
 
 // ——————Block 会馆板块模块
 //获取会馆列表
@@ -329,6 +531,10 @@ interface replyMessageQuery {
   content: String
 }
 export const ReplyMessageAPI = (data: replyMessageQuery): Res<String> => instance.post("/message/reply", data);
+
+// 发起新会话
+export const StartConversationAPI = (data: { targetUid: number; content: string }): Res<{ plid: number; mid?: number }> =>
+  instance.post("/message/start", data);
 
 // ——————Banner 轮播图模块
 // 轮播图Banner接口（对应BannerDo）
@@ -555,3 +761,212 @@ export const InsertPermissionAPI = (data: PermissionItem): Res<String> => instan
 export const DeletePermissionAPI = (id: number): Res<String> => instance.get("/admin/delete-permission", {
   params: { id }
 });
+
+// ————Version 版本控制模块
+// 版本实体类
+interface VersionItem {
+  /** 版本ID，数据库自动增加 */
+  id?: number;
+  /** 版本号（如：1.0.0） */
+  version?: string;
+  /** 版本发布时间时间戳，前端不填 */
+  time?: string;
+  /** 发布人UID，前端不填后端填写 */
+  uid?: number;
+  /** 版本状态（1-启用，0-禁用） */
+  state?: number;
+  /** 是否强制推送（1-是，0-否） */
+  push?: number;
+  /** 版本更新说明 */
+  message?: string;
+}
+
+/**
+ * 罗小黑妖灵论坛 获取最新版本信息
+ * @returns 最新版本实体类
+ */
+interface VersionData {
+  id: number; version: string; time: string; uid: number;
+  state: number; push: number; message: string; downloadUrl: string;
+}
+export const GetLatestVersionAPI = (): Res<VersionData> => instance.get("/version/getlatest");
+
+// 版本列表查询参数
+interface GetVersionListQuery {
+  pageNum?: number; // 默认1
+  pageSize?: number; // 默认30
+}
+
+/**
+ * 罗小黑妖灵论坛 获取版本信息列表
+ * @param params 分页查询参数
+ * @returns 版本信息列表
+ */
+export const GetVersionListAPI = (params?: GetVersionListQuery): Res<String> => {
+  const requestParams = {
+    pageNum: 1,
+    pageSize: 10,
+    ...params
+  };
+  return instance.get("/version/getlist", { params: requestParams })
+};
+
+/**
+ * 罗小黑妖灵论坛 后台用 获取版本信息列表
+ * @param params 分页查询参数
+ * @returns 版本信息列表
+ */
+export const GetAdminVersionListAPI = (params?: GetVersionListQuery): Res<PageResult<VersionItem>> => {
+  const requestParams = {
+    pageNum: 1,
+    pageSize: 10,
+    ...params
+  };
+  return instance.get("/admin/select-version", { params: requestParams })
+};
+
+/**
+ * 罗小黑妖灵论坛 更新版本信息
+ * @param data 版本实体类
+ * @returns RestFul响应 是否成功
+ */
+export const UpdateVersionAPI = (data: VersionItem): Res<String> => instance.post("/admin/update-version", data)
+
+/**
+ * 罗小黑妖灵论坛 添加版本信息
+ * @param data 版本实体类
+ * @returns RestFul响应 是否成功
+ */
+export const InsertVersionAPI = (data: VersionItem): Res<String> => instance.post("/admin/insert-version", data)
+
+/**
+ * 罗小黑妖灵论坛 删除版本信息
+ * @param id 版本实体类
+ * @returns RestFul响应 是否成功
+ */
+export const DeleteVersion = (id?: number): Res<String> => instance.get("/admin/delete-version", {
+  params: { id }
+})
+
+// ——————Task 任务模块
+interface TaskItem {
+  id?: number; title: string; description?: string; icon?: string;
+  type: string; conditionType: string; conditionValue: number;
+  rewardType: string; rewardValue: number; rewardItemId?: number; rewardItemQuantity?: number;
+  status?: number; displayOrder?: number;
+  cycleType: string; acceptType: string;
+}
+export const GetTaskListAPI = (): Res<any> => instance.get("/task/list");
+export const AcceptTaskAPI = (taskId: number): Res<String> => instance.post(`/task/accept/${taskId}`);
+export const CancelTaskAPI = (taskId: number): Res<String> => instance.post(`/task/cancel/${taskId}`);
+export const CompleteTaskAPI = (taskId: number): Res<String> => instance.post(`/task/complete/${taskId}`);
+export const ClaimTaskRewardAPI = (taskId: number): Res<String> => instance.post(`/task/claim/${taskId}`);
+export const AdminConfirmTaskAPI = (userTaskId: number): Res<String> => instance.post(`/task/admin/confirm/${userTaskId}`);
+export const AdminRejectTaskAPI = (userTaskId: number): Res<String> => instance.post(`/task/admin/reject/${userTaskId}`);
+export const GetPendingConfirmListAPI = (params?: any): Res<any> => instance.get("/task/admin/pending-confirm", { params });
+export const GetCompletedTasksAPI = (): Res<any> => instance.get("/task/completed");
+export const GetAdminTaskListAPI = (params?: any): Res<any> => instance.get("/task/admin/list", { params });
+export const InsertTaskAPI = (data: TaskItem): Res<String> => instance.post("/task/admin/insert", data);
+export const UpdateTaskAPI = (data: TaskItem): Res<String> => instance.post("/task/admin/update", data);
+export const DeleteTaskAPI = (id: number): Res<String> => instance.get("/task/admin/delete", { params: { id } });
+
+// ——————Item 物品模块
+interface ItemItem {
+  id?: number; name: string; description?: string; icon?: string;
+  type?: string; rarity?: number; price?: number;
+  effectType?: string; effectValue?: number; status?: number;
+}
+export const GetMyItemsAPI = (): Res<any> => instance.get("/item/mylist");
+export const UseItemAPI = (userItemId: number): Res<String> => instance.post(`/item/use/${userItemId}`);
+export const GetAdminItemListAPI = (params?: any): Res<any> => instance.get("/item/admin/list", { params });
+export const InsertItemAPI = (data: ItemItem): Res<String> => instance.post("/item/admin/insert", data);
+export const UpdateItemAPI = (data: ItemItem): Res<String> => instance.post("/item/admin/update", data);
+export const DeleteItemAPI = (id: number): Res<String> => instance.get("/item/admin/delete", { params: { id } });
+export const GetAdminUserItemsAPI = (uid: number): Res<any> => instance.get("/item/admin/user-items", { params: { uid } });
+export const GrantItemAPI = (data: { itemId: number; quantity: number; uids: string }): Res<String> =>
+  instance.post("/item/admin/grant", data);
+
+// ——————Medal 勋章模块
+interface MedalItem {
+  id?: number; name: string; description?: string; imageUrl: string;
+  categoryId: number; conditionDesc?: string; status?: number; displayOrder?: number;
+}
+export const GetMedalListAPI = (): Res<any> => instance.get("/medal/list");
+export const GetUserMedalsAPI = (uid: number): Res<any> => instance.get(`/medal/user/${uid}`);
+export const ReorderMedalsAPI = (medalIds: string): Res<String> => instance.post("/medal/reorder", { medalIds });
+export const SetPrimaryMedalAPI = (userMedalId: number): Res<String> => instance.post(`/medal/set-primary/${userMedalId}`);
+export const GetAdminMedalListAPI = (params?: any): Res<any> => instance.get("/medal/admin/list", { params });
+export const InsertMedalAPI = (data: MedalItem): Res<String> => instance.post("/medal/admin/insert", data);
+export const UpdateMedalAPI = (data: MedalItem): Res<String> => instance.post("/medal/admin/update", data);
+export const DeleteMedalAPI = (id: number): Res<String> => instance.get("/medal/admin/delete", { params: { id } });
+export const GrantMedalAPI = (data: { medalId: number; uids: string }): Res<String> =>
+  instance.post("/medal/admin/grant", data);
+export const RevokeMedalAPI = (id: number): Res<String> => instance.get("/medal/admin/revoke", { params: { id } });
+
+// ——————Shop 集市模块
+export const GetShopListingsAPI = (params?: { pageNum?: number; pageSize?: number; type?: string }): Res<any> => {
+  const p = { pageNum:1, pageSize:20, ...params };
+  return instance.get("/shop/listings", { params: p });
+};
+export const SellItemAPI = (data: { userItemId: number; quantity: number; price: number; type: string; auctionDays?: number }): Res<String> =>
+  instance.post("/shop/sell", data);
+export const BuyFixedAPI = (listingId: number): Res<String> => instance.post(`/shop/buy/${listingId}`);
+export const PlaceBidAPI = (listingId: number, amount: number): Res<String> => instance.post(`/shop/bid/${listingId}`, { amount });
+export const GetBidsAPI = (listingId: number): Res<any> => instance.get(`/shop/bids/${listingId}`);
+export const CancelListingAPI = (listingId: number): Res<String> => instance.post(`/shop/cancel/${listingId}`);
+
+// ——————Stamp 图章模块
+interface StampItem { id?:number; name:string; imageUrl?:string; displayOrder?:number; status?:number }
+export const GetStampListAPI = (): Res<StampItem[]> => instance.get("/admin/stamp/list");
+export const GetActiveStampsAPI = (): Res<StampItem[]> => instance.get("/admin/stamp/active");
+export const InsertStampAPI = (data:StampItem): Res<String> => instance.post("/admin/stamp/insert",data);
+export const UpdateStampAPI = (data:StampItem): Res<String> => instance.post("/admin/stamp/update",data);
+export const DeleteStampAPI = (id:number): Res<String> => instance.get("/admin/stamp/delete",{params:{id}});
+export const SetPostStampAPI = (pid:number, stampId:number|null): Res<String> => instance.post("/admin/stamp/set-post-stamp",{pid,stampId});
+
+// 勋章新接口
+export const GetAllMedalsAPI = (): Res<any> => instance.get("/medal/all");
+export const GetUserPrimaryMedalAPI = (uid: number): Res<any> => instance.get(`/medal/primary/${uid}`);
+export const PurchaseMedalAPI = (medalId: number): Res<String> => instance.post(`/medal/purchase/${medalId}`);
+export const GetRecentMedalLogsAPI = (): Res<any[]> => instance.get("/medal/recent-logs");
+
+// ——————Promotion 晋升模块
+export const GetPromotionStatusAPI = (): Res<any> => instance.get("/user/promotion-status");
+export const ConfirmPromotionAPI = (logId: number): Res<String> => instance.post(`/user/confirm-promotion/${logId}`);
+export const RejectPromotionAPI = (logId: number): Res<String> => instance.post(`/user/reject-promotion/${logId}`);
+
+// ——————Attachment 附件管理模块
+interface AttachmentItem {
+  aid: number; filename: string; filesize: number; attachment: string;
+  category: string; attachmentType: string; systemCategory: string;
+  isimage: number; formattedDateline: string;
+}
+export const GetAttachmentListAPI = (params?: {
+  pageNum?: number; pageSize?: number; category?: string; attachmentType?: string;
+}): Res<PageResult<AttachmentItem>> => {
+  const p = { pageNum:1, pageSize:30, ...params };
+  return instance.get("/admin/attachment/list", { params: p });
+};
+export const GetSystemAttachmentListAPI = (systemCategory?: string): Res<AttachmentItem[]> =>
+  instance.get("/admin/attachment/system-list", { params: { systemCategory } });
+export const DeleteAttachmentAPI = (aid: number): Res<String> =>
+  instance.delete("/admin/attachment/"+aid);
+
+// ——————Dashboard 仪表盘模块
+// 仪表盘统计数据接口
+interface DashboardVo {
+  totalUsers: number;       // 用户总数
+  todayNewUsers: number;    // 今日新增用户数
+  totalPosts: number;       // 帖子总数
+  todayNewPosts: number;    // 今日新增帖子数
+  totalBlocks: number;      // 板块总数
+  todayActiveUsers: number; // 今日活跃用户数
+  latestUsers: UserItem[];  // 最新注册的5个用户
+  latestPosts: PostDo[];    // 最新发布的5个帖子
+}
+
+/**
+ * 罗小黑妖灵论坛 获取后台仪表盘统计数据
+ * @returns 仪表盘统计数据
+ */
+export const GetDashboardAPI = (): Res<DashboardVo> => instance.get("/admin/dashboard")

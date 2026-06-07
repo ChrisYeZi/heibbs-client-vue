@@ -54,8 +54,13 @@
                   }}</span
                 >
                 {{ mainPost.author }}
+                <div class="author-medals" v-if="authorMedalMap[mainPost.authorid]?.length">
+                <img v-for="m in authorMedalMap[mainPost.authorid]" :key="m.id"
+                  :src="m.medalImageUrl" class="author-medal-img" :title="m.medalName"/>
+              </div>
               </div>
               <div class="post-time">{{ mainPost.formattedCreateTime }}</div>
+              
             </div>
           </div>
           <div class="post-tag">
@@ -151,7 +156,7 @@
             <tr v-for="record in mainPost.extcreditsRecords" :key="record.id">
               <td>{{ record.username }}</td>
               <td>{{ record.message }}</td>
-              <td>{{ getExtcreditsDesc(record) }}</td>
+              <td><span v-for="(p,i) in getExtcreditsDesc(record)" :key="i" :class="{ neg: p.neg }" style="margin-right:4px">{{ p.text }}</span></td>
             </tr>
           </tbody>
         </table>
@@ -161,7 +166,10 @@
         <el-button type="info" text @click="showPostReply = true"
           >回复</el-button
         >
-        <el-button type="info" text>评分</el-button>
+        <el-button type="info" text @click="handleToggleLike(mainPost.pid)"
+          ><span :class="mainPostLiked?'post-like':''">{{ mainPostLiked ? '❤' : '❤' }}&nbsp;</span> 赞 ({{ mainPostLikeCount }})</el-button
+        >
+        <el-button type="info" text @click="openRatingDialog(mainPost.pid)">评分</el-button>
 
         <!-- 使用原生下拉菜单 -->
         <div class="dropdown-container">
@@ -261,6 +269,7 @@
                     }}</span
                   >
                   {{ comment.author }}
+                <Postbar :postObj="comment" />
                 </div>
                 <div class="comment-time">
                   {{ comment.formattedCreateTime }}
@@ -372,7 +381,7 @@
                   >
                     <td>{{ record.username }}</td>
                     <td>{{ record.message }}</td>
-                    <td>{{ getExtcreditsDesc(record) }}</td>
+                    <td><span v-for="(p,i) in getExtcreditsDesc(record)" :key="i" :class="{ neg: p.neg }" style="margin-right:4px">{{ p.text }}</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -386,7 +395,7 @@
                 @click="showCommentReply(comment, index)"
                 >回复</el-button
               >
-              <el-button type="info" text>评分</el-button>
+              <el-button type="info" text @click="openRatingDialog(comment.pid)">评分</el-button>
 
               <div class="dropdown-container">
                 <button
@@ -486,6 +495,39 @@
       v-if="showMainPostDropdown || showCommentDropdown !== null"
       @click="closeAllDropdowns"
     ></div>
+
+    <!-- 评分对话框 -->
+    <el-dialog v-model="ratingDialogVisible" title="帖子评分" width="380px">
+      <div class="rating-info">
+        <p>评分帖子: #{{ ratingTargetPid }}</p>
+        <p style="font-size:12px;color:#909399;">请为以下积分类型设置评分值（正数加分，负数扣分）</p>
+      </div>
+      <div class="rating-credits" v-if="ratingData">
+        <div v-for="(info, key) in ratingData" :key="key" class="rating-row" v-show="isActiveCredit(key)">
+          <span class="rating-label">{{ info.name }}</span>
+          <span class="rating-limit">剩余额度: {{ info.remainingPositive }}</span>
+          <el-input-number
+            v-model="ratingValues[key]"
+            :min="info.singleMax > 0 ? -info.singleMax : -999"
+            :max="info.singleMax > 0 ? Math.min(info.singleMax, info.remainingPositive) : info.remainingPositive"
+            size="small"
+            style="width:120px"
+            controls-position="right"
+          />
+        </div>
+      </div>
+      <el-input
+        v-model="ratingMessage"
+        placeholder="评分留言（可选）"
+        style="margin-top:10px"
+        maxlength="200"
+        show-word-limit
+      />
+      <template #footer>
+        <el-button @click="ratingDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitRating" :disabled="!hasRatingValue">提交评分</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -504,7 +546,16 @@ import {
   EditPostDataAPI,
   InsertPostAPI,
   GetUserAvatarAPI,
+  ToggleLikeAPI,
+  GetLikeCountAPI,
+  UserExtcreditsChangeAPI,
+  GetRatingRemainingAPI,
+  SubmitReportAPI,
+  GetUserMedalsAPI,
+  GetActiveStampsAPI,
+  SetPostStampAPI,
 } from "@/api/index";
+import Postbar from "@/components/common/Postbar.vue";
 import parsedContent from "@/assets/js/parsedContent";
 
 // 定义接口保持不变
@@ -613,6 +664,7 @@ const userData = store.state.user?.info?.user;
 export default defineComponent({
   name: "PostDetail",
   components: {
+    Postbar,
     [Empty.name]: Empty,
     [Loading.name]: Loading,
     [Icon.name]: Icon,
@@ -642,6 +694,10 @@ export default defineComponent({
     const pageSize = ref(10);
     const editCommentId = ref<number | null>(null);
     const editContent = ref<string>("");
+
+    // 点赞相关状态
+    const mainPostLiked = ref(false);
+    const mainPostLikeCount = ref(0);
 
     // 头像相关
     const avatarUrls = ref<Record<number, string>>({}); // 存储用户头像URL映射
@@ -685,6 +741,21 @@ export default defineComponent({
       }
     };
 
+    // 作者勋章缓存
+    const authorMedalMap = ref<Record<number, any[]>>({});
+
+    // 加载作者勋章
+    const loadAuthorMedals = async (authorIds: number[]) => {
+      const unique = [...new Set(authorIds)];
+      for (const aid of unique) {
+        if (authorMedalMap.value[aid]) continue;
+        try {
+          const r = await GetUserMedalsAPI(aid);
+          if (r.status === 200) authorMedalMap.value[aid] = r.data || [];
+        } catch (e) { authorMedalMap.value[aid] = []; }
+      }
+    };
+
     // 批量加载头像
     const loadAllAvatars = async () => {
       if (!mainPost.value) return;
@@ -711,51 +782,16 @@ export default defineComponent({
     };
 
     // 生成积分变化描述
+    const creditNames = ['灵气','妖灵币','值钱玉佩','天明珠','积分5','积分6','积分7','积分8'];
     const getExtcreditsDesc = (record: ExtcreditsRecord) => {
-      const descParts = [];
-
-      if (record.extcredits1 !== null && record.extcredits1 !== undefined) {
-        descParts.push(
-          `灵气${record.extcredits1 > 0 ? "+" : ""}${record.extcredits1}`
-        );
+      const parts: {text:string, neg:boolean}[] = [];
+      const vals = [record.extcredits1,record.extcredits2,record.extcredits3,record.extcredits4,record.extcredits5,record.extcredits6,record.extcredits7,record.extcredits8];
+      for (let i=0;i<vals.length;i++) {
+        const v = vals[i];
+        if (v == null || v === 0) continue;
+        parts.push({text: `${creditNames[i]}${v>0?'+':''}${v}`, neg: v<0});
       }
-      if (record.extcredits2 !== null && record.extcredits2 !== undefined) {
-        descParts.push(
-          `妖灵币${record.extcredits2 > 0 ? "+" : ""}${record.extcredits2}`
-        );
-      }
-      if (record.extcredits3 !== null && record.extcredits3 !== undefined) {
-        descParts.push(
-          `值钱玉佩${record.extcredits3 > 0 ? "+" : ""}${record.extcredits3}`
-        );
-      }
-      if (record.extcredits4 !== null && record.extcredits4 !== undefined) {
-        descParts.push(
-          `天明珠${record.extcredits4 > 0 ? "+" : ""}${record.extcredits4}`
-        );
-      }
-      if (record.extcredits5 !== null && record.extcredits5 !== undefined) {
-        descParts.push(
-          `积分5${record.extcredits5 > 0 ? "+" : ""}${record.extcredits5}`
-        );
-      }
-      if (record.extcredits6 !== null && record.extcredits6 !== undefined) {
-        descParts.push(
-          `积分6${record.extcredits6 > 0 ? "+" : ""}${record.extcredits6}`
-        );
-      }
-      if (record.extcredits7 !== null && record.extcredits7 !== undefined) {
-        descParts.push(
-          `积分7${record.extcredits7 > 0 ? "+" : ""}${record.extcredits7}`
-        );
-      }
-      if (record.extcredits8 !== null && record.extcredits8 !== undefined) {
-        descParts.push(
-          `积分8${record.extcredits8 > 0 ? "+" : ""}${record.extcredits8}`
-        );
-      }
-
-      return descParts.join("，");
+      return parts;
     };
 
     // 显示评论回复框
@@ -896,6 +932,82 @@ export default defineComponent({
       showCommentDropdown.value = null;
     };
 
+    // 处理主帖点赞切换
+    const handleToggleLike = async (pid: number) => {
+      if (!pid) return;
+      try {
+        const res = await ToggleLikeAPI(pid);
+        if (res.status === 200) {
+          mainPostLiked.value = res.data.liked;
+          mainPostLikeCount.value = res.data.likeCount;
+        } else {
+          ElMessage.error(String(res.msg || "操作失败"));
+        }
+      } catch (error) {
+        console.error("点赞操作失败:", error);
+        ElMessage.error("点赞操作异常");
+      }
+    };
+
+    // 评分相关状态
+    const ratingDialogVisible = ref(false);
+    const ratingTargetPid = ref(0);
+    const ratingData = ref<Record<string, any> | null>(null);
+    const ratingValues = ref<Record<string, number>>({});
+    const ratingMessage = ref("");
+
+    const hasRatingValue = computed(() => {
+      return Object.values(ratingValues.value).some((v: number) => v !== 0);
+    });
+
+    const activeCredits = ["extcredits1", "extcredits2", "extcredits3", "extcredits4"];
+
+    const isActiveCredit = (key: string) => activeCredits.includes(key);
+
+    const openRatingDialog = async (pid: number) => {
+      ratingTargetPid.value = pid;
+      ratingMessage.value = "";
+      ratingValues.value = { extcredits1: 0, extcredits2: 0, extcredits3: 0, extcredits4: 0 };
+      try {
+        const res = await GetRatingRemainingAPI();
+        if (res.status === 200) ratingData.value = res.data;
+      } catch (e) { /* ignore */ }
+      ratingDialogVisible.value = true;
+    };
+
+    const submitRating = async () => {
+      try {
+        const data: any = { pid: ratingTargetPid.value, message: ratingMessage.value };
+        activeCredits.forEach(k => { data[k] = ratingValues.value[k] || 0; });
+        const res = await UserExtcreditsChangeAPI(data);
+        if (res.status === 200) {
+          ElMessage.success(String(res.msg || "评分成功"));
+          ratingDialogVisible.value = false;
+        } else {
+          ElMessage.error(String(res.msg || "评分失败"));
+        }
+      } catch (e) {
+        ElMessage.error("评分操作异常");
+      }
+    };
+
+    // 图章设置
+    const openStampSelect = async (pid: number) => {
+      try {
+        const stampRes = await GetActiveStampsAPI();
+        if (stampRes.status !== 200) return;
+        const stamps: any[] = stampRes.data || [];
+        const options = [{ label: "无图章", value: null }, ...stamps.map(s => ({ label: s.name, value: s.id }))];
+        // 简单的选择弹窗
+        const { value: idx } = await ElMessageBox.prompt("输入序号选择图章:\n" + options.map((o,i)=>`${i}: ${o.label}`).join("\n"), "设置图章", { inputType: "number", inputValidator: (v:any) => { const n=parseInt(v); return n>=0&&n<options.length?true:"无效序号" } });
+        const sel = options[parseInt(idx)];
+        if (sel) {
+          const r = await SetPostStampAPI(pid, sel.value);
+          ElMessage[r.status===200?'success':'error'](String(r.msg||''));
+        }
+      } catch(e) {}
+    };
+
     // 处理主帖操作
     const handleMainPostAction = (action: string) => {
       closeAllDropdowns();
@@ -904,10 +1016,27 @@ export default defineComponent({
 
       switch (action) {
         case "operate":
-          ElMessage.info("执行主帖操作功能");
+          openStampSelect(mainPost.value!.pid);
           break;
         case "report":
-          ElMessage.info("举报主帖功能已触发");
+          ElMessageBox.prompt("请输入举报原因", "举报帖子", {
+            confirmButtonText: "提交举报",
+            cancelButtonText: "取消",
+            inputType: "textarea",
+            inputPlaceholder: "请描述举报原因（不超过500字）",
+            inputValidator: (val: string) => {
+              if (!val || !val.trim()) return "举报原因不能为空";
+              if (val.length > 500) return "举报原因不能超过500字";
+              return true;
+            },
+          }).then(async ({ value }: any) => {
+            const res = await SubmitReportAPI({ pid: mainPost.value!.pid, reason: value.trim() });
+            if (res.status === 200) {
+              ElMessage.success(String(res.msg || "举报已提交"));
+            } else {
+              ElMessage.error(String(res.msg || "举报提交失败"));
+            }
+          }).catch(() => {});
           break;
         case "share":
           navigator.clipboard
@@ -950,7 +1079,24 @@ export default defineComponent({
           ElMessage.info("执行评论操作功能");
           break;
         case "report":
-          ElMessage.info("举报评论功能已触发");
+          ElMessageBox.prompt("请输入举报原因", "举报评论", {
+            confirmButtonText: "提交举报",
+            cancelButtonText: "取消",
+            inputType: "textarea",
+            inputPlaceholder: "请描述举报原因（不超过500字）",
+            inputValidator: (val: string) => {
+              if (!val || !val.trim()) return "举报原因不能为空";
+              if (val.length > 500) return "举报原因不能超过500字";
+              return true;
+            },
+          }).then(async ({ value }: any) => {
+            const res = await SubmitReportAPI({ pid: comment.pid, reason: value.trim() });
+            if (res.status === 200) {
+              ElMessage.success(String(res.msg || "举报已提交"));
+            } else {
+              ElMessage.error(String(res.msg || "举报提交失败"));
+            }
+          }).catch(() => {});
           break;
         case "share":
           const commentUrl = `${window.location.href}#comment-${comment.pid}`;
@@ -1019,6 +1165,20 @@ export default defineComponent({
 
           // 加载所有用户头像
           await loadAllAvatars();
+
+          // 加载作者勋章
+          const allAuthorIds = [mainPost.value!.authorid, ...comments.value.map((c: any) => c.authorid)];
+          loadAuthorMedals(allAuthorIds);
+
+          // 加载主帖点赞数
+          try {
+            const likeCountRes = await GetLikeCountAPI(Number(pidParam));
+            if (likeCountRes.status === 200) {
+              mainPostLikeCount.value = likeCountRes.data;
+            }
+          } catch (e) {
+            // 点赞数加载失败不阻塞页面渲染
+          }
         } else {
           console.error("获取帖子失败:", res.data);
           postUnknow.value = res.data || "获取帖子失败";
@@ -1268,6 +1428,22 @@ export default defineComponent({
       defaultAvatar,
       // 积分相关
       getExtcreditsDesc,
+      // 点赞相关
+      mainPostLiked,
+      mainPostLikeCount,
+      handleToggleLike,
+      // 勋章相关
+      authorMedalMap,
+      // 评分相关
+      ratingDialogVisible,
+      ratingTargetPid,
+      ratingData,
+      ratingValues,
+      ratingMessage,
+      hasRatingValue,
+      isActiveCredit,
+      openRatingDialog,
+      submitRating,
     };
   },
 });
@@ -1365,6 +1541,8 @@ export default defineComponent({
           color: #888;
         }
       }
+      .author-medals { display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
+      .author-medal-img { width:24px; height:24px; border-radius:3px; object-fit:contain; }
     }
   }
 
@@ -1418,6 +1596,9 @@ export default defineComponent({
     margin-bottom: 0;
     padding-left: 46px;
     margin-top: 8px;
+  }
+  .post-like{
+    color: rgba(236, 98, 18, 0.89);;
   }
 }
 
@@ -1559,7 +1740,7 @@ export default defineComponent({
     td {
       padding: 8px 10px;
       text-align: left;
-      border: 1px solid #f8f5e8;
+      border: 1px solid #faf6ef;
     }
 
     th {
@@ -1570,6 +1751,7 @@ export default defineComponent({
     tr:nth-child(even) {
       background-color: #fafafa;
     }
+    .neg { color: #e8743a; font-weight: 500; }
   }
 }
 

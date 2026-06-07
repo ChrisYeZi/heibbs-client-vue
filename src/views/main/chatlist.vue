@@ -9,7 +9,7 @@
       <!-- 头像区域 -->
       <div class="chat-avatar">
         <img
-          src="../../assets/img/avatar.png"
+          :src="getAvatarUrl(item)"
           :alt="item.sname"
           class="avatar-img"
         />
@@ -53,8 +53,10 @@
 
 <script>
 // 1. 移除了对 @/utils/dateHelper 的引用
-import { GetMessageListAPI } from "../../api/index";
+import { GetMessageListAPI, GetUserAvatarAPI } from "../../api/index";
 import store from "@/store";
+import config from "@/config/index";
+import defaultAvatar from "../../assets/img/avatar.png";
 import { Icon, Empty } from "vant";
 
 export default {
@@ -66,8 +68,9 @@ export default {
   data() {
     return {
       chatList: [],
-      unreadPlids: [1], // 模拟未读消息的plid
+      unreadPlids: [1],
       userdata: store.state.user?.info,
+      avatarUrls: {},
     };
   },
   computed: {
@@ -89,12 +92,35 @@ export default {
   methods: {
     getChatData() {
       GetMessageListAPI().then((res) => {
-        if (res.status == 200) {
+        if (res.status === 200) {
           this.chatList = res.data || [];
+          this.loadAvatars();
         } else {
           console.log("获取消息失败：", res.msg);
         }
       });
+    },
+
+    loadAvatars() {
+      const uidSet = new Set();
+      const currentUid = store.state.user?.info?.user?.uid;
+      this.chatList.forEach(item => {
+        const otherUid = item.tid === currentUid ? item.sid : item.tid;
+        if (otherUid) uidSet.add(otherUid);
+      });
+      uidSet.forEach(uid => {
+        GetUserAvatarAPI(uid).then(res => {
+          if (res.status === 200) {
+            this.avatarUrls[uid] = config.avatarUrl + res.data;
+          }
+        });
+      });
+    },
+
+    getAvatarUrl(item) {
+      const currentUid = store.state.user?.info?.user?.uid;
+      const otherUid = item.tid === currentUid ? item.sid : item.tid;
+      return this.avatarUrls[otherUid] || defaultAvatar;
     },
 
     // 3. 内置时间格式化函数（原 dateHelper 里的逻辑移到这里）
@@ -140,10 +166,6 @@ export default {
       return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
     },
 
-    // 头像生成函数
-    getAvatarUrl(sid) {
-      return `https://q1.qlogo.cn/g?b=qq&nk=${sid}&s=100`;
-    },
 
     // 点击事件
     handleChatClick(item) {

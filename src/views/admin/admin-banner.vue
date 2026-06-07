@@ -125,8 +125,9 @@
         <el-form-item label="图片URL" prop="url">
           <el-input
             v-model="bannerForm.url"
-            placeholder="请输入Banner图片地址"
+            placeholder="请输入Banner图片地址或从附件选择"
           />
+          <el-button size="small" style="margin-top:6px" @click="openPicker('banner')">从系统附件选择</el-button>
           <el-image
             v-if="bannerForm.url"
             :src="bannerForm.url"
@@ -176,6 +177,20 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 系统附件选择器弹窗 -->
+    <el-dialog v-model="pickerVisible" title="选择系统附件" width="650px">
+      <div class="picker-grid">
+        <div v-for="item in pickerList" :key="item.aid" class="picker-card"
+          :class="{ selected: pickerSelected === item.aid }"
+          @click="pickerSelected = item.aid">
+          <el-image v-if="item.isimage===1" :src="config.baseApi+item.attachment" fit="cover" style="width:100%;height:80px"/>
+          <span v-else class="picker-file">{{ item.filename }}</span>
+          <div class="picker-name">{{ item.filename }}</div>
+        </div>
+      </div>
+      <template #footer><el-button @click="pickerVisible=false">取消</el-button><el-button type="primary" @click="confirmPicker">确定选择</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -204,7 +219,9 @@ import {
   InsertBannerAPI,
   UpdateBannerAPI,
   DeleteBannerAPI,
+  GetSystemAttachmentListAPI,
 } from "../../api/index";
+import config from "@/config/index";
 
 // 导入或定义ItypeAPI类型
 interface ItypeAPI<T> {
@@ -443,24 +460,33 @@ export default defineComponent({
       getBannerList();
     });
 
+    // 附件选择器
+    const pickerVisible = ref(false);
+    const pickerList = ref<any[]>([]);
+    const pickerSelected = ref<number|null>(null);
+    const openPicker = async (sysCat: string) => {
+      pickerSelected.value = null;
+      const r = await GetSystemAttachmentListAPI(sysCat);
+      if (r.status === 200) pickerList.value = r.data || [];
+      pickerVisible.value = true;
+    };
+    const confirmPicker = () => {
+      if (pickerSelected.value) {
+        const att = pickerList.value.find(a => a.aid === pickerSelected.value);
+        if (att) {
+          bannerForm.url = config.baseApi + att.attachment;
+          (bannerForm as any).attachmentId = att.aid;
+        }
+      }
+      pickerVisible.value = false;
+    };
+
     return {
-      bannerList,
-      isLoading,
-      currentPage,
-      pageSize,
-      dialogVisible,
-      isEdit,
-      submitLoading,
-      bannerFormRef,
-      bannerForm,
-      bannerRules,
-      getBannerList,
-      handleSizeChange,
-      handleCurrentChange,
-      openAddBanner,
-      openEditBanner,
-      submitBannerForm,
-      handleDeleteBanner,
+      bannerList, isLoading, currentPage, pageSize, dialogVisible, isEdit, submitLoading,
+      bannerFormRef, bannerForm, bannerRules,
+      getBannerList, handleSizeChange, handleCurrentChange, openAddBanner, openEditBanner,
+      submitBannerForm, handleDeleteBanner,
+      pickerVisible, pickerList, pickerSelected, openPicker, confirmPicker, config,
     };
   },
 });
@@ -487,6 +513,12 @@ export default defineComponent({
     margin-top: 16px;
     text-align: right;
   }
+
+  .picker-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-height:350px; overflow-y:auto; }
+  .picker-card { border:2px solid transparent; border-radius:6px; padding:4px; cursor:pointer; text-align:center; }
+  .picker-card:hover,.picker-card.selected { border-color:#409eff; }
+  .picker-name { font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .picker-file { font-size:12px; display:block; padding:20px; background:#f5f7fa; border-radius:4px; }
 
   ::v-deep .el-table .cell {
     overflow: visible;

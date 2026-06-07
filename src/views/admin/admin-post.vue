@@ -73,6 +73,9 @@
       />
 
       <!-- 状态 -->
+      <el-table-column label="图章" align="center" width="80">
+        <template #default="scope"><span v-if="scope.row.stampName" style="color:#c0392b;font-weight:600">{{ scope.row.stampName }}</span></template>
+      </el-table-column>
       <el-table-column label="帖子状态" align="center" width="100">
         <template #default="scope">
           <el-tag :type="getStatusTagType(scope.row.state)" size="small">
@@ -82,32 +85,15 @@
       </el-table-column>
 
       <!-- 操作 -->
-      <el-table-column label="操作" align="center" width="260">
+      <el-table-column label="操作" align="center" width="280">
         <template #default="scope">
-          <el-button
-            type="primary"
-            size="small"
-            @click="handleEdit(scope.row.pid)"
-            style="margin-right: 8px"
-          >
-            编辑
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
+          <el-button type="primary" size="small" @click="handleEdit(scope.row.pid)">编辑</el-button>
+          <el-button type="warning" size="small" @click="handleSetState(scope.row)">设状态</el-button>
+          <el-button size="small" @click="openStampDialog(scope.row)">图章</el-button>
+          <el-button type="danger" size="small"
             @click="handleDelete(scope.row.pid)"
-            disabled
-            style="margin-right: 8px"
           >
             删除
-          </el-button>
-          <el-button
-            type="info"
-            size="small"
-            @click="handleSetState(scope.row.pid)"
-            disabled
-          >
-            设置状态
           </el-button>
         </template>
       </el-table-column>
@@ -126,14 +112,47 @@
       @current-change="handleCurrentChange"
       style="margin-top: 20px; text-align: right"
     />
+
+    <!-- 设置帖子状态对话框 -->
+    <el-dialog v-model="stateDialogVisible" title="设置帖子状态" width="400px">
+      <p style="margin-bottom: 12px;">
+        帖子ID: <strong>{{ currentPost.pid }}</strong>
+        当前状态: <el-tag :type="getStatusTagType(currentPost.state)" size="small">{{ getStatusText(currentPost.state) }}</el-tag>
+      </p>
+      <el-radio-group v-model="selectedState">
+        <el-radio :label="0">正常</el-radio>
+        <el-radio :label="1">隐藏内容</el-radio>
+        <el-radio :label="2">关闭</el-radio>
+        <el-radio :label="3">屏蔽并关闭</el-radio>
+        <el-radio :label="4">全局置顶</el-radio>
+        <el-radio :label="5">板块内置顶</el-radio>
+      </el-radio-group>
+      <template #footer>
+        <el-button @click="stateDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmSetState">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 设置图章对话框 -->
+    <el-dialog v-model="stampDialogVisible" title="设置图章" width="400px">
+      <p>帖子: <strong>#{{ stampTargetPid }}</strong></p>
+      <el-radio-group v-model="selectedStampId">
+        <el-radio :label="null">无图章</el-radio>
+        <el-radio v-for="s in stampList" :key="s.id" :label="s.id">{{ s.name }}</el-radio>
+      </el-radio-group>
+      <template #footer>
+        <el-button @click="stampDialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="confirmSetStamp">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts">
-import { ref, onMounted, defineComponent, computed, watch } from "vue";
-import { GetPostListAPI, SearchPostAPI } from "@/api/index";
+import { ref, defineComponent, computed, watch } from "vue";
+import { GetPostListAPI, SearchPostAPI, SetPostStateAPI, DeletePostAPI, GetActiveStampsAPI, SetPostStampAPI } from "@/api/index";
 import { useRouter, useRoute } from "vue-router";
-import { ElMessage, ElTag, ElButton, ElLink, ElInput, ElPagination } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 // 帖子接口定义
 interface PostItem {
@@ -149,7 +168,7 @@ interface PostItem {
   likeCount?: number;
   groupid?: number;
   extgroupid?: number;
-  state?: number; // 0正常、1隐藏、2关闭、3屏蔽、4置顶
+  state?: number;
 }
 
 // 分页结果接口
@@ -172,7 +191,6 @@ type PostListResponse = PageResult<PostItem>;
 
 export default defineComponent({
   name: "admin-post",
-  components: { ElTag, ElButton, ElLink, ElInput, ElPagination },
   setup() {
     const router = useRouter();
     const route = useRoute();
@@ -188,6 +206,15 @@ export default defineComponent({
     // 分页参数
     const currentPage = ref(1);
     const pageSize = ref(10);
+
+    // 状态对话框
+    const stateDialogVisible = ref(false);
+    const currentPost = ref<PostItem>({ subject: '', author: '', message: '', formattedCreateTime: '' });
+    const selectedState = ref(0);
+    // 图章相关
+    const stampDialogVisible=ref(false),stampTargetPid=ref(0),selectedStampId=ref<number|null>(null),stampList=ref<any[]>([]);
+    const openStampDialog=async(row:any)=>{stampTargetPid.value=row.pid;selectedStampId.value=row.stampId||null;const r=await GetActiveStampsAPI();if(r.status===200)stampList.value=r.data;stampDialogVisible.value=true};
+    const confirmSetStamp=async()=>{const r=await SetPostStampAPI(stampTargetPid.value,selectedStampId.value);if(r.status===200){ElMessage.success(String(r.msg||"设置成功"));stampDialogVisible.value=false;getData()}else ElMessage.error(String(r.msg||""))};
 
     // 状态映射
     const statusMap = computed(() => ({
@@ -216,7 +243,7 @@ export default defineComponent({
       );
     };
 
-    // 从路由参数初始化页码、每页数量和搜索关键词
+    // 从路由参数初始化
     const initFromRoute = () => {
       const { current, size, keyword } = route.query;
       if (current && !isNaN(Number(current))) {
@@ -243,13 +270,12 @@ export default defineComponent({
       });
     };
 
-    // 获取帖子列表数据（支持搜索）
+    // 获取帖子列表数据
     const getData = async () => {
       try {
         isLoading.value = true;
         let res: any;
-        
-        // 根据是否有搜索关键词选择调用的API
+
         if (hasSearched.value && searchKeyword.value) {
           res = await SearchPostAPI({
             pageNum: currentPage.value,
@@ -264,10 +290,8 @@ export default defineComponent({
         }
 
         if (res.status === 200) {
-          const newData = res.data;
-          postList.value = newData;
+          postList.value = res.data;
         } else {
-          console.error("获取帖子列表失败:", res.msg);
           ElMessage.error("获取帖子列表失败");
         }
       } catch (error) {
@@ -284,8 +308,7 @@ export default defineComponent({
         ElMessage.warning("请输入搜索关键词");
         return;
       }
-      
-      currentPage.value = 1; // 搜索时重置到第一页
+      currentPage.value = 1;
       hasSearched.value = true;
       updateRouteParams();
       await getData();
@@ -300,15 +323,15 @@ export default defineComponent({
       getData();
     };
 
-    // 处理每页条数变化
+    // 每页条数变化
     const handleSizeChange = (val: number) => {
       pageSize.value = val;
-      currentPage.value = 1; // 切换每页条数时重置到第一页
+      currentPage.value = 1;
       updateRouteParams();
       getData();
     };
 
-    // 处理当前页变化
+    // 当前页变化
     const handleCurrentChange = (val: number) => {
       currentPage.value = val;
       updateRouteParams();
@@ -327,17 +350,69 @@ export default defineComponent({
       router.push({ path: "/editpost/" + pid });
     };
 
-    // 预留：删除帖子
+    // 打开设置状态对话框
+    const handleSetState = (row: PostItem) => {
+      currentPost.value = row;
+      selectedState.value = row.state ?? 0;
+      stateDialogVisible.value = true;
+    };
+
+    // 确认设置状态
+    const confirmSetState = async () => {
+      const pid = Number(currentPost.value.pid);
+      if (!pid) {
+        ElMessage.error("无效的帖子ID");
+        return;
+      }
+      try {
+        const res = await SetPostStateAPI({ pid, state: selectedState.value });
+        if (res.status === 200) {
+          ElMessage.success(String(res.msg || "状态更新成功"));
+          stateDialogVisible.value = false;
+          getData(); // 刷新列表
+        } else {
+          ElMessage.error(String(res.msg || "状态更新失败"));
+        }
+      } catch (error) {
+        console.error("设置状态出错:", error);
+        ElMessage.error("操作异常");
+      }
+    };
+
+    // 删除帖子
     const handleDelete = (pid?: string | number) => {
-      ElMessage.info("删除功能待实现");
+      const id = Number(pid);
+      if (!id) {
+        ElMessage.error("无效的帖子ID");
+        return;
+      }
+      ElMessageBox.confirm(
+        "确定要删除该帖子吗？此操作不可恢复！",
+        "删除确认",
+        {
+          confirmButtonText: "确定删除",
+          cancelButtonText: "取消",
+          type: "warning",
+        }
+      ).then(async () => {
+        try {
+          const res = await DeletePostAPI(id);
+          if (res.status === 200) {
+            ElMessage.success("删除成功");
+            getData(); // 刷新列表
+          } else {
+            ElMessage.error(String(res.msg || "删除失败"));
+          }
+        } catch (error) {
+          console.error("删除帖子出错:", error);
+          ElMessage.error("删除异常");
+        }
+      }).catch(() => {
+        // 用户取消删除
+      });
     };
 
-    // 预留：设置状态
-    const handleSetState = (pid?: string | number) => {
-      ElMessage.info("设置状态功能待实现");
-    };
-
-    // 监听路由参数变化（包含关键词）
+    // 监听路由参数变化
     watch(
       () => [route.query.current, route.query.size, route.query.keyword],
       () => {
@@ -354,12 +429,17 @@ export default defineComponent({
       pageSize,
       searchKeyword,
       hasSearched,
+      stateDialogVisible,
+      currentPost,
+      selectedState,
       getStatusText,
       getStatusTagType,
       handleView,
       handleEdit,
       handleDelete,
       handleSetState,
+      confirmSetState,
+      stampDialogVisible,stampTargetPid,selectedStampId,stampList,openStampDialog,confirmSetStamp,
       handleSearch,
       resetSearch,
       handleSizeChange,
@@ -381,20 +461,17 @@ export default defineComponent({
   margin: 0 0 16px 0;
 }
 
-// 搜索区域样式
 .search-container {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
 }
 
-// 分页组件样式
 .pagination {
   margin-top: 20px;
   text-align: right;
 }
 
-// 表格内容换行优化
 ::v-deep .el-table__cell {
   white-space: normal;
   word-break: break-all;

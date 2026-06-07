@@ -38,7 +38,7 @@
       <!-- 功能按钮区域 -->
       <div class="block-buttons">
         <!-- 修改会馆发帖按钮，确保有板块ID时才显示 -->
-        <van-button
+        <!-- <van-button
           type="primary"
           size="normal"
           @click="gotoNewPost"
@@ -57,7 +57,7 @@
           @click="placeholder('管理会馆')"
           v-if="isManagerOrAdmin"
           >管理会馆</van-button
-        >
+        > -->
       </div>
     </div>
 
@@ -97,6 +97,7 @@
           ><span class="index-post-title-block" v-if="item?.state != 5"
             >{{ getBlockName(item.fid) }} </span
           >{{ item.subject }}
+          <span v-if="item.stampName" class="post-stamp-seal">{{ item.stampName }}</span>
         </div>
         <div class="index-post-meta">
           <span>
@@ -119,10 +120,8 @@
               >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
             >
             {{ item.author }}
-            <van-icon
-              name="http://www.heibbs.net:8081/api/attachment/default/xz001.png"
-              size="15px"
-          /></span>
+            <PostbarVue :postObj="item" />
+          </span>
           <span>{{ item.formattedCreateTime }}</span>
         </div>
         <div
@@ -846,4 +845,5 @@ export default defineComponent({
     }
   }
 }
+.post-stamp-seal{display:inline-block;color:#c0392b;border:2px solid #c0392b;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:6px;transform:rotate(-3deg);vertical-align:middle;letter-spacing:1px;opacity:.85;font-family:SimHei,serif}
 </style>

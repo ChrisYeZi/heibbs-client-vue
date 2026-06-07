@@ -23,12 +23,18 @@ export default {
     },
   },
   methods: {
-    // 回退到上一页，无历史记录时兜底跳首页
+    // 返回路由的上一级
     goBack() {
-      if (window.history.length <= 1) {
-        router.push("/index");
+      const matched = this.$route.matched;
+      // 有父级路由时跳转到父级，否则跳首页
+      if (matched.length >= 2) {
+        const parent = matched[matched.length - 2];
+        router.push({ path: parent.path });
       } else {
-        this.$router.go(-1);
+        // 单级路由：去掉最后一段路径
+        const currentPath = this.$route.path;
+        const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/index';
+        router.push(parentPath);
       }
     },
     // 直接跳转到首页

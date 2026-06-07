@@ -51,6 +51,11 @@
         <p class="user-status" :class="statusClass">{{ statusText }}</p>
       </div>
 
+      <!-- 操作按钮 -->
+      <div class="user-actions" v-if="userdata?.uid && userdata.uid !== currentUid">
+        <van-button type="primary" size="small" @click="sendMessageToUser">发送消息</van-button>
+      </div>
+
       <!-- 注册信息 -->
       <div class="user-meta">
         <div class="meta-item">
@@ -60,6 +65,16 @@
         <div class="meta-item">
           <van-icon name="eye-o" size="14" />
           <span>最后登录: {{ userdata?.userLastvisit }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户勋章展示 -->
+    <div class="info-medals" v-if="userMedals.length>0">
+      <div class="medal-row">
+        <div v-for="m in userMedals" :key="m.id" class="info-medal-item"
+          :class="{ primary: m.isPrimary===1 }">
+          <img :src="m.medalImageUrl" :alt="m.medalName" class="info-medal-img"/>
         </div>
       </div>
     </div>
@@ -113,9 +128,13 @@ import {
 import config from "@/config/index"; // 导入config配置
 import {
   GetUserInformationAPI,
-  GetUserAvatarAPI, // 引入头像接口
-  GetGroupListAPI, // 引入用户组接口
+  GetUserAvatarAPI,
+  GetGroupListAPI,
+  GetUserMedalsAPI,
+  StartConversationAPI,
 } from "@/api/index";
+import router from "@/router";
+import store from "@/store";
 import { ElMessage } from "element-plus";
 
 // 定义用户数据接口
@@ -200,7 +219,9 @@ export default defineComponent({
     const route = useRoute();
     const userdata = ref<UserData>({});
     const count = ref<CountData>({});
+    const userMedals = ref<any[]>([]);
     const isLoading = ref(true);
+    const currentUid = store.state.user?.info?.user?.uid;
     const hasError = ref(false);
     const activeNames = ref(["1"]);
     const avatarUrl = ref<string>("../../assets/img/avatar.png"); // 头像地址
@@ -274,6 +295,12 @@ export default defineComponent({
         if (response.status === 200 && response.data) {
           userdata.value = response.data.user || {};
           count.value = response.data.count || {};
+
+          // 加载用户勋章
+          try {
+            const medalRes = await GetUserMedalsAPI(userId);
+            if (medalRes.status === 200) userMedals.value = medalRes.data || [];
+          } catch (e) {}
 
           // 如果用户组数据未加载完成，再次尝试获取
           if (!groupList.value) {
@@ -360,9 +387,27 @@ export default defineComponent({
       }
     });
 
+    const sendMessageToUser = async () => {
+      const targetUid = userdata.value.uid;
+      if (!targetUid) return;
+      try {
+        const r = await StartConversationAPI({ targetUid, content: "你好！" });
+        if (r.status === 200 && r.data) {
+          // 无论新建或已有会话，data 都包含 plid
+          router.push({ path: "/chat", query: { plid: String(r.data.plid) } });
+        } else {
+          ElMessage.error(String(r.msg || "发起会话失败"));
+        }
+      } catch (e) {
+        ElMessage.error("操作失败");
+      }
+    };
+
     return {
       userdata,
       count,
+      userMedals,
+      currentUid,
       isLoading,
       hasError,
       userGroup,
@@ -375,6 +420,7 @@ export default defineComponent({
       avatarUrl, // 导出头像地址
       groupList, // 导出用户组列表
       fetchUserInfo,
+      sendMessageToUser,
     };
   },
 });
@@ -542,6 +588,13 @@ export default defineComponent({
 }
 
 .group-badge {
-  display: none; // 隐藏原有的van-badge，使用新的用户组标签
+  display: none;
+}
+.info-medals {
+  padding: 0 16px 8px;
+  .medal-row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .info-medal-item { width:36px; height:36px; border-radius:6px; overflow:hidden; border:1px solid #e0e0e0; }
+  .info-medal-item.primary { border-color:#f4a400; }
+  .info-medal-img { width:100%; height:100%; object-fit:contain; }
 }
 </style>

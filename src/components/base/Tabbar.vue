@@ -45,7 +45,6 @@ export default {
     };
   },
   methods: {
-    // 多个路由跳转
     toIndex(): void {
       router.push("/index");
     },

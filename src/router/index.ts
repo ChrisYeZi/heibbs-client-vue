@@ -28,7 +28,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
           Navbar: true,//顶部导航栏
           Tabbar: true,//底部导航栏
-          Login: false,//是否需要登录
+          Login: true,//是否需要登录
           NavReturnbar: false,
           Copyright: false,
           title: "首页",
@@ -54,7 +54,7 @@ const routes: Array<RouteRecordRaw> = [
           Navbar: false,
           Tabbar: false,
           NavReturnbar: true,
-          Login: false,
+          Login: true,
           Copyright: true,
           title: "帖子",
         },
@@ -67,7 +67,7 @@ const routes: Array<RouteRecordRaw> = [
           Navbar: false,
           Tabbar: false,
           NavReturnbar: true,
-          Login: false,
+          Login: true,
           Copyright: true,
           title: "发帖",
         },
@@ -80,7 +80,7 @@ const routes: Array<RouteRecordRaw> = [
           Navbar: false,
           Tabbar: false,
           NavReturnbar: true,
-          Login: false,
+          Login: true,
           Copyright: true,
           title: "编辑帖子",
         },
@@ -116,9 +116,9 @@ const routes: Array<RouteRecordRaw> = [
         name: "shop",
         component: () => import("../views/gugu/shop.vue"),
         meta: {
-          Navbar: false,
+          Navbar: true,
           Tabbar: true,
-          Login: false,
+          Login: true,
           Copyright: true,
           title: "集市",
         },
@@ -130,7 +130,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
           Navbar: false,
           Tabbar: true,
-          Login: false,
+          Login: true,
           Copyright: true,
           title: "鸽门",
         },
@@ -142,7 +142,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
           Navbar: true,
           Tabbar: true,
-          Login: false,
+          Login: true,
           NavReturnbar: false,
           Copyright: true,
           title: "会馆列表",
@@ -155,7 +155,7 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
           Navbar: false,
           Tabbar: true,
-          Login: false,
+          Login: true,
           NavReturnbar: true,
           Copyright: true,
           title: "会馆",
@@ -224,6 +224,43 @@ const routes: Array<RouteRecordRaw> = [
           Copyright: true,
           title: "设置",
         },
+      },
+      {
+        path: "/notification",
+        name: "notification",
+        component: () => import("../views/main/notification.vue"),
+        meta: {
+          Navbar: false,
+          Tabbar: true,
+          Login: true,
+          NavReturnbar: true,
+          Copyright: true,
+          title: "通知中心",
+        },
+      },
+      {
+        path: "/task",
+        name: "task",
+        component: () => import("../views/main/task-list.vue"),
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "社区任务" },
+      },
+      {
+        path: "/inventory",
+        name: "inventory",
+        component: () => import("../views/user/inventory.vue"),
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "我的物品" },
+      },
+      {
+        path: "/credits",
+        name: "credits",
+        component: () => import("../views/user/credits.vue"),
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "积分明细" },
+      },
+      {
+        path: "/medal-page",
+        name: "medal-page",
+        component: () => import("../views/user/medal-page.vue"),
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "我的勋章" },
       },
 
 
@@ -326,6 +363,75 @@ const routes: Array<RouteRecordRaw> = [
               Copyright: true,
               title: "管理面板 - Banner管理",
             },
+          },
+          {
+            path: "/admin/version",
+            name: "admin-version",
+            component: () => import("../views/admin/admin-version.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 版本控制",
+            },
+          },
+          {
+            path: "/admin/report",
+            name: "admin-report",
+            component: () => import("../views/admin/admin-report.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 举报管理",
+            },
+          },
+          {
+            path: "/admin/stamp",
+            name: "admin-stamp",
+            component: () => import("../views/admin/admin-stamp.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 图章管理" },
+          },
+          {
+            path: "/admin/credit",
+            name: "admin-credit",
+            component: () => import("../views/admin/admin-credit.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 积分管理" },
+          },
+          {
+            path: "/admin/attachment",
+            name: "admin-attachment",
+            component: () => import("../views/admin/admin-attachment.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 附件管理" },
+          },
+          {
+            path: "/admin/announcement",
+            name: "admin-announcement",
+            component: () => import("../views/admin/admin-announcement.vue"),
+            meta: {
+              Login: true,
+              NavReturnbar: true,
+              Copyright: true,
+              title: "管理面板 - 公告管理",
+            },
+          },
+          {
+            path: "/admin/task",
+            name: "admin-task",
+            component: () => import("../views/admin/admin-task.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 任务管理" },
+          },
+          {
+            path: "/admin/item",
+            name: "admin-item",
+            component: () => import("../views/admin/admin-item.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 物品管理" },
+          },
+          {
+            path: "/admin/medal",
+            name: "admin-medal",
+            component: () => import("../views/admin/admin-medal.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 勋章管理" },
           },
         ]
       },

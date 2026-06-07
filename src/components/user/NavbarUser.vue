@@ -36,8 +36,10 @@
         params: { id: uid },
       }"
     />
-    <van-cell icon="medal-o" title="勋章" is-link to="invitation" />
-    <van-cell icon="todo-list-o" title="誓言录" is-link to="invitation" />
+    <van-cell icon="medal-o" title="勋章" is-link to="/medal-page" />
+    <van-cell icon="label-o" title="任务" is-link to="/task" />
+    <van-cell icon="gold-coin-o" title="积分" is-link to="/credits" />
+    <van-cell icon="send-gift-o" title="物品" is-link to="/inventory" />
     <van-cell icon="coupon-o" title="邀请码" is-link to="invitation" />
     <van-cell icon="friends-o" title="用户组" is-link to="permission" />
     <van-cell icon="setting-o" title="设置" is-link to="setting" />

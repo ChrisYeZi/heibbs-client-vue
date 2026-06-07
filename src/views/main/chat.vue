@@ -27,7 +27,7 @@
           <!-- 接收消息（左侧） -->
           <div class="message received" v-if="msg.sid !== currentUid">
             <div class="avatar">
-              <img src="../../assets/img/avatar.png" class="avatar-img" />
+              <img :src="getAvatarUrl(msg.sid)" class="avatar-img" />
             </div>
             <div class="message-wrap">
               <div class="user-name">{{ getUserName(msg.sid) }}</div>
@@ -48,7 +48,7 @@
             </div>
             <div class="avatar">
               <img
-                src="../../assets/img/avatar.png"
+                :src="getAvatarUrl(msg.sid)"
                 alt="我的头像"
                 class="avatar-img"
               />
@@ -99,10 +99,12 @@
 </template>
 
 <script lang="ts">
-import { GetMessageAPI, ReplyMessageAPI } from "@/api/index";
+import { GetMessageAPI, ReplyMessageAPI, GetUserAvatarAPI } from "@/api/index";
 import { Icon, Empty, Toast } from "vant";
 import router from "@/router";
 import store from "@/store";
+import config from "@/config/index";
+import defaultAvatar from "../../assets/img/avatar.png";
 import MessagebarVue from "@/components/common/Messagebar.vue";
 import parsedContent from "@/assets/js/parsedContent";
 
@@ -158,7 +160,8 @@ export default {
       inputContent: "",
       inputHeight: "40px",
       currentUid: store.state.user?.info?.user?.uid || 1,
-      isSending: false, // 发送状态锁，防止重复发送
+      isSending: false,
+      avatarUrls: {},
     };
   },
   computed: {
@@ -191,6 +194,7 @@ export default {
             this.messageList = res.data;
             this.messageDoList = res.data.messageDoList || [];
             this.chatInfo = res.data.messageListDo || {};
+            this.loadAvatars();
             this.scrollToBottom();
           } else {
             this.showToast("获取消息失败", "error");
@@ -294,8 +298,18 @@ export default {
       return `${year}年${formattedMonth}月${formattedDay}日`;
     },
 
+    loadAvatars() {
+      const uidSet = new Set<number>();
+      this.messageDoList.forEach((msg: any) => { if (msg.sid) uidSet.add(msg.sid); });
+      uidSet.forEach((uid: number) => {
+        GetUserAvatarAPI(uid).then((res: any) => {
+          if (res.status === 200) this.avatarUrls[uid] = config.avatarUrl + res.data;
+        });
+      });
+    },
+
     getAvatarUrl(uid: number) {
-      return `https://q1.qlogo.cn/g?b=qq&nk=${uid}&s=100`;
+      return this.avatarUrls[uid] || defaultAvatar;
     },
 
     getUserName(uid: number) {

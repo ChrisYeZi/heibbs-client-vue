@@ -29,20 +29,32 @@
         <el-menu-item index="message" @click="routerGoto('/admin/message')"
           >消息</el-menu-item
         >
+        <el-menu-item index="attachment" @click="routerGoto('/admin/attachment')"
+          >附件</el-menu-item
+        >
         <el-menu-item index="banner" @click="routerGoto('/admin/banner')"
           >横幅</el-menu-item
         >
-        <el-menu-item index="unknowed" @click="routerGoto('/admin/unknowed')"
-          >附件</el-menu-item
+        <el-menu-item index="announcement" @click="routerGoto('/admin/announcement')"
+          >公告</el-menu-item
         >
-        <el-menu-item index="unknowed" @click="routerGoto('/admin/unknowed')"
+        <el-menu-item index="report" @click="routerGoto('/admin/report')"
+          >举报</el-menu-item
+        >
+        <el-menu-item index="credit" @click="routerGoto('/admin/credit')"
+          >积分</el-menu-item
+        >
+        <el-menu-item index="task" @click="routerGoto('/admin/task')"
+          >任务</el-menu-item
+        >
+        <el-menu-item index="item" @click="routerGoto('/admin/item')"
+          >物品</el-menu-item
+        >
+        <el-menu-item index="stamp" @click="routerGoto('/admin/stamp')"
+          >图章</el-menu-item
+        >
+        <el-menu-item index="medal" @click="routerGoto('/admin/medal')"
           >勋章</el-menu-item
-        >
-        <el-menu-item index="unknowed" @click="routerGoto('/admin/unknowed')"
-          >集市</el-menu-item
-        >
-        <el-menu-item index="unknowed" @click="routerGoto('/admin/unknowed')"
-          >誓言录</el-menu-item
         >
         <el-menu-item index="version" @click="routerGoto('/admin/version')"
           >版本控制</el-menu-item

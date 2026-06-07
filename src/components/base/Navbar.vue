@@ -27,7 +27,7 @@
     </van-popup>
     <!-- 头像设置弹出页 -->
     <van-popup
-      v-model:show="avatarShow"
+      v-model:show="navbarUserShow"
       closeable
       :close-icon="require(`@/assets/icon/guanbi.svg`)"
       position="left"
@@ -58,8 +58,6 @@ export default {
       imgUrl: config.imgUrl,
       test: null,
       searchShow: false,
-      avatarShow: false,
-      // 头像地址（默认使用本地图片）
       avatarUrl: "../../assets/img/avatar.png",
     };
   },
@@ -70,9 +68,12 @@ export default {
     username() {
       return store.state.user?.info?.user?.username;
     },
-    // 获取用户ID
     userId() {
       return store.state.user?.info?.user?.uid;
+    },
+    navbarUserShow: {
+      get() { return store.state.system.navbarUserShow; },
+      set(val) { store.commit("system/SET_NAVBARUSER_SHOW", val); },
     },
   },
   watch: {
@@ -115,7 +116,7 @@ export default {
       this.searchShow = true;
     },
     showAvatar() {
-      this.avatarShow = true;
+      store.commit("system/SET_NAVBARUSER_SHOW", true);
     },
     toChat() {
       router.push("/chatlist");

@@ -35,15 +35,44 @@ export default {
   created() {
     console.log("ฅ(๑˙o˙๑)ฅ ~嗨！~你怎么发现这里了！");
   },
+  mounted() {
+    this.initSwipeGesture();
+  },
+  beforeUnmount() {
+    document.removeEventListener("touchstart", this._touchStart);
+    document.removeEventListener("touchend", this._touchEnd);
+  },
   methods: {
+    initSwipeGesture() {
+      let startX = 0, startY = 0;
+      this._touchStart = (e) => {
+        if (e.touches.length === 1) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
+      };
+      this._touchEnd = (e) => {
+        if (e.changedTouches.length !== 1) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+        const navbarOpen = store.state.system.navbarUserShow;
+        if (dx > 100 && startX < 90 && !navbarOpen) {
+          // 右滑(从左边缘) → 打开侧边栏
+          store.commit("system/SET_NAVBARUSER_SHOW", true);
+        } else if (dx < -60 && navbarOpen) {
+          // 左滑 → 关闭侧边栏
+          store.commit("system/SET_NAVBARUSER_SHOW", false);
+        }
+      };
+      document.addEventListener("touchstart", this._touchStart, { passive: true });
+      document.addEventListener("touchend", this._touchEnd, { passive: false });
+    },
     init() {
       if (localStorage.getItem("heibbs.token")) {
-        // 1. 接口请求前：显示加载动画（调用Vuex的action设置loading为true）
+        // 显示加载动画（调用Vuex的action设置loading为true）
         store.dispatch("system/SET_SYSLOADING_ACTION", true);
 
         GetUserInfoAPI()
           .then((res) => {
-            // 3. 接口请求成功后：隐藏加载动画
+            // 隐藏加载动画
             store.dispatch("system/SET_SYSLOADING_ACTION", false);
 
             if (res.status == 200) {
@@ -54,7 +83,7 @@ export default {
             }
           })
           .catch((err) => {
-            // 4. 接口请求失败后：也要隐藏隐藏加载动画（避免一直直加载）
+            // 隐藏隐藏加载动画（避免一直直加载）
             store.dispatch("system/SET_SYSLOADING_ACTION", false);
             console.error("获取用户信息失败", err);
           });

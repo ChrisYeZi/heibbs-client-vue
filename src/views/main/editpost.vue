@@ -101,6 +101,7 @@ import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
 import { GetPostDataAPI, EditPostDataAPI } from "@/api/index";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import config from "@/config/index";
 
 interface PostItem {
   pid: number;
@@ -273,7 +274,25 @@ export default defineComponent({
 
     // 编辑器配置（保持默认，可按需添加功能）
     const toolbarConfig = {};
-    const editorConfig = { placeholder: "请输入内容..." };
+    const editorConfig = {
+      placeholder: "请输入内容...",
+      MENU_CONF: {
+        uploadImage: {
+          server: "http://127.0.0.1:8081/api/attachment/upload/image",
+          fieldName: "file",
+          headers: {
+            Authorization: localStorage.getItem("heibbs.token") || "",
+          },
+          customInsert(res: any, insertFn: Function) {
+            if (res.errno === 0 && res.data && res.data.url) {
+              const fullUrl = (res.data.url as string).startsWith("http") ? res.data.url : config.baseApi + res.data.url;
+              insertFn(fullUrl, res.data.alt || "", fullUrl);
+            }
+          },
+        },
+      },
+      scroll: false,
+    };
 
     // 编辑器初始化
     const handleCreated = (editor: any) => {
@@ -348,6 +367,22 @@ export default defineComponent({
     border-radius: 15px;
     overflow: hidden;
     margin: 20px 0;
+    overflow-anchor: none;
+    overscroll-behavior: contain;
+  }
+
+  /* 修复长文本选择时页面跳动 */
+  :deep(.w-e-text-container) {
+    overflow-anchor: none !important;
+    scroll-behavior: auto !important;
+    min-height: 200px;
+    max-height: 60vh;
+    overflow-y: auto !important;
+  }
+
+  :deep(.w-e-scroll) {
+    overflow-anchor: none !important;
+    scroll-behavior: auto !important;
   }
 
   /* 工具栏 + 切换按钮容器 */

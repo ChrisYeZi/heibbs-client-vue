@@ -104,6 +104,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import { InsertPostAPI, GetBlockListAPI } from "@/api/index";
+import config from "@/config/index";
 
 // 发帖请求参数类型
 interface InsertPostQuery {
@@ -257,15 +258,22 @@ export default defineComponent({
     const editorConfig = {
       placeholder: "请输入帖子内容...",
       MENU_CONF: {
-        // 可自定义编辑器菜单配置，比如上传图片等
         uploadImage: {
-          server: "/api/upload/image", // 替换为实际的图片上传接口
+          server: "http://127.0.0.1:8081/api/attachment/upload/image",
           fieldName: "file",
           headers: {
-            Authorization: localStorage.getItem("token") || "",
+            Authorization: localStorage.getItem("heibbs.token") || "",
+          },
+          // 自定义插入图片
+          customInsert(res: any, insertFn: Function) {
+            if (res.errno === 0 && res.data && res.data.url) {
+              const fullUrl = (res.data.url as string).startsWith("http") ? res.data.url : config.baseApi + res.data.url;
+              insertFn(fullUrl, res.data.alt || "", fullUrl);
+            }
           },
         },
       },
+      scroll: false,
     };
 
     // 编辑器初始化
@@ -375,6 +383,22 @@ export default defineComponent({
     border-radius: 15px;
     overflow: hidden;
     margin: 20px 0;
+    overflow-anchor: none;
+    overscroll-behavior: contain;
+  }
+
+  /* 修复长文本选择时页面跳动 */
+  :deep(.w-e-text-container) {
+    overflow-anchor: none !important;
+    scroll-behavior: auto !important;
+    min-height: 200px;
+    max-height: 60vh;
+    overflow-y: auto !important;
+  }
+
+  :deep(.w-e-scroll) {
+    overflow-anchor: none !important;
+    scroll-behavior: auto !important;
   }
 
   /* 工具栏 + 切换按钮容器 */

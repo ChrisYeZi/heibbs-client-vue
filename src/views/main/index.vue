@@ -71,6 +71,7 @@
             getBlockName(item.fid)
           }}</span>
           {{ item.subject }}
+          <span v-if="item.stampName" class="post-stamp-seal">{{ item.stampName }}</span>
         </div>
         <div class="index-post-meta">
           <span>
@@ -94,11 +95,8 @@
             >
             <!-- 用户名 -->
             <span class="post-username">{{ item.author }}</span>
-            <!-- 勋章占位 -->
-            <van-icon
-              name="http://www.heibbs.net:8081/api/attachment/default/xz001.png"
-              size="15px"
-          /></span>
+            <PostbarVue :postObj="item" />
+          </span>
           <span>{{ item.formattedCreateTime }}</span>
         </div>
         <div
@@ -685,4 +683,5 @@ export default defineComponent({
     }
   }
 }
+.post-stamp-seal{display:inline-block;color:#c0392b;border:2px solid #c0392b;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:6px;transform:rotate(-3deg);vertical-align:middle;letter-spacing:1px;opacity:.85;font-family:SimHei,serif}
 </style>
