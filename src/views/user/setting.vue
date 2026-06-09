@@ -348,8 +348,8 @@ export default {
 
 <style lang="scss" scoped>
 .settingBox {
-  margin-top: 70px;
-  padding: 0 15px;
+  margin-top: 10px;
+  padding: 0 10px;
 
   // 当前版本样式
   .currentVersion {

@@ -214,7 +214,7 @@ export default defineComponent({
 
 <style scoped>
 .medal-page {
-  margin-top: 60px;
+  margin: 10px 5px;
   padding: 10px 20px;
   min-height: 100vh;
   background: rgba(255, 255, 255, 0.9);

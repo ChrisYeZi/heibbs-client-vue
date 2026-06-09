@@ -430,9 +430,7 @@ export default defineComponent({
 .user-info-page {
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 10px;
-  margin: 110px 10px 20px 10px;
-  max-width: calc(800px - 20px);
-  margin: 110px auto;
+  margin: 50px 5px 20px 5px;
   padding-bottom: 20px;
 }
 

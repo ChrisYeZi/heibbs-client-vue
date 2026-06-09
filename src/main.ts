@@ -19,7 +19,7 @@ app.use(store).use(router).use(vant).use(ElementPlus).mount('#app')
 
 // ============ 移动端原生功能 ============
 
-// 1. 硬件返回键：路由返回上一级，根目录双击退出
+// 硬件返回键：路由返回上一级，根目录双击退出
 let backPressed = 0
 document.addEventListener('backbutton', (e: any) => {
   const path = router.currentRoute.value.path
@@ -37,7 +37,7 @@ document.addEventListener('backbutton', (e: any) => {
   e.preventDefault()
 }, false)
 
-// 2. 状态栏（Cordova deviceready）
+// 状态栏（Cordova deviceready）
 let statusBarReady = false
 document.addEventListener('deviceready', () => {
   try {
@@ -60,7 +60,7 @@ document.addEventListener('deviceready', () => {
   } catch (e) {}
 }, false)
 
-// 3. 禁用双指缩放
+// 禁用双指缩放
 document.addEventListener('gesturestart', (e) => e.preventDefault())
 document.addEventListener('gesturechange', (e) => e.preventDefault())
 document.addEventListener('gestureend', (e) => e.preventDefault())
@@ -68,7 +68,7 @@ document.addEventListener('touchmove', (e: any) => {
   if (e.touches && e.touches.length > 1) e.preventDefault()
 }, { passive: false })
 
-// 4. 处理deeplink/分享链接跳转
+// 处理deeplink/分享链接跳转
 function handleDeepLink(url: string) {
   try {
     const match = url.match(/post\/(\d+)/)

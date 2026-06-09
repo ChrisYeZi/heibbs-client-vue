@@ -127,7 +127,7 @@ const routes: Array<RouteRecordRaw> = [
         path: "/search",
         name: "search",
         component: () => import("../views/main/search.vue"),
-        meta: { Navbar: true, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "搜索" },
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "搜索" },
       },
       {
         path: "/gugu",

@@ -1,11 +1,11 @@
 <template>
   <div class="chat-container">
     <!-- 顶部导航栏 -->
-    <div class="chat-header">
+    <!-- <div class="chat-header">
       <van-icon name="arrow-left" class="back-btn" @click="$router.go(-1)" />
       <div class="chat-title">{{ chatInfo.tname || "聊天" }}</div>
       <van-icon name="more" class="more-btn" />
-    </div>
+    </div> -->
 
     <!-- 聊天内容区 -->
     <div class="chat-messages">
@@ -336,7 +336,7 @@ export default {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 60px);
   background: rgba(255, 255, 255, 0.7);
   overflow: hidden;
 }

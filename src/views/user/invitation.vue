@@ -255,8 +255,8 @@ export default {
 <style lang="scss" scoped>
 // 全局容器样式
 .invitationBox {
-  margin-top: 70px;
-  padding: 0 15px;
+  margin-top: 10px;
+  padding: 0 5px;
 
   // 创建按钮
   .createInvitation-submit {
@@ -372,7 +372,7 @@ export default {
 
 // 登机牌内容区
 .pass-content {
-  padding: 16px;
+  padding: 12px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
@@ -421,7 +421,8 @@ export default {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      letter-spacing: 1px; // 字符间距放大，增强邀请码辨识度
+      max-width: 70vw;
+      letter-spacing: 0.7px; // 字符间距放大，增强邀请码辨识度
       color: rgba(0, 0, 0, 0.7);
     }
 

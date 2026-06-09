@@ -3,21 +3,17 @@
     <div class="avatarBox">
       <!-- 头像区域：支持点击上传 -->
       <div class="avatar-container" @click="triggerAvatarUpload">
-        <img 
-          :src="avatarUrl" 
-          alt="用户头像" 
-          class="user-avatar"
-        />
+        <img :src="avatarUrl" alt="用户头像" class="user-avatar" />
         <!-- 上传提示（登录状态显示） -->
         <div class="avatar-tip" v-if="login">更换头像</div>
       </div>
-      
+
       <!-- 隐藏的文件选择器 -->
-      <input 
-        type="file" 
-        ref="avatarInput" 
-        class="avatar-input" 
-        accept="image/*" 
+      <input
+        type="file"
+        ref="avatarInput"
+        class="avatar-input"
+        accept="image/*"
         @change="handleAvatarSelect"
       />
 
@@ -62,7 +58,7 @@ import store from "@/store";
 import router from "@/router";
 import { GetUserAvatarAPI } from "@/api/index"; // 引入获取头像接口
 import { UploadAvatarAPI } from "@/api/index"; // 引入上传头像接口
-import { ElMessage } from "element-plus"; 
+import { ElMessage } from "element-plus";
 
 export default defineComponent({
   name: "NavbarUser",
@@ -107,7 +103,7 @@ export default defineComponent({
       // 校验文件类型和大小（限制2MB以内的图片）
       const isImage = file.type.startsWith("image/");
       const isLt3M = file.size / 1024 / 1024 < 3;
-      
+
       if (!isImage) {
         ElMessage.error("请选择图片文件！");
         return;
@@ -123,7 +119,7 @@ export default defineComponent({
         if (res.status === 200) {
           ElMessage.success("头像上传成功！");
           // 如果用vant Toast：Toast.success("头像上传成功！");
-          
+
           // 重新加载最新头像
           await loadUserAvatar();
           // 清空文件选择器
@@ -138,14 +134,15 @@ export default defineComponent({
     };
 
     // 监听登录状态和UID变化
-    watch([() => store.state.user?.login, () => store.state.user?.info?.user?.uid], 
+    watch(
+      [() => store.state.user?.login, () => store.state.user?.info?.user?.uid],
       () => {
         uid.value = store.state.user?.info?.user?.uid;
         login.value = !!store.state.user?.login; // 强制转为boolean原始类型
         username.value = store.state.user?.info?.user?.username || "";
         admin.value = store.state.user?.info?.user?.extgroupids;
         loadUserAvatar(); // 重新加载头像
-      }, 
+      },
       { immediate: true }
     );
 
@@ -178,7 +175,7 @@ export default defineComponent({
   background: rgba(246, 246, 246, 1);
   height: 100%;
   max-width: 700px;
-
+  user-select: none;
   .avatarBox {
     background: rgba(255, 252, 244, 0.8);
     height: 10%;

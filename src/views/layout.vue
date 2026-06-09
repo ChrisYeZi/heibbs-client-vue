@@ -2,14 +2,18 @@
   <div class="layout">
     <!-- 通过Vuex的loading状态控制加载动画显示 -->
     <LoadingVue v-if="loading"></LoadingVue>
-    <NavbarVue v-if="$route.meta.Navbar"></NavbarVue>
-    <nav-returnbar-vue v-if="$route.meta.NavReturnbar"></nav-returnbar-vue>
+    <div v-if="$route.meta.Navbar" class="layout-navbar">
+      <NavbarVue></NavbarVue>
+    </div>
+    <div v-if="$route.meta.NavReturnbar" class="layout-returnbar">
+      <nav-returnbar-vue></nav-returnbar-vue>
+    </div>
     <div class="layout-box">
       <router-view />
     </div>
     <div v-if="$route.meta.Copyright" class="layout-copyright">
       <p>罗小黑妖灵论坛（公益非官方）</p>
-      <p>Copyright ©2020-2025 heibbs.net All Rights Reserved.</p>
+      <p>Copyright ©2020-2026 heibbs.net All Rights Reserved.</p>
       <p>论坛管理组: admin@heibbs.net</p>
     </div>
     <TabbarVue v-if="$route.meta.Tabbar"></TabbarVue>
@@ -102,14 +106,20 @@ export default {
 <style lang="scss" scoped>
 /* 样式不变 */
 .layout {
+  .layout-navbar {
+    height: 60px;
+  }
+  .layout-returnbar {
+    height: 60px;
+  }
   .layout-box {
     max-width: 1200px;
-    margin: 10px auto;
+    margin: 0px auto;
   }
   .layout-copyright {
-    margin-top: 90px;
-    padding-top: 20px;
-    margin-bottom: 60px;
+    margin-top: 10px;
+    margin-bottom: 80px;
+    padding: 0px 5px 0px 5px;
     height: 100px;
     text-align: center;
     color: rgb(155, 154, 128);

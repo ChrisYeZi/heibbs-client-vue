@@ -99,7 +99,7 @@ export default defineComponent({
 
 <style scoped>
 .credits-page {
-  margin-top: 60px;
+  margin: 10px 5px;
   padding: 11px 20px;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 11px;

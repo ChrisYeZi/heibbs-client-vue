@@ -497,16 +497,13 @@ export default defineComponent({
 .index {
   background: rgba(255, 255, 255, 0.9);
   margin-bottom: 60px;
-  margin: 50px 10px 60px 10px;
-  margin-top: -100px;
-  padding: 15px 10px;
-  padding-top: 150px;
+  margin: 0px 5px 60px 5px;
+  padding: 5px 10px 15px 10px;
   line-height: 1.5em;
   height: calc(100vh - 125px);
   overflow-y: auto;
-
+  user-select: none;
   .search-bar {
-    background: rgba(255, 255, 255, 0.9);
   }
 
   .section-title {

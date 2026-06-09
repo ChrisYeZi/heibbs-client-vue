@@ -350,11 +350,10 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .editpost {
-  margin-top: 60px;
+  margin: 10px 5px;
   padding: 0 20px;
   padding-bottom: 20px;
-  border-bottom-right-radius: 20px;
-  border-bottom-left-radius: 20px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 1);
 
   .editpost-form {

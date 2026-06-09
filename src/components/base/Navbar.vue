@@ -72,8 +72,12 @@ export default {
       return store.state.user?.info?.user?.uid;
     },
     navbarUserShow: {
-      get() { return store.state.system.navbarUserShow; },
-      set(val) { store.commit("system/SET_NAVBARUSER_SHOW", val); },
+      get() {
+        return store.state.system.navbarUserShow;
+      },
+      set(val) {
+        store.commit("system/SET_NAVBARUSER_SHOW", val);
+      },
     },
   },
   watch: {
@@ -135,6 +139,7 @@ export default {
   padding-top: 10px;
   background: rgba(255, 254, 249, 1);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  user-select: none;
   z-index: 999;
   .avatar {
     margin-left: 10px;

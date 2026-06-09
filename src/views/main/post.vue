@@ -1617,11 +1617,10 @@ export default defineComponent({
 <style lang="scss" scoped>
 .post-detail {
   background: rgba(255, 255, 255, 0.9);
-  min-height: calc(100vh - 730px);
   padding: 15px 10px;
   border-radius: 10px;
   line-height: 1.6em;
-  margin: 150px 10px 0px 10px;
+  margin: 10px 10px 0px 10px;
   position: relative;
   z-index: 1;
 }

@@ -96,11 +96,11 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .block {
-  margin: -80px 0px 0px 0px;
+  margin: 0px 5px 0px 5px;
   background: rgba(255, 255, 255, 0.8);
-  padding-top: 150px;
+  padding-top: 10px;
   padding-bottom: 10px;
-  border-radius: 10px;
+  border-radius: 0px 0px 10px 10px;
   display: flex;
   justify-content: space-evenly;
   flex-wrap: wrap;

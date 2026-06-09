@@ -1,6 +1,5 @@
 <template>
   <div class="gugu">
-    <h2 class="page-title">罗小黑战记追更日历</h2>
     <van-loading v-if="loading" class="loading" />
 
     <template v-if="!loading && mainEps.length">
@@ -253,9 +252,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .gugu {
-  padding: 10px 20px;
-  padding-top: 70px;
-  min-height: 100vh;
+  padding: 10px 10px;
   background: #fcf9e0;
   border-radius: 0 0 10px 10px;
   color: #728567;

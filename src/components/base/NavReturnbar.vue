@@ -33,7 +33,8 @@ export default {
       } else {
         // 单级路由：去掉最后一段路径
         const currentPath = this.$route.path;
-        const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/')) || '/index';
+        const parentPath =
+          currentPath.substring(0, currentPath.lastIndexOf("/")) || "/index";
         router.push(parentPath);
       }
     },
@@ -58,8 +59,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between; // 左右分布按钮，中间标题
-
-  .return, .home {
+  user-select: none;
+  .return,
+  .home {
     text-align: center;
     background: rgb(255, 254, 249);
     display: inline-flex;
@@ -71,7 +73,8 @@ export default {
     cursor: pointer;
   }
 
-  .return:active, .home:active {
+  .return:active,
+  .home:active {
     transition: 0.1s;
     background: rgba(223, 209, 186, 0.3);
   }

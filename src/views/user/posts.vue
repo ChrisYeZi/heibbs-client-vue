@@ -114,11 +114,10 @@ export default defineComponent({
 
 <style scoped>
 .user-posts {
-  margin-top: 60px;
+  margin: 10px 5px;
   padding: 10px 20px;
-  min-height: 100vh;
-  background: rgba(255,255,255,0.9);
-  border-radius: 0 0 10px 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
   color: #728567;
 }
 .tabs {
@@ -140,7 +139,7 @@ export default defineComponent({
   color: #fff;
 }
 .post-item {
-  background: rgba(252,249,224,0.1);
+  background: rgba(252, 249, 224, 0.1);
   border-radius: 10px;
   padding: 12px;
   margin-bottom: 8px;

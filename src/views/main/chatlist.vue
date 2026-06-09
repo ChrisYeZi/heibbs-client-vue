@@ -183,7 +183,6 @@ export default {
 <style lang="scss" scoped>
 /* 样式部分完全不变 */
 .chatBox {
-  margin-top: 60px;
   padding: 10px 12px;
   padding-bottom: 30px;
   background: rgba(255, 255, 255, 0.7);

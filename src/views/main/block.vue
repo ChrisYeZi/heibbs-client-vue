@@ -97,10 +97,14 @@
           ><span class="index-post-title-block" v-if="item?.state != 5"
             >{{ getBlockName(item.fid) }} </span
           >{{ item.subject }}
-          <span v-if="item.state===2" class="post-lock">🔒</span>
-          <span v-if="item.stampName" class="post-stamp-seal">{{ item.stampName }}</span>
+          <span v-if="item.state === 2" class="post-lock">🔒</span>
+          <span v-if="item.stampName" class="post-stamp-seal">{{
+            item.stampName
+          }}</span>
         </div>
-        <div class="post-hidden-note" v-if="item.state===1">⚠ 内容已被隐藏</div>
+        <div class="post-hidden-note" v-if="item.state === 1">
+          ⚠ 内容已被隐藏
+        </div>
         <div class="index-post-meta">
           <span>
             <!-- 用户组 -->
@@ -210,7 +214,6 @@ interface PostItem {
   state?: number;
   stampName?: string;
 }
-
 
 interface PageResult<T> {
   records: T[];
@@ -617,7 +620,7 @@ export default defineComponent({
   padding: 15px 10px;
   height: calc(100vh - 0px);
   overflow-y: auto;
-
+  user-select: none;
   .block-box {
     border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 10px;
@@ -848,6 +851,32 @@ export default defineComponent({
     }
   }
 }
-.post-stamp-seal{display:inline-block;color:#c0392b;border:2px solid #c0392b;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:6px;transform:rotate(-3deg);vertical-align:middle;letter-spacing:1px;opacity:.85;font-family:SimHei,serif}
-.post-lock{font-size:14px;margin-left:4px;vertical-align:middle}.post-hidden-note{font-size:12px;color:#e6a23c;margin:4px 0;padding:4px 8px;background:rgba(230,162,60,.1);border-radius:4px}
+.post-stamp-seal {
+  display: inline-block;
+  color: #c0392b;
+  border: 2px solid #c0392b;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  transform: rotate(-3deg);
+  vertical-align: middle;
+  letter-spacing: 1px;
+  opacity: 0.85;
+  font-family: SimHei, serif;
+}
+.post-lock {
+  font-size: 14px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.post-hidden-note {
+  font-size: 12px;
+  color: #e6a23c;
+  margin: 4px 0;
+  padding: 4px 8px;
+  background: rgba(230, 162, 60, 0.1);
+  border-radius: 4px;
+}
 </style>

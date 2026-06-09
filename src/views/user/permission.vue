@@ -1,8 +1,5 @@
 <template>
   <div class="permission-container">
-    <!-- 页面标题 -->
-    <div class="page-title">用户组管理</div>
-
     <!-- 加载状态 -->
     <div class="loading" v-if="isLoading">
       <van-loading color="#1989fa" size="24" />
@@ -214,16 +211,6 @@ export default defineComponent({
 .permission-container {
   padding: 16px;
   min-height: calc(100vh - 70px); // 适配顶部导航栏高度
-}
-
-// 页面标题
-.page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d2129;
-  margin-bottom: 20px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #ebeef5;
 }
 
 // 加载状态

@@ -71,6 +71,7 @@ export default {
   bottom: 0px;
   text-align: center;
   font-size: 0.7rem;
+  user-select: none;
   z-index: 998;
   .select {
     font-weight: 550;

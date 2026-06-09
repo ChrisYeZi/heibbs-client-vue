@@ -240,8 +240,8 @@ export default defineComponent({
 
 <style scoped>
 .shop-page {
+  margin: 0px 5px;
   padding: 10px 20px;
-  padding-top: 70px;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 0 0 10px 10px;
   color: #728567;
