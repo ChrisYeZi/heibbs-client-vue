@@ -56,7 +56,7 @@
 <script lang="ts">
 import { ref, computed, onMounted, defineComponent } from "vue";
 import { Loading, Empty } from "vant";
-import config from "@/config/index";
+import { GetGuguEpisodesAPI } from "@/api/index";
 
 interface Ep { id:number; title:string; dateStr:string; ts:number; gap:number|null; show_title?:string; long_title?:string }
 
@@ -68,8 +68,8 @@ export default defineComponent({
 
     const fetchData = async () => {
       try {
-        const r = await fetch(`${config.baseApi}/gugu/episodes?epId=32374`);
-        const json = await r.json();
+        const r = await GetGuguEpisodesAPI(32374);
+        const json = typeof r === 'string' ? JSON.parse(r as any) : r;
         if (json.code!==0) throw new Error(json.message);
         let raw = json.result.episodes || [];
         // 按 pub_time 排序

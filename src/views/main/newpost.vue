@@ -259,7 +259,7 @@ export default defineComponent({
       placeholder: "请输入帖子内容...",
       MENU_CONF: {
         uploadImage: {
-          server: "http://127.0.0.1:8081/api/attachment/upload/image",
+          server: config.baseApi + "/attachment/upload/image",
           fieldName: "file",
           headers: {
             Authorization: localStorage.getItem("heibbs.token") || "",

@@ -924,6 +924,39 @@ export const UpdateStampAPI = (data:StampItem): Res<String> => instance.post("/a
 export const DeleteStampAPI = (id:number): Res<String> => instance.get("/admin/stamp/delete",{params:{id}});
 export const SetPostStampAPI = (pid:number, stampId:number|null): Res<String> => instance.post("/admin/stamp/set-post-stamp",{pid,stampId});
 
+// ——————UserPosts 用户帖子
+export const GetUserTopicsAPI = (params?:any): Res<any> => instance.get("/post/getuserpost",{params});
+export const GetUserRepliesAPI = (params?:any): Res<any> => instance.get("/post/getuserrepost",{params});
+
+// ——————SystemConfig 系统配置
+export const GetSystemConfigAPI = (): Res<any> => instance.get("/admin/config/all");
+export const SetSystemConfigAPI = (key:string,value:string): Res<String> => instance.post("/admin/config/set",{key,value});
+
+// ——————CreditManage 积分管理
+export const GetCreditDefsAPI = (): Res<any> => instance.get("/admin/credit/defs");
+export const UpdateCreditDefAPI = (data:any): Res<String> => instance.post("/admin/credit/update-def",data);
+export const GetCreditRulesAPI = (): Res<any> => instance.get("/admin/credit/rules");
+export const UpdateCreditRuleAPI = (data:any): Res<String> => instance.post("/admin/credit/update-rule",data);
+export const InsertCreditRuleAPI = (data:any): Res<String> => instance.post("/admin/credit/insert-rule",data);
+export const DeleteCreditRuleAPI = (id:number): Res<String> => instance.get("/admin/credit/delete-rule",{params:{id}});
+export const GrantCreditsAPI = (data:any): Res<String> => instance.post("/admin/credit/grant",data);
+
+// ——————BlockFinance 会馆财政
+export const GetBlockFinanceAPI = (blockId:number, params?:any): Res<any> => instance.get(`/block-finance/finance/${blockId}`,{params});
+export const GetMyStockAPI = (): Res<any> => instance.get("/block-finance/stock/my");
+export const BuyStockAPI = (amount:number): Res<String> => instance.post("/block-finance/stock/buy",{amount});
+export const SellStockAPI = (amount:number): Res<String> => instance.post("/block-finance/stock/sell",{amount});
+
+// ——————CreditDetail 积分明细
+export const GetCreditDetailAPI = (params?:any): Res<any> => instance.get("/count/detail",{params});
+
+// ——————Attachment 附件管理(admin)
+export const GetAdminAttachmentListAPI = (params?:any): Res<any> => instance.get("/admin/attachment/list",{params});
+export const DeleteAdminAttachmentAPI = (aid:number): Res<String> => instance.delete("/admin/attachment/"+aid);
+
+// ——————Gugu 番剧
+export const GetGuguEpisodesAPI = (epId?:number): Res<any> => instance.get("/gugu/episodes",{params:{epId:epId||32374}});
+
 // 勋章新接口
 export const GetAllMedalsAPI = (): Res<any> => instance.get("/medal/all");
 export const GetUserPrimaryMedalAPI = (uid: number): Res<any> => instance.get(`/medal/primary/${uid}`);

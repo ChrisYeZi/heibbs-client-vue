@@ -124,11 +124,17 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
+        path: "/search",
+        name: "search",
+        component: () => import("../views/main/search.vue"),
+        meta: { Navbar: true, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "搜索" },
+      },
+      {
         path: "/gugu",
         name: "gugu",
         component: () => import("../views/gugu/gugu.vue"),
         meta: {
-          Navbar: false,
+          Navbar: true,
           Tabbar: true,
           Login: true,
           Copyright: true,
@@ -147,6 +153,12 @@ const routes: Array<RouteRecordRaw> = [
           Copyright: true,
           title: "会馆列表",
         },
+      },
+      {
+        path: "/block-finance",
+        name: "block-finance",
+        component: () => import("../views/user/block-finance.vue"),
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "会馆财政" },
       },
       {
         path: "/block/:id",
@@ -242,13 +254,19 @@ const routes: Array<RouteRecordRaw> = [
         path: "/task",
         name: "task",
         component: () => import("../views/main/task-list.vue"),
-        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "社区任务" },
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "任务" },
       },
       {
         path: "/inventory",
         name: "inventory",
         component: () => import("../views/user/inventory.vue"),
-        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "我的物品" },
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "物品" },
+      },
+      {
+        path: "/my-posts",
+        name: "my-posts",
+        component: () => import("../views/user/posts.vue"),
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "帖子" },
       },
       {
         path: "/credits",
@@ -260,7 +278,7 @@ const routes: Array<RouteRecordRaw> = [
         path: "/medal-page",
         name: "medal-page",
         component: () => import("../views/user/medal-page.vue"),
-        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "我的勋章" },
+        meta: { Navbar: false, Tabbar: true, Login: true, NavReturnbar: true, Copyright: true, title: "勋章" },
       },
 
 

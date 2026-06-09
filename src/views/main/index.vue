@@ -1,5 +1,13 @@
 <template>
   <div class="index" ref="scrollContainer">
+    <!-- 搜索框 -->
+    <div class="search-bar">
+      <van-search
+        v-model="searchKeyword"
+        placeholder="搜索帖子标题或用户名"
+        @search="doSearch"
+      />
+    </div>
     <!-- 轮播图区域 -->
     <van-swipe
       v-if="slides.length"
@@ -71,7 +79,13 @@
             getBlockName(item.fid)
           }}</span>
           {{ item.subject }}
-          <span v-if="item.stampName" class="post-stamp-seal">{{ item.stampName }}</span>
+          <span v-if="item.state === 2" class="post-lock">🔒</span>
+          <span v-if="item.stampName" class="post-stamp-seal">{{
+            item.stampName
+          }}</span>
+        </div>
+        <div class="post-hidden-note" v-if="item.state === 1">
+          ⚠ 内容已被隐藏
         </div>
         <div class="index-post-meta">
           <span>
@@ -155,7 +169,16 @@ import {
   GetAdminBannerAPI,
   GetUserAvatarAPI,
 } from "@/api/index";
-import { Swipe, SwipeItem, Grid, GridItem, Empty, Loading, Icon } from "vant";
+import {
+  Swipe,
+  SwipeItem,
+  Grid,
+  GridItem,
+  Empty,
+  Loading,
+  Icon,
+  Search,
+} from "vant";
 import parsedContent from "@/assets/js/parsedContent";
 import router from "@/router";
 
@@ -172,7 +195,8 @@ interface PostItem {
   replyCount?: number;
   groupid?: number;
   extgroupid?: number;
-  // 其他可能的字段
+  state?: number;
+  stampName?: string;
 }
 
 // 定义分页结果接口
@@ -229,6 +253,7 @@ export default defineComponent({
     [Empty.name]: Empty,
     [Loading.name]: Loading,
     [Icon.name]: Icon,
+    [Search.name]: Search,
   },
   setup() {
     const router = useRouter();
@@ -247,6 +272,15 @@ export default defineComponent({
     const hasMore = ref(true);
     // 排序类型：latestPost（最新发帖）/latestReply（最新回复），默认最新回复
     const sortType = ref<"latestPost" | "latestReply">("latestReply");
+    const searchKeyword = ref("");
+    const doSearch = () => {
+      if (searchKeyword.value.trim()) {
+        router.push({
+          path: "/search",
+          query: { keyword: searchKeyword.value.trim() },
+        });
+      }
+    };
 
     // 处理Banner点击事件
     const handleBannerClick = (banner: BannerItem) => {
@@ -445,7 +479,9 @@ export default defineComponent({
       getBlockName,
       gotoInfo,
       handleBannerClick,
-      sortType, // 导出排序类型
+      sortType,
+      searchKeyword,
+      doSearch,
       changeSortType, // 导出切换方法
     };
   },
@@ -467,6 +503,10 @@ export default defineComponent({
   line-height: 1.5em;
   height: calc(100vh - 140px);
   overflow-y: auto;
+
+  .search-bar {
+    background: rgba(255, 255, 255, 0.9);
+  }
 
   .section-title {
     font-size: 16px;
@@ -683,5 +723,33 @@ export default defineComponent({
     }
   }
 }
-.post-stamp-seal{display:inline-block;color:#c0392b;border:2px solid #c0392b;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:6px;transform:rotate(-3deg);vertical-align:middle;letter-spacing:1px;opacity:.85;font-family:SimHei,serif}
+.post-lock {
+  font-size: 14px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.post-hidden-note {
+  font-size: 12px;
+  color: #e6a23c;
+  margin: 4px 0;
+  padding: 4px 8px;
+  background: rgba(230, 162, 60, 0.1);
+  border-radius: 4px;
+}
+.post-stamp-seal {
+  display: inline-block;
+  color: #c0392b;
+  border: 2px solid #c0392b;
+  border-radius: 4px;
+  padding: 0px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  transform: rotate(-3deg);
+  vertical-align: middle;
+  letter-spacing: 1px;
+  line-height: 15px;
+  opacity: 0.85;
+  font-family: SimHei, serif;
+}
 </style>

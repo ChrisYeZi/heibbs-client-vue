@@ -36,7 +36,9 @@
         params: { id: uid },
       }"
     />
+    <van-cell icon="balance-o" title="会馆财政" is-link to="/block-finance" />
     <van-cell icon="medal-o" title="勋章" is-link to="/medal-page" />
+    <van-cell icon="notes-o" title="帖子" is-link to="/my-posts" />
     <van-cell icon="label-o" title="任务" is-link to="/task" />
     <van-cell icon="gold-coin-o" title="积分" is-link to="/credits" />
     <van-cell icon="send-gift-o" title="物品" is-link to="/inventory" />

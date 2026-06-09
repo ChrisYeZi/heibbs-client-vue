@@ -20,10 +20,7 @@
     >
       <div class="block-head">
         <div class="block-head-avatar">
-          <el-avatar
-            class="author-avatar"
-            :src="item?.imgUrl"
-          />
+          <img width="10px" class="author-avatar" :src="item?.imgUrl" />
         </div>
         <div class="block-head-title">
           {{ item?.name }}
@@ -33,9 +30,9 @@
         <div class="block-content-icon">
           <van-icon name="manager-o">馆长: {{ item?.management }}</van-icon>
         </div>
-        <div class="block-content-icon">
+        <!-- <div class="block-content-icon">
           <van-icon name="gold-coin-o">妖灵币: {{ item?.finance }}</van-icon>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -113,8 +110,8 @@ export default defineComponent({
     max-width: 800px;
   }
   .block-list {
-    width: 45%;
-    min-width: 320px;
+    width: 47%;
+    min-width: 350px;
     padding: 5px 10px;
     border-radius: 7px;
     border: solid 1px rgba(0, 0, 0, 0.05);
@@ -130,6 +127,9 @@ export default defineComponent({
       margin-bottom: 5px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       .block-head-avatar {
+        img {
+          width: 30px;
+        }
       }
       .block-head-title {
         margin-left: 10px;
@@ -145,7 +145,7 @@ export default defineComponent({
       font-size: 14px;
       line-height: 1.5em;
       .block-content-icon {
-        width: 50%;
+        // width: 50%;
       }
     }
   }

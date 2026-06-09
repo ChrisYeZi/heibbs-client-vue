@@ -150,7 +150,8 @@
 
 <script lang="ts">
 import { ref, defineComponent, computed, watch } from "vue";
-import { GetPostListAPI, SearchPostAPI, SetPostStateAPI, DeletePostAPI, GetActiveStampsAPI, SetPostStampAPI } from "@/api/index";
+import { SearchPostAPI, SetPostStateAPI, DeletePostAPI, GetActiveStampsAPI, SetPostStampAPI } from "@/api/index";
+import instance from "@/config/request/request";
 import { useRouter, useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 
@@ -283,9 +284,8 @@ export default defineComponent({
             keyword: searchKeyword.value
           } as SearchParams);
         } else {
-          res = await GetPostListAPI({
-            current: currentPage.value,
-            size: pageSize.value,
+          res = await instance.get("/post/getadminlist", {
+            params: { current: currentPage.value, size: pageSize.value },
           });
         }
 

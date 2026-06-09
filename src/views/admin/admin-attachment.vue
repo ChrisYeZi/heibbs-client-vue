@@ -54,7 +54,7 @@
 import { ref, watch, defineComponent } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import config from "@/config/index";
-import instance from "@/config/request/request";
+import { GetAdminAttachmentListAPI, DeleteAdminAttachmentAPI } from "@/api/index";
 
 interface AttachItem { aid:number;filename:string;filesize:number;attachment:string;category:string;attachmentType:string;systemCategory:string;isimage:number;formattedDateline:string; }
 interface PageResult<T> { records:T[]; total?:number; }
@@ -74,7 +74,7 @@ export default defineComponent({
       const params:any={pageNum:currentPage.value,pageSize:pageSize.value};
       if(filterCategory.value&&filterCategory.value!=='all')params.category=filterCategory.value;
       if(filterType.value!=='all')params.attachmentType=filterType.value;
-      const r=await instance.get("/admin/attachment/list",{params});
+      const r=await GetAdminAttachmentListAPI(params);
       if(r.status===200)list.value=r.data;
       loading.value=false;
     };
@@ -83,7 +83,7 @@ export default defineComponent({
     const getFileIcon=(cat:string)=>({image:'🖼️',document:'📄',archive:'📦',audio:'🎵',video:'🎬'} as any)[cat]||'📎';
     const formatSize=(s:number)=>s<1024?s+'B':s<1048576?(s/1024).toFixed(1)+'KB':(s/1048576).toFixed(1)+'MB';
     const copyUrl=(item:AttachItem)=>{navigator.clipboard.writeText(baseUrl+item.attachment).then(()=>ElMessage.success("已复制"))};
-    const handleDelete=(aid:number)=>{ElMessageBox.confirm("确定删除?","提示",{type:"warning"}).then(async()=>{await instance.delete("/admin/attachment/"+aid);fetchData()})};
+    const handleDelete=(aid:number)=>{ElMessageBox.confirm("确定删除?","提示",{type:"warning"}).then(async()=>{await DeleteAdminAttachmentAPI(aid);fetchData()})};
     const handlePageChange=(p:number)=>{currentPage.value=p;fetchData()};
     watch([filterType, filterCategory], ()=>{ currentPage.value=1; fetchData(); });
     fetchData();

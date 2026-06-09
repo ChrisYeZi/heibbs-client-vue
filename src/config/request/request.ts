@@ -1,9 +1,9 @@
 import axios from 'axios'
 // 创建axios实例
+import config from '@/config/index'
 const request = axios.create({
-    // baseURL: 'http://api.heibbs.net:8081/api',// 所有的请求地址前缀部分(没有后端请求不用写)
-    baseURL: 'http://127.0.0.1:8081/api',// 所有的请求地址前缀部分(没有后端请求不用写)
-    timeout: 80000, // 请求超时时间(毫秒)
+    baseURL: config.baseApi,
+    timeout: 80000,
     withCredentials: false,// 异步请求携带cookie
     // headers: {
     // 设置后端需要的传参类型

@@ -20,6 +20,10 @@
         <el-form-item label="图片URL"><el-input v-model="form.imageUrl"/></el-form-item>
         <el-form-item label="分类"><el-radio-group v-model="form.categoryId"><el-radio :label="1">传奇勋章</el-radio><el-radio :label="2">普通勋章</el-radio></el-radio-group></el-form-item>
         <el-form-item label="获取条件"><el-input v-model="form.conditionDesc"/></el-form-item>
+        <el-form-item label="注册时间条件">
+          <el-date-picker v-model="form.regdateBefore" type="datetime" placeholder="在此日期之前注册才可获得" value-format="X" style="width:100%"/>
+          <span style="font-size:11px;color:#909399">留空=无限制</span>
+        </el-form-item>
         <el-form-item label="获取方式">
           <el-radio-group v-model="form.acquireType">
             <el-radio value="manual">人工发放</el-radio>
@@ -54,11 +58,11 @@ import { ElMessage, ElMessageBox } from "element-plus";
 export default defineComponent({
   name:"admin-medal",setup(){
     const loading=ref(true),list=ref<any>({records:[]}),dlg=ref(false),isEdit=ref(false),grantDlg=ref(false);
-    const form=reactive<any>({name:"",description:"",imageUrl:"",categoryId:1,conditionDesc:"",acquireType:"manual",creditType:"extcredits2",creditPrice:10,statusBool:true});
+    const form=reactive<any>({name:"",description:"",imageUrl:"",categoryId:1,conditionDesc:"",regdateBefore:null,acquireType:"manual",creditType:"extcredits2",creditPrice:10,statusBool:true});
     const grantForm=reactive({medalId:0,uids:""});
     const fetch=async()=>{loading.value=true;const r=await GetAdminMedalListAPI();if(r.status===200)list.value=r.data;loading.value=false};
-    const showAdd=()=>{isEdit.value=false;Object.assign(form,{id:undefined,name:"",description:"",imageUrl:"",categoryId:1,conditionDesc:"",acquireType:"manual",creditType:"extcredits2",creditPrice:10,statusBool:true});dlg.value=true};
-    const showEdit=(row:any)=>{isEdit.value=true;Object.assign(form,{...row,statusBool:row.status===1,acquireType:row.acquireType||'manual',creditType:row.creditType||'extcredits2',creditPrice:row.creditPrice||0});dlg.value=true};
+    const showAdd=()=>{isEdit.value=false;Object.assign(form,{id:undefined,name:"",description:"",imageUrl:"",categoryId:1,conditionDesc:"",regdateBefore:null,acquireType:"manual",creditType:"extcredits2",creditPrice:10,statusBool:true});dlg.value=true};
+    const showEdit=(row:any)=>{isEdit.value=true;Object.assign(form,{...row,statusBool:row.status===1,acquireType:row.acquireType||'manual',creditType:row.creditType||'extcredits2',creditPrice:row.creditPrice||0,regdateBefore:row.regdateBefore||null});dlg.value=true};
     const showGrant=(row:any)=>{grantForm.medalId=row.id;grantForm.uids="";grantDlg.value=true};
     const submit=async()=>{const d={...form,status:form.statusBool?1:0};const r=isEdit.value?await UpdateMedalAPI(d):await InsertMedalAPI(d);if(r.status===200){ElMessage.success(String(r.msg||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.msg||"失败"))};
     const submitGrant=async()=>{const r=await GrantMedalAPI(grantForm);if(r.status===200){ElMessage.success(String(r.msg||"成功"));grantDlg.value=false}else ElMessage.error(String(r.msg||"失败"))};

@@ -54,13 +54,20 @@
                   }}</span
                 >
                 {{ mainPost.author }}
-                <div class="author-medals" v-if="authorMedalMap[mainPost.authorid]?.length">
-                <img v-for="m in authorMedalMap[mainPost.authorid]" :key="m.id"
-                  :src="m.medalImageUrl" class="author-medal-img" :title="m.medalName"/>
-              </div>
+                <div
+                  class="author-medals"
+                  v-if="authorMedalMap[mainPost.authorid]?.length"
+                >
+                  <img
+                    v-for="m in authorMedalMap[mainPost.authorid]"
+                    :key="m.id"
+                    :src="m.medalImageUrl"
+                    class="author-medal-img"
+                    :title="m.medalName"
+                  />
+                </div>
               </div>
               <div class="post-time">{{ mainPost.formattedCreateTime }}</div>
-              
             </div>
           </div>
           <div class="post-tag">
@@ -156,7 +163,15 @@
             <tr v-for="record in mainPost.extcreditsRecords" :key="record.id">
               <td>{{ record.username }}</td>
               <td>{{ record.message }}</td>
-              <td><span v-for="(p,i) in getExtcreditsDesc(record)" :key="i" :class="{ neg: p.neg }" style="margin-right:4px">{{ p.text }}</span></td>
+              <td>
+                <span
+                  v-for="(p, i) in getExtcreditsDesc(record)"
+                  :key="i"
+                  :class="{ neg: p.neg }"
+                  style="margin-right: 4px"
+                  >{{ p.text }}</span
+                >
+              </td>
             </tr>
           </tbody>
         </table>
@@ -167,9 +182,14 @@
           >回复</el-button
         >
         <el-button type="info" text @click="handleToggleLike(mainPost.pid)"
-          ><span :class="mainPostLiked?'post-like':''">{{ mainPostLiked ? '❤' : '❤' }}&nbsp;</span> 赞 ({{ mainPostLikeCount }})</el-button
+          ><span :class="mainPostLiked ? 'post-like' : ''"
+            >{{ mainPostLiked ? "❤" : "❤" }}&nbsp;</span
+          >
+          赞 ({{ mainPostLikeCount }})</el-button
         >
-        <el-button type="info" text @click="openRatingDialog(mainPost.pid)">评分</el-button>
+        <el-button type="info" text @click="openRatingDialog(mainPost.pid)"
+          >评分</el-button
+        >
 
         <!-- 使用原生下拉菜单 -->
         <div class="dropdown-container">
@@ -269,7 +289,7 @@
                     }}</span
                   >
                   {{ comment.author }}
-                <Postbar :postObj="comment" />
+                  <Postbar :postObj="comment" />
                 </div>
                 <div class="comment-time">
                   {{ comment.formattedCreateTime }}
@@ -381,7 +401,15 @@
                   >
                     <td>{{ record.username }}</td>
                     <td>{{ record.message }}</td>
-                    <td><span v-for="(p,i) in getExtcreditsDesc(record)" :key="i" :class="{ neg: p.neg }" style="margin-right:4px">{{ p.text }}</span></td>
+                    <td>
+                      <span
+                        v-for="(p, i) in getExtcreditsDesc(record)"
+                        :key="i"
+                        :class="{ neg: p.neg }"
+                        style="margin-right: 4px"
+                        >{{ p.text }}</span
+                      >
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -395,7 +423,9 @@
                 @click="showCommentReply(comment, index)"
                 >回复</el-button
               >
-              <el-button type="info" text @click="openRatingDialog(comment.pid)">评分</el-button>
+              <el-button type="info" text @click="openRatingDialog(comment.pid)"
+                >评分</el-button
+              >
 
               <div class="dropdown-container">
                 <button
@@ -496,22 +526,76 @@
       @click="closeAllDropdowns"
     ></div>
 
+    <!-- 帖子操作对话框 -->
+    <el-dialog v-model="operateDlg" title="帖子操作" width="380px">
+      <el-radio-group
+        v-model="operateType"
+        size="small"
+        style="margin-bottom: 10px"
+      >
+        <el-radio-button value="state">状态设置</el-radio-button>
+        <el-radio-button value="stamp">图章设置</el-radio-button>
+      </el-radio-group>
+      <div v-if="operateType === 'state'" class="state-opts">
+        <el-radio-group v-model="operateState">
+          <el-radio
+            v-for="o in [
+              { v: 0, l: '正常' },
+              { v: 1, l: '隐藏内容' },
+              { v: 2, l: '关闭' },
+              { v: 3, l: '屏蔽并关闭' },
+              { v: 4, l: '全局置顶' },
+              { v: 5, l: '板块置顶' },
+            ]"
+            :key="o.v"
+            :value="o.v"
+            >{{ o.l }}</el-radio
+          >
+        </el-radio-group>
+      </div>
+      <div v-else>
+        <el-radio-group v-model="operateStamp">
+          <el-radio :value="null">无图章</el-radio>
+          <el-radio v-for="s in operateStampList" :key="s.id" :value="s.id">{{
+            s.name
+          }}</el-radio>
+        </el-radio-group>
+      </div>
+      <template #footer>
+        <el-button @click="operateDlg = false">取消</el-button>
+        <el-button type="primary" @click="submitOperate">确定</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 评分对话框 -->
     <el-dialog v-model="ratingDialogVisible" title="帖子评分" width="380px">
       <div class="rating-info">
         <p>评分帖子: #{{ ratingTargetPid }}</p>
-        <p style="font-size:12px;color:#909399;">请为以下积分类型设置评分值（正数加分，负数扣分）</p>
+        <p style="font-size: 12px; color: #909399">
+          请为以下积分类型设置评分值（正数加分，负数扣分）
+        </p>
       </div>
       <div class="rating-credits" v-if="ratingData">
-        <div v-for="(info, key) in ratingData" :key="key" class="rating-row" v-show="isActiveCredit(key)">
+        <div
+          v-for="(info, key) in ratingData"
+          :key="key"
+          class="rating-row"
+          v-show="isActiveCredit(key)"
+        >
           <span class="rating-label">{{ info.name }}</span>
-          <span class="rating-limit">剩余额度: {{ info.remainingPositive }}</span>
+          <span class="rating-limit"
+            >剩余额度: {{ info.remainingPositive }}</span
+          >
           <el-input-number
             v-model="ratingValues[key]"
             :min="info.singleMax > 0 ? -info.singleMax : -999"
-            :max="info.singleMax > 0 ? Math.min(info.singleMax, info.remainingPositive) : info.remainingPositive"
+            :max="
+              info.singleMax > 0
+                ? Math.min(info.singleMax, info.remainingPositive)
+                : info.remainingPositive
+            "
             size="small"
-            style="width:120px"
+            style="width: 120px"
             controls-position="right"
           />
         </div>
@@ -519,13 +603,18 @@
       <el-input
         v-model="ratingMessage"
         placeholder="评分留言（可选）"
-        style="margin-top:10px"
+        style="margin-top: 10px"
         maxlength="200"
         show-word-limit
       />
       <template #footer>
         <el-button @click="ratingDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitRating" :disabled="!hasRatingValue">提交评分</el-button>
+        <el-button
+          type="primary"
+          @click="submitRating"
+          :disabled="!hasRatingValue"
+          >提交评分</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -554,6 +643,7 @@ import {
   GetUserMedalsAPI,
   GetActiveStampsAPI,
   SetPostStampAPI,
+  SetPostStateAPI,
 } from "@/api/index";
 import Postbar from "@/components/common/Postbar.vue";
 import parsedContent from "@/assets/js/parsedContent";
@@ -752,7 +842,9 @@ export default defineComponent({
         try {
           const r = await GetUserMedalsAPI(aid);
           if (r.status === 200) authorMedalMap.value[aid] = r.data || [];
-        } catch (e) { authorMedalMap.value[aid] = []; }
+        } catch (e) {
+          authorMedalMap.value[aid] = [];
+        }
       }
     };
 
@@ -782,14 +874,35 @@ export default defineComponent({
     };
 
     // 生成积分变化描述
-    const creditNames = ['灵气','妖灵币','值钱玉佩','天明珠','积分5','积分6','积分7','积分8'];
+    const creditNames = [
+      "灵气",
+      "妖灵币",
+      "值钱玉佩",
+      "天明珠",
+      "积分5",
+      "积分6",
+      "积分7",
+      "积分8",
+    ];
     const getExtcreditsDesc = (record: ExtcreditsRecord) => {
-      const parts: {text:string, neg:boolean}[] = [];
-      const vals = [record.extcredits1,record.extcredits2,record.extcredits3,record.extcredits4,record.extcredits5,record.extcredits6,record.extcredits7,record.extcredits8];
-      for (let i=0;i<vals.length;i++) {
+      const parts: { text: string; neg: boolean }[] = [];
+      const vals = [
+        record.extcredits1,
+        record.extcredits2,
+        record.extcredits3,
+        record.extcredits4,
+        record.extcredits5,
+        record.extcredits6,
+        record.extcredits7,
+        record.extcredits8,
+      ];
+      for (let i = 0; i < vals.length; i++) {
         const v = vals[i];
         if (v == null || v === 0) continue;
-        parts.push({text: `${creditNames[i]}${v>0?'+':''}${v}`, neg: v<0});
+        parts.push({
+          text: `${creditNames[i]}${v > 0 ? "+" : ""}${v}`,
+          neg: v < 0,
+        });
       }
       return parts;
     };
@@ -960,25 +1073,42 @@ export default defineComponent({
       return Object.values(ratingValues.value).some((v: number) => v !== 0);
     });
 
-    const activeCredits = ["extcredits1", "extcredits2", "extcredits3", "extcredits4"];
+    const activeCredits = [
+      "extcredits1",
+      "extcredits2",
+      "extcredits3",
+      "extcredits4",
+    ];
 
     const isActiveCredit = (key: string) => activeCredits.includes(key);
 
     const openRatingDialog = async (pid: number) => {
       ratingTargetPid.value = pid;
       ratingMessage.value = "";
-      ratingValues.value = { extcredits1: 0, extcredits2: 0, extcredits3: 0, extcredits4: 0 };
+      ratingValues.value = {
+        extcredits1: 0,
+        extcredits2: 0,
+        extcredits3: 0,
+        extcredits4: 0,
+      };
       try {
         const res = await GetRatingRemainingAPI();
         if (res.status === 200) ratingData.value = res.data;
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        /* ignore */
+      }
       ratingDialogVisible.value = true;
     };
 
     const submitRating = async () => {
       try {
-        const data: any = { pid: ratingTargetPid.value, message: ratingMessage.value };
-        activeCredits.forEach(k => { data[k] = ratingValues.value[k] || 0; });
+        const data: any = {
+          pid: ratingTargetPid.value,
+          message: ratingMessage.value,
+        };
+        activeCredits.forEach((k) => {
+          data[k] = ratingValues.value[k] || 0;
+        });
         const res = await UserExtcreditsChangeAPI(data);
         if (res.status === 200) {
           ElMessage.success(String(res.msg || "评分成功"));
@@ -992,20 +1122,37 @@ export default defineComponent({
     };
 
     // 图章设置
-    const openStampSelect = async (pid: number) => {
-      try {
-        const stampRes = await GetActiveStampsAPI();
-        if (stampRes.status !== 200) return;
-        const stamps: any[] = stampRes.data || [];
-        const options = [{ label: "无图章", value: null }, ...stamps.map(s => ({ label: s.name, value: s.id }))];
-        // 简单的选择弹窗
-        const { value: idx } = await ElMessageBox.prompt("输入序号选择图章:\n" + options.map((o,i)=>`${i}: ${o.label}`).join("\n"), "设置图章", { inputType: "number", inputValidator: (v:any) => { const n=parseInt(v); return n>=0&&n<options.length?true:"无效序号" } });
-        const sel = options[parseInt(idx)];
-        if (sel) {
-          const r = await SetPostStampAPI(pid, sel.value);
-          ElMessage[r.status===200?'success':'error'](String(r.msg||''));
-        }
-      } catch(e) {}
+    const operateDlg = ref(false);
+    const operatePost = ref<any>(null);
+    const operateType = ref("state"); // state | stamp
+    const operateState = ref(0);
+    const operateStamp = ref<number | null>(null);
+    const operateStampList = ref<any[]>([]);
+
+    const openPostOperate = async (post: any) => {
+      operatePost.value = post;
+      operateType.value = "state";
+      operateState.value = post.state || 0;
+      operateStamp.value = post.stampId || null;
+      const r = await GetActiveStampsAPI();
+      operateStampList.value = r.data || [];
+      operateDlg.value = true;
+    };
+
+    const submitOperate = async () => {
+      const post = operatePost.value;
+      if (!post) return;
+      if (operateType.value === "state") {
+        const r = await SetPostStateAPI({
+          pid: post.pid,
+          state: operateState.value,
+        });
+        ElMessage[r.status === 200 ? "success" : "error"](String(r.msg || ""));
+      } else {
+        const r = await SetPostStampAPI(post.pid, operateStamp.value);
+        ElMessage[r.status === 200 ? "success" : "error"](String(r.msg || ""));
+      }
+      operateDlg.value = false;
     };
 
     // 处理主帖操作
@@ -1016,7 +1163,7 @@ export default defineComponent({
 
       switch (action) {
         case "operate":
-          openStampSelect(mainPost.value!.pid);
+          openPostOperate(mainPost.value!);
           break;
         case "report":
           ElMessageBox.prompt("请输入举报原因", "举报帖子", {
@@ -1029,14 +1176,19 @@ export default defineComponent({
               if (val.length > 500) return "举报原因不能超过500字";
               return true;
             },
-          }).then(async ({ value }: any) => {
-            const res = await SubmitReportAPI({ pid: mainPost.value!.pid, reason: value.trim() });
-            if (res.status === 200) {
-              ElMessage.success(String(res.msg || "举报已提交"));
-            } else {
-              ElMessage.error(String(res.msg || "举报提交失败"));
-            }
-          }).catch(() => {});
+          })
+            .then(async ({ value }: any) => {
+              const res = await SubmitReportAPI({
+                pid: mainPost.value!.pid,
+                reason: value.trim(),
+              });
+              if (res.status === 200) {
+                ElMessage.success(String(res.msg || "举报已提交"));
+              } else {
+                ElMessage.error(String(res.msg || "举报提交失败"));
+              }
+            })
+            .catch(() => {});
           break;
         case "share":
           navigator.clipboard
@@ -1089,14 +1241,19 @@ export default defineComponent({
               if (val.length > 500) return "举报原因不能超过500字";
               return true;
             },
-          }).then(async ({ value }: any) => {
-            const res = await SubmitReportAPI({ pid: comment.pid, reason: value.trim() });
-            if (res.status === 200) {
-              ElMessage.success(String(res.msg || "举报已提交"));
-            } else {
-              ElMessage.error(String(res.msg || "举报提交失败"));
-            }
-          }).catch(() => {});
+          })
+            .then(async ({ value }: any) => {
+              const res = await SubmitReportAPI({
+                pid: comment.pid,
+                reason: value.trim(),
+              });
+              if (res.status === 200) {
+                ElMessage.success(String(res.msg || "举报已提交"));
+              } else {
+                ElMessage.error(String(res.msg || "举报提交失败"));
+              }
+            })
+            .catch(() => {});
           break;
         case "share":
           const commentUrl = `${window.location.href}#comment-${comment.pid}`;
@@ -1167,7 +1324,10 @@ export default defineComponent({
           await loadAllAvatars();
 
           // 加载作者勋章
-          const allAuthorIds = [mainPost.value!.authorid, ...comments.value.map((c: any) => c.authorid)];
+          const allAuthorIds = [
+            mainPost.value!.authorid,
+            ...comments.value.map((c: any) => c.authorid),
+          ];
           loadAuthorMedals(allAuthorIds);
 
           // 加载主帖点赞数
@@ -1230,12 +1390,12 @@ export default defineComponent({
     };
 
     const getAttachUrl = (attach: Attachment) => {
-      const baseUrl = "http://127.0.0.1:8081/api/attachment/";
+      const baseUrl = config.baseApi; // attachment path already starts with /attachment/
       return baseUrl + attach.attachment;
     };
 
     const getImgUrl = (url: any) => {
-      const baseUrl = "http://127.0.0.1:8081/api/attachment/";
+      const baseUrl = config.baseApi; // attachment path already starts with /attachment/
       return baseUrl + url;
     };
 
@@ -1444,6 +1604,13 @@ export default defineComponent({
       isActiveCredit,
       openRatingDialog,
       submitRating,
+      openPostOperate,
+      operateDlg,
+      operateType,
+      operateState,
+      operateStamp,
+      operateStampList,
+      submitOperate,
     };
   },
 });
@@ -1541,8 +1708,18 @@ export default defineComponent({
           color: #888;
         }
       }
-      .author-medals { display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
-      .author-medal-img { width:24px; height:24px; border-radius:3px; object-fit:contain; }
+      .author-medals {
+        display: flex;
+        gap: 4px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+      }
+      .author-medal-img {
+        width: 24px;
+        height: 24px;
+        border-radius: 3px;
+        object-fit: contain;
+      }
     }
   }
 
@@ -1597,8 +1774,8 @@ export default defineComponent({
     padding-left: 46px;
     margin-top: 8px;
   }
-  .post-like{
-    color: rgba(236, 98, 18, 0.89);;
+  .post-like {
+    color: rgba(236, 98, 18, 0.89);
   }
 }
 
@@ -1751,7 +1928,10 @@ export default defineComponent({
     tr:nth-child(even) {
       background-color: #fafafa;
     }
-    .neg { color: #e8743a; font-weight: 500; }
+    .neg {
+      color: #e8743a;
+      font-weight: 500;
+    }
   }
 }
 

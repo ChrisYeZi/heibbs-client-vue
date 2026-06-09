@@ -24,7 +24,6 @@
       </div>
 
       <!-- 明细列表 -->
-      <h3 class="section-title">积分明细</h3>
       <van-empty v-if="!records.length" description="暂无记录" />
       <div class="record-list">
         <div v-for="r in records" :key="r.id" class="record-item">
@@ -43,13 +42,16 @@
           <div class="rec-time">{{ fmtTime(r.time) }}</div>
         </div>
       </div>
+      <el-pagination v-if="recTotal>11" layout="prev,pager,next" :total="recTotal"
+        :page-size="11" :current-page="recPage" @current-change="p=>{recPage=p;fetch()}" size="small"
+        style="justify-content:center;margin-top:11px"/>
     </template>
   </div>
 </template>
 
 <script lang="ts">
 import { ref, defineComponent, onMounted } from "vue";
-import instance from "@/config/request/request";
+import { GetCreditDetailAPI } from "@/api/index";
 import { Loading, Empty } from "vant";
 
 export default defineComponent({
@@ -58,7 +60,8 @@ export default defineComponent({
   setup() {
     const loading = ref(true),
       count = ref<any>(null),
-      records = ref<any[]>([]);
+      records = ref<any[]>([]),
+      recPage = ref(1), recTotal = ref(0);
     const names = ["灵气", "妖灵币", "值钱玉佩", "天明珠"];
 
     const getChanges = (r: any) => {
@@ -80,15 +83,16 @@ export default defineComponent({
 
     const fetch = async () => {
       loading.value = true;
-      const r = await instance.get("/count/detail");
+      const r = await GetCreditDetailAPI({pageNum:recPage.value,pageSize:11});
       if (r.status === 200) {
         count.value = r.data.count;
         records.value = r.data.records || [];
+        recTotal.value = r.data.total || 0;
       }
       loading.value = false;
     };
     onMounted(fetch);
-    return { loading, count, records, getChanges, fmtTime };
+    return { loading, count, records, recPage, recTotal, fetch, getChanges, fmtTime };
   },
 });
 </script>
@@ -96,10 +100,9 @@ export default defineComponent({
 <style scoped>
 .credits-page {
   margin-top: 60px;
-  padding: 10px 20px;
-  min-height: 100vh;
+  padding: 11px 20px;
   background: rgba(255, 255, 255, 0.9);
-  border-radius: 10px;
+  border-radius: 11px;
 }
 h2 {
   font-size: 18px;
@@ -114,8 +117,8 @@ h2 {
 .credit-card {
   background: linear-gradient(135deg, #ffc169, #fccb74);
   color: #fff;
-  border-radius: 10px;
-  padding: 12px 8px;
+  border-radius: 11px;
+  padding: 11px 8px;
   text-align: center;
 }
 .cc-val {
@@ -123,23 +126,23 @@ h2 {
   font-weight: 700;
 }
 .cc-label {
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0.9;
   margin-top: 2px;
 }
 .section-title {
-  font-size: 15px;
+  font-size: 11px;
   margin-bottom: 8px;
   color: #666;
 }
 .record-list {
   background: #fff;
-  border-radius: 10px;
+  border-radius: 11px;
 }
 .record-item {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
+  padding: 11px 11px;
   border-bottom: 1px solid #f0f0f0;
   font-size: 13px;
   gap: 8px;
@@ -164,7 +167,7 @@ h2 {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  font-size: 12px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .rec-changes span {

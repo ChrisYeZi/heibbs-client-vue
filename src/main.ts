@@ -24,5 +24,37 @@ app.config.globalProperties.$version = "alpha-0.1.0"
 app.use(store)
    .use(router)
    .use(vant)
-   .use(ElementPlus)  // 注册 Element Plus（新增）
+   .use(ElementPlus)
    .mount('#app')
+
+// ====== 移动端硬件返回键处理 + 状态栏 ======
+let backPressed = 0
+document.addEventListener('backbutton', (e) => {
+  const currentRoute = router.currentRoute.value
+  const isRoot = currentRoute.path === '/index' || currentRoute.path === '/' || currentRoute.path === '/login'
+
+  if (isRoot) {
+    const now = Date.now()
+    if (now - backPressed < 2000) {
+      (navigator as any).app?.exitApp?.() // Cordova
+    } else {
+      backPressed = now
+      // 提示再按一次退出（可选：用Toast提示）
+    }
+  } else {
+    router.back()
+  }
+  e.preventDefault()
+}, false)
+
+// 状态栏（Cordova）
+document.addEventListener('deviceready', () => {
+  try {
+    const win = window as any
+    if (win.StatusBar) {
+      win.StatusBar.overlaysWebView(false)
+      win.StatusBar.styleDefault()
+      win.StatusBar.backgroundColorByHexString('#FCF9E0')
+    }
+  } catch (e) { /* ignore */ }
+}, false)

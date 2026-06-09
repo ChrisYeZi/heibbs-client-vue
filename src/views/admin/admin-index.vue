@@ -118,8 +118,7 @@
 <script lang="ts">
 import { ref, onMounted, defineComponent } from "vue";
 import { useRouter } from "vue-router";
-import { GetDashboardAPI } from "@/api/index";
-import instance from "@/config/request/request";
+import { GetDashboardAPI, GetSystemConfigAPI, SetSystemConfigAPI } from "@/api/index";
 import { ElMessage } from "element-plus";
 
 // 仪表盘数据类型
@@ -154,12 +153,12 @@ export default defineComponent({
     const loginEnabled = ref(true);
     const fetchConfig = async () => {
       try {
-        const r: any = await instance.get("/admin/config/all");
+        const r = await GetSystemConfigAPI();
         if (r.status === 200) loginEnabled.value = r.data.login_enabled === 'true';
       } catch (e) {}
     };
     const toggleLogin = async (val: boolean) => {
-      const r: any = await instance.post("/admin/config/set", { key: "login_enabled", value: val ? "true" : "false" });
+      const r = await SetSystemConfigAPI("login_enabled", val ? "true" : "false");
       ElMessage[r.status===200?'success':'error'](String(r.msg||''));
     };
 

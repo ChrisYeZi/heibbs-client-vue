@@ -44,17 +44,21 @@ export default {
   },
   methods: {
     initSwipeGesture() {
-      let startX = 0, startY = 0;
+      let startX = 0,
+        startY = 0;
       this._touchStart = (e) => {
-        if (e.touches.length === 1) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }
+        if (e.touches.length === 1) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
       };
       this._touchEnd = (e) => {
         if (e.changedTouches.length !== 1) return;
         const dx = e.changedTouches[0].clientX - startX;
         const dy = e.changedTouches[0].clientY - startY;
-        if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+        if (Math.abs(dx) < 5 || Math.abs(dx) < Math.abs(dy)) return;
         const navbarOpen = store.state.system.navbarUserShow;
-        if (dx > 100 && startX < 90 && !navbarOpen) {
+        if (dx > 100 && startX < 100 && !navbarOpen) {
           // 右滑(从左边缘) → 打开侧边栏
           store.commit("system/SET_NAVBARUSER_SHOW", true);
         } else if (dx < -60 && navbarOpen) {
@@ -62,7 +66,9 @@ export default {
           store.commit("system/SET_NAVBARUSER_SHOW", false);
         }
       };
-      document.addEventListener("touchstart", this._touchStart, { passive: true });
+      document.addEventListener("touchstart", this._touchStart, {
+        passive: true,
+      });
       document.addEventListener("touchend", this._touchEnd, { passive: false });
     },
     init() {
