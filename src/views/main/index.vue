@@ -496,12 +496,13 @@ export default defineComponent({
 <style lang="scss" scoped>
 .index {
   background: rgba(255, 255, 255, 0.9);
-  margin-top: 50px;
   margin-bottom: 60px;
   margin: 50px 10px 60px 10px;
+  margin-top: -100px;
   padding: 15px 10px;
+  padding-top: 150px;
   line-height: 1.5em;
-  height: calc(100vh - 140px);
+  height: calc(100vh - 125px);
   overflow-y: auto;
 
   .search-bar {

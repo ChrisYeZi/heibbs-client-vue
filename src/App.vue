@@ -7,6 +7,7 @@
 <script lang="ts">
 import { defineComponent, onMounted } from "vue";
 import router from "@/router";
+import store from "@/store";
 import { GetLatestVersionAPI } from "@/api/index";
 
 export default defineComponent({
@@ -63,18 +64,22 @@ export default defineComponent({
         const deltaX = e.changedTouches[0].clientX - touchStartX;
         const deltaY = e.changedTouches[0].clientY - touchStartY;
         const screenWidth = window.innerWidth;
+        const absDx = Math.abs(deltaX);
+        const absDy = Math.abs(deltaY);
+        if (absDx < 50 || absDx < absDy) return;
 
-        // 检测右边缘滑动：起始点靠近右边缘 + 向左滑动距离>50px + 水平滑动为主
-        if (
-          touchStartX > screenWidth - 30 &&
-          deltaX < -50 &&
-          Math.abs(deltaX) > Math.abs(deltaY) * 1.5
-        ) {
-          // 仅在非首页时返回上一级
+        // 全屏左向右滑 → 打开 NavbarUser（侧边栏）
+        if (deltaX > 50 && touchStartX < screenWidth * 0.7) {
+          store.commit("system/SET_NAVBARUSER_SHOW", true);
+          e.preventDefault();
+          return;
+        }
+
+        // 右边缘向左滑 → 返回上一级（非首页）
+        if (deltaX < -50 && touchStartX > screenWidth - 30) {
           if (router.currentRoute.value.path !== "/index") {
             router.back();
           }
-          // 阻止默认行为防止退出APP
           e.preventDefault();
         }
       }

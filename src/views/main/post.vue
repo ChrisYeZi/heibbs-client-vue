@@ -181,10 +181,7 @@
         <el-button type="info" text @click="showPostReply = true"
           >回复</el-button
         >
-        <el-button type="info" text @click="handleToggleLike(mainPost.pid)"
-          ><span :class="mainPostLiked ? 'post-like' : ''"
-            >{{ mainPostLiked ? "❤" : "❤" }}&nbsp;</span
-          >
+        <el-button type="info" text @click="handleToggleLike(mainPost.pid)">
           赞 ({{ mainPostLikeCount }})</el-button
         >
         <el-button type="info" text @click="openRatingDialog(mainPost.pid)"
@@ -1191,8 +1188,9 @@ export default defineComponent({
             .catch(() => {});
           break;
         case "share":
+          const shareUrl = `https://www.heibbs.net/#/post/${mainPost.value!.pid}`;
           navigator.clipboard
-            .writeText(window.location.href)
+            .writeText(shareUrl)
             .then(() => ElMessage.success("分享链接已复制到剪贴板"))
             .catch(() => ElMessage.success("主帖链接已复制"));
           break;
@@ -1256,7 +1254,7 @@ export default defineComponent({
             .catch(() => {});
           break;
         case "share":
-          const commentUrl = `${window.location.href}#comment-${comment.pid}`;
+          const commentUrl = `https://www.heibbs.net/#/post/${comment.pid}`;
           navigator.clipboard
             .writeText(commentUrl)
             .then(() => ElMessage.success("评论链接已复制到剪贴板"))
@@ -1623,7 +1621,7 @@ export default defineComponent({
   padding: 15px 10px;
   border-radius: 10px;
   line-height: 1.6em;
-  margin: 70px 10px 0px 10px;
+  margin: 150px 10px 0px 10px;
   position: relative;
   z-index: 1;
 }

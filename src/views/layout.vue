@@ -104,10 +104,10 @@ export default {
 .layout {
   .layout-box {
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 10px auto;
   }
   .layout-copyright {
-    margin-top: 10px;
+    margin-top: 90px;
     padding-top: 20px;
     margin-bottom: 60px;
     height: 100px;

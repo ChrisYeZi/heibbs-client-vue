@@ -3,43 +3,33 @@ import App from './App.vue'
 import router from '@/router'
 import store from './store'
 
-// 创建应用实例
 const app = createApp(App)
 
-// 引入 Vant UI
 import vant from 'vant'
 import 'vant/lib/index.css'
 
-// 引入 Element Plus（新增）
 import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'  // Element Plus 样式
+import 'element-plus/dist/index.css'
 
-// 引入 Axios
 import axios from 'axios'
-// axios.defaults.baseURL = 'https://127.0.0.1:8081/api'  // 按需开启
 app.config.globalProperties.$axios = axios
 app.config.globalProperties.$version = "alpha-0.1.0"
 
-// 注册所有插件
-app.use(store)
-   .use(router)
-   .use(vant)
-   .use(ElementPlus)
-   .mount('#app')
+app.use(store).use(router).use(vant).use(ElementPlus).mount('#app')
 
-// ====== 移动端硬件返回键处理 + 状态栏 ======
+// ============ 移动端原生功能 ============
+
+// 1. 硬件返回键：路由返回上一级，根目录双击退出
 let backPressed = 0
-document.addEventListener('backbutton', (e) => {
-  const currentRoute = router.currentRoute.value
-  const isRoot = currentRoute.path === '/index' || currentRoute.path === '/' || currentRoute.path === '/login'
-
-  if (isRoot) {
+document.addEventListener('backbutton', (e: any) => {
+  const path = router.currentRoute.value.path
+  if (path === '/index' || path === '/') {
     const now = Date.now()
     if (now - backPressed < 2000) {
-      (navigator as any).app?.exitApp?.() // Cordova
+      (navigator as any).app?.exitApp?.()
     } else {
-      backPressed = now
-      // 提示再按一次退出（可选：用Toast提示）
+      backPressed = now;
+      (window as any).Toast?.fail?.('再按一次退出')
     }
   } else {
     router.back()
@@ -47,7 +37,8 @@ document.addEventListener('backbutton', (e) => {
   e.preventDefault()
 }, false)
 
-// 状态栏（Cordova）
+// 2. 状态栏（Cordova deviceready）
+let statusBarReady = false
 document.addEventListener('deviceready', () => {
   try {
     const win = window as any
@@ -55,6 +46,58 @@ document.addEventListener('deviceready', () => {
       win.StatusBar.overlaysWebView(false)
       win.StatusBar.styleDefault()
       win.StatusBar.backgroundColorByHexString('#FCF9E0')
+      statusBarReady = true
     }
   } catch (e) { /* ignore */ }
+  // 处理deeplink
+  try {
+    const UniversalLinks = (window as any).handleOpenURL
+    if (typeof UniversalLinks !== 'undefined') {
+      UniversalLinks.subscribe(null, (eventData: any) => {
+        handleDeepLink(eventData.url)
+      })
+    }
+  } catch (e) {}
 }, false)
+
+// 3. 禁用双指缩放
+document.addEventListener('gesturestart', (e) => e.preventDefault())
+document.addEventListener('gesturechange', (e) => e.preventDefault())
+document.addEventListener('gestureend', (e) => e.preventDefault())
+document.addEventListener('touchmove', (e: any) => {
+  if (e.touches && e.touches.length > 1) e.preventDefault()
+}, { passive: false })
+
+// 4. 处理deeplink/分享链接跳转
+function handleDeepLink(url: string) {
+  try {
+    const match = url.match(/post\/(\d+)/)
+    if (match) {
+      const pid = match[1]
+      const goToPost = () => {
+        router.push('/post/' + pid)
+      }
+      // 兼容Cordova确认弹窗
+      if ((window as any).navigator?.notification?.confirm) {
+        (window as any).navigator.notification.confirm(
+          `是否跳转到帖子 #${pid}？`, goToPost, '站内链接', ['是', '否']
+        )
+      } else {
+        if (confirm(`是否跳转到帖子 #${pid}？`)) goToPost()
+      }
+    }
+  } catch (e) {}
+}
+
+// 监听Cordova URL变化
+;(window as any).handleOpenURL = (url: string) => handleDeepLink(url)
+
+// 启动时检查冷启动URL
+try {
+  const UniversalLinks = (window as any).UniversalLinks
+  if (typeof UniversalLinks !== 'undefined') {
+    UniversalLinks.subscribe(null, (eventData: any) => {
+      handleDeepLink(eventData.url)
+    })
+  }
+} catch (e) {}
