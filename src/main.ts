@@ -13,51 +13,40 @@ import 'element-plus/dist/index.css'
 
 import axios from 'axios'
 app.config.globalProperties.$axios = axios
-app.config.globalProperties.$version = "alpha-0.1.0"
+app.config.globalProperties.$version = "beta-0.05.000"
 
 app.use(store).use(router).use(vant).use(ElementPlus).mount('#app')
 
-// ============ 移动端原生功能 ============
-
-// 硬件返回键：路由返回上一级，根目录双击退出
-let backPressed = 0
-document.addEventListener('backbutton', (e: any) => {
-  const path = router.currentRoute.value.path
-  if (path === '/index' || path === '/') {
-    const now = Date.now()
-    if (now - backPressed < 2000) {
-      (navigator as any).app?.exitApp?.()
-    } else {
-      backPressed = now;
-      (window as any).Toast?.fail?.('再按一次退出')
-    }
-  } else {
-    router.back()
-  }
-  e.preventDefault()
+// ====== UniApp 返回键处理 ======
+document.addEventListener('plusready', () => {
+  let first: any = null
+  const webview = (window as any).plus?.webview?.currentWebview()
+  if (!webview) return
+  ;(window as any).plus.key.addEventListener('backbutton', () => {
+    webview.canBack((e: any) => {
+      if (e.canBack) {
+        webview.back()
+      } else {
+        if (!first) {
+          first = new Date().getTime()
+          ;(window as any).plus?.nativeUI?.toast?.('再按一次退出应用', { duration: 'short' })
+          setTimeout(() => { first = null }, 1000)
+        } else {
+          if (new Date().getTime() - first < 1000) {
+            ;(window as any).plus?.runtime?.quit?.()
+          }
+        }
+      }
+    })
+  })
 }, false)
 
-// 状态栏（Cordova deviceready）
-let statusBarReady = false
+// Deeplink
 document.addEventListener('deviceready', () => {
   try {
-    const win = window as any
-    if (win.StatusBar) {
-      win.StatusBar.overlaysWebView(false)
-      win.StatusBar.styleDefault()
-      win.StatusBar.backgroundColorByHexString('#FCF9E0')
-      statusBarReady = true
-    }
+    const ul = (window as any).handleOpenURL
+    if (typeof ul !== 'undefined') ul.subscribe(null, (ev: any) => handleDeepLink(ev.url))
   } catch (e) { /* ignore */ }
-  // 处理deeplink
-  try {
-    const UniversalLinks = (window as any).handleOpenURL
-    if (typeof UniversalLinks !== 'undefined') {
-      UniversalLinks.subscribe(null, (eventData: any) => {
-        handleDeepLink(eventData.url)
-      })
-    }
-  } catch (e) {}
 }, false)
 
 // 禁用双指缩放
@@ -68,36 +57,23 @@ document.addEventListener('touchmove', (e: any) => {
   if (e.touches && e.touches.length > 1) e.preventDefault()
 }, { passive: false })
 
-// 处理deeplink/分享链接跳转
+// Deeplink 跳转
 function handleDeepLink(url: string) {
   try {
-    const match = url.match(/post\/(\d+)/)
-    if (match) {
-      const pid = match[1]
-      const goToPost = () => {
-        router.push('/post/' + pid)
-      }
-      // 兼容Cordova确认弹窗
+    const m = url.match(/post\/(\d+)/)
+    if (m) {
+      const pid = m[1]
+      const go = () => router.push('/post/' + pid)
       if ((window as any).navigator?.notification?.confirm) {
-        (window as any).navigator.notification.confirm(
-          `是否跳转到帖子 #${pid}？`, goToPost, '站内链接', ['是', '否']
-        )
+        ;(window as any).navigator.notification.confirm(`跳转到帖子 #${pid}？`, go, '站内链接', ['是', '否'])
       } else {
-        if (confirm(`是否跳转到帖子 #${pid}？`)) goToPost()
+        if (confirm(`跳转到帖子 #${pid}？`)) go()
       }
     }
-  } catch (e) {}
+  } catch (e) { /* ignore */ }
 }
-
-// 监听Cordova URL变化
 ;(window as any).handleOpenURL = (url: string) => handleDeepLink(url)
-
-// 启动时检查冷启动URL
 try {
-  const UniversalLinks = (window as any).UniversalLinks
-  if (typeof UniversalLinks !== 'undefined') {
-    UniversalLinks.subscribe(null, (eventData: any) => {
-      handleDeepLink(eventData.url)
-    })
-  }
-} catch (e) {}
+  const ul = (window as any).UniversalLinks
+  if (typeof ul !== 'undefined') ul.subscribe(null, (ev: any) => handleDeepLink(ev.url))
+} catch (e) { /* ignore */ }

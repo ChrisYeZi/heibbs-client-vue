@@ -215,7 +215,7 @@ export default defineComponent({
     // 图章相关
     const stampDialogVisible=ref(false),stampTargetPid=ref(0),selectedStampId=ref<number|null>(null),stampList=ref<any[]>([]);
     const openStampDialog=async(row:any)=>{stampTargetPid.value=row.pid;selectedStampId.value=row.stampId||null;const r=await GetActiveStampsAPI();if(r.status===200)stampList.value=r.data;stampDialogVisible.value=true};
-    const confirmSetStamp=async()=>{const r=await SetPostStampAPI(stampTargetPid.value,selectedStampId.value);if(r.status===200){ElMessage.success(String(r.msg||"设置成功"));stampDialogVisible.value=false;getData()}else ElMessage.error(String(r.msg||""))};
+    const confirmSetStamp=async()=>{const r=await SetPostStampAPI(stampTargetPid.value,selectedStampId.value);if(r.status===200){ElMessage.success(String(r.data||"设置成功"));stampDialogVisible.value=false;getData()}else ElMessage.error(String(r.data||""))};
 
     // 状态映射
     const statusMap = computed(() => ({
@@ -367,11 +367,11 @@ export default defineComponent({
       try {
         const res = await SetPostStateAPI({ pid, state: selectedState.value });
         if (res.status === 200) {
-          ElMessage.success(String(res.msg || "状态更新成功"));
+          ElMessage.success(String(res.data || "状态更新成功"));
           stateDialogVisible.value = false;
           getData(); // 刷新列表
         } else {
-          ElMessage.error(String(res.msg || "状态更新失败"));
+          ElMessage.error(String(res.data || "状态更新失败"));
         }
       } catch (error) {
         console.error("设置状态出错:", error);
@@ -401,7 +401,7 @@ export default defineComponent({
             ElMessage.success("删除成功");
             getData(); // 刷新列表
           } else {
-            ElMessage.error(String(res.msg || "删除失败"));
+            ElMessage.error(String(res.data || "删除失败"));
           }
         } catch (error) {
           console.error("删除帖子出错:", error);

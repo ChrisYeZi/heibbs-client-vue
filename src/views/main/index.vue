@@ -1,5 +1,6 @@
 <template>
-  <div class="index" ref="scrollContainer">
+  <van-pull-refresh v-model="refreshing" @refresh="onRefresh" class="index">
+  <div ref="scrollContainer">
     <!-- 搜索框 -->
     <div class="search-bar">
       <van-search
@@ -154,6 +155,7 @@
       <span v-else>已显示全部内容</span>
     </div>
   </div>
+  </van-pull-refresh>
 </template>
 
 <script lang="ts">
@@ -178,6 +180,7 @@ import {
   Loading,
   Icon,
   Search,
+  PullRefresh,
 } from "vant";
 import parsedContent from "@/assets/js/parsedContent";
 import router from "@/router";
@@ -254,6 +257,7 @@ export default defineComponent({
     [Loading.name]: Loading,
     [Icon.name]: Icon,
     [Search.name]: Search,
+    [PullRefresh.name]: PullRefresh,
   },
   setup() {
     const router = useRouter();
@@ -272,6 +276,12 @@ export default defineComponent({
     const hasMore = ref(true);
     // 排序类型：latestPost（最新发帖）/latestReply（最新回复），默认最新回复
     const sortType = ref<"latestPost" | "latestReply">("latestReply");
+    const refreshing = ref(false);
+    const onRefresh = async () => {
+      refreshing.value = true;
+      await changeSortType(sortType.value);
+      refreshing.value = false;
+    };
     const searchKeyword = ref("");
     const doSearch = () => {
       if (searchKeyword.value.trim()) {
@@ -480,6 +490,7 @@ export default defineComponent({
       gotoInfo,
       handleBannerClick,
       sortType,
+      refreshing, onRefresh,
       searchKeyword,
       doSearch,
       changeSortType, // 导出切换方法

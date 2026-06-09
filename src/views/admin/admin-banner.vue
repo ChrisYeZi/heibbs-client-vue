@@ -330,7 +330,7 @@ export default defineComponent({
         const res: ItypeAPI<BannerItem[]> = await SelectBannerAPI();
 
         const status = toPrimitive.number(res.status);
-        const msg = toPrimitive.string(res.msg);
+        const msg = String(res.data ?? '');
 
         if (status === 200 && res.data) {
           bannerList.value = res.data;
@@ -403,7 +403,7 @@ export default defineComponent({
         }
 
         const status = toPrimitive.number(res.status);
-        const msg = toPrimitive.string(res.msg);
+        const msg = String(res.data ?? '');
 
         if (status === 200) {
           ElMessage.success(isEdit.value ? "Banner更新成功" : "Banner添加成功");
@@ -438,7 +438,7 @@ export default defineComponent({
         if (confirm) {
           const res: ItypeAPI<String> = await DeleteBannerAPI(id);
           const status = toPrimitive.number(res.status);
-          const msg = toPrimitive.string(res.msg);
+          const msg = String(res.data ?? '');
 
           if (status === 200) {
             ElMessage.success("Banner删除成功");

@@ -554,7 +554,7 @@ export default defineComponent({
           blockList.value = res.data || [];
           total.value = blockList.value.length;
         } else {
-          ElMessage.error(`获取会馆列表失败: ${res.msg}`);
+          ElMessage.error(`获取会馆列表失败: ${res.data}`);
         }
       } catch (error) {
         console.error("获取会馆列表出错:", error);
@@ -651,7 +651,7 @@ export default defineComponent({
             ElMessage.success("删除成功");
             getBlockList();
           } else {
-            ElMessage.error(`删除失败: ${res.msg}`);
+            ElMessage.error(`删除失败: ${res.data}`);
           }
         }
       } catch (error) {
@@ -702,7 +702,7 @@ export default defineComponent({
           getBlockList();
         } else {
           ElMessage.error(
-            `${dialogType.value === "add" ? "添加" : "更新"}失败: ${res.msg}`
+            `${dialogType.value === "add" ? "添加" : "更新"}失败: ${res.data}`
           );
         }
       } catch (error) {

@@ -44,8 +44,8 @@ export default defineComponent({
     const showAdd=()=>{isEdit.value=false;Object.assign(form,{id:undefined,name:"",description:"",icon:"",type:"consumable",rarity:0,price:0});dlg.value=true};
     const showEdit=(row:any)=>{isEdit.value=true;Object.assign(form,row);dlg.value=true};
     const showGrant=(row:any)=>{grantForm.itemId=row.id;grantForm.quantity=1;grantForm.uids="";grantDlg.value=true};
-    const submit=async()=>{const r=isEdit.value?await UpdateItemAPI(form):await InsertItemAPI(form);if(r.status===200){ElMessage.success(String(r.msg||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.msg||"失败"))};
-    const submitGrant=async()=>{const r=await GrantItemAPI(grantForm);if(r.status===200){ElMessage.success(String(r.msg||"成功"));grantDlg.value=false}else ElMessage.error(String(r.msg||"失败"))};
+    const submit=async()=>{const r=isEdit.value?await UpdateItemAPI(form):await InsertItemAPI(form);if(r.status===200){ElMessage.success(String(r.data||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.data||"失败"))};
+    const submitGrant=async()=>{const r=await GrantItemAPI(grantForm);if(r.status===200){ElMessage.success(String(r.data||"成功"));grantDlg.value=false}else ElMessage.error(String(r.data||"失败"))};
     const handleDelete=(id:number)=>{ElMessageBox.confirm("确定删除?","提示",{type:"warning"}).then(async()=>{await DeleteItemAPI(id);fetch()})};
     fetch();return{loading,list,dlg,isEdit,form,grantDlg,grantForm,showAdd,showEdit,showGrant,submit,submitGrant,handleDelete};
   }

@@ -72,8 +72,8 @@ export default defineComponent({
         isLoading.value = false;
       } else {
         isLoading.value = false;
-        blockUnknow.value = res.msg;
-        console.error("获取板块数据失败:", res.msg);
+        blockUnknow.value = res.data;
+        console.error("获取板块数据失败:", res.data);
       }
     };
 

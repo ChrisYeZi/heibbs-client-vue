@@ -1,5 +1,6 @@
 <template>
-  <div class="shop-page">
+  <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+<div class="shop-page">
     <div class="shop-tabs">
       <span
         :class="{ active: filterType === '' }"
@@ -124,13 +125,14 @@
       >
     </el-dialog>
   </div>
+</van-pull-refresh>
 </template>
 
 <script lang="ts">
 import { ref, defineComponent } from "vue";
 import { GetShopListingsAPI, BuyFixedAPI, PlaceBidAPI } from "@/api/index";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Loading, Empty } from "vant";
+import { Loading, Empty, PullRefresh } from "vant";
 
 const rarityColors: Record<number, string> = {
   0: "common",
@@ -141,7 +143,7 @@ const rarityColors: Record<number, string> = {
 
 export default defineComponent({
   name: "shop",
-  components: { VanLoading: Loading, VanEmpty: Empty },
+  components: { VanLoading: Loading, VanEmpty: Empty, [PullRefresh.name]: PullRefresh },
   setup() {
     const loading = ref(true),
       list = ref<any[]>([]),
@@ -179,7 +181,7 @@ export default defineComponent({
       if (r.status === 200) {
         ElMessage.success("购买成功");
         fetch();
-      } else ElMessage.error(String(r.msg));
+      } else ElMessage.error(String(r.data));
     };
     const showBid = (item: any) => {
       bidTarget.value = item;
@@ -213,7 +215,7 @@ export default defineComponent({
         ElMessage.success("出价成功");
         bidDlg.value = false;
         fetch();
-      } else ElMessage.error(String(r.data));
+      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
     };
     fetch();
     return {

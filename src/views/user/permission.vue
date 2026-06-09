@@ -181,7 +181,7 @@ export default defineComponent({
           groupDo.value = data.groupDo || [];
           extgroupDo.value = data.extgroupDo || [];
         } else {
-          errorMsg.value = res.msg || "获取用户组数据失败";
+          errorMsg.value = res.data || "获取用户组数据失败";
         }
       } catch (err: any) {
         errorMsg.value = "网络错误，无法加载用户组数据";

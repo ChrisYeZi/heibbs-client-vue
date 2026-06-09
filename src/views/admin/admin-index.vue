@@ -159,7 +159,7 @@ export default defineComponent({
     };
     const toggleLogin = async (val: boolean) => {
       const r = await SetSystemConfigAPI("login_enabled", val ? "true" : "false");
-      ElMessage[r.status===200?'success':'error'](String(r.msg||''));
+      ElMessage[r.status===200?'success':'error'](String(r.data||''));
     };
 
     // 获取仪表盘数据
@@ -170,7 +170,7 @@ export default defineComponent({
         if (res.status === 200) {
           dashboardData.value = res.data;
         } else {
-          ElMessage.error("获取仪表盘数据失败：" + res.msg);
+          ElMessage.error("获取仪表盘数据失败：" + res.data);
         }
       } catch (error) {
         console.error("获取仪表盘数据出错:", error);

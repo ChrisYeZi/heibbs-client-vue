@@ -119,17 +119,17 @@ export default defineComponent({
     const doSell = async () => {
       const r = await SellItemAPI(sellForm);
       if (r.status === 200) {
-        ElMessage.success(String(r.msg || "上架成功"));
+        ElMessage.success(String(r.data || "上架成功"));
         sellDlg.value = false;
         fetch();
-      } else ElMessage.error(String(r.msg));
+      } else ElMessage.error(String(r.data));
     };
     const doCancel = async (listingId: number) => {
       const r = await CancelListingAPI(listingId);
       if (r.status === 200) {
         ElMessage.success("已下架，物品已退还");
         fetch();
-      } else ElMessage.error(String(r.msg));
+      } else ElMessage.error(String(r.data));
     };
     fetch();
     return {

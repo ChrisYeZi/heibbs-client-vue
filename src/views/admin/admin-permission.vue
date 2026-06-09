@@ -203,7 +203,7 @@ export default defineComponent({
         if (res.status === 200) {
           permissionList.value = res.data || [];
         } else {
-          ElMessage.error(`获取权限列表失败: ${res.msg}`);
+          ElMessage.error(`获取权限列表失败: ${res.data}`);
         }
       } catch (error) {
         console.error("获取权限列表出错:", error);
@@ -253,7 +253,7 @@ export default defineComponent({
             ElMessage.success("删除成功");
             getPermissionList();
           } else {
-            ElMessage.error(`删除失败: ${res.msg}`);
+            ElMessage.error(`删除失败: ${res.data}`);
           }
         }
       } catch (error) {
@@ -284,7 +284,7 @@ export default defineComponent({
           getPermissionList();
         } else {
           ElMessage.error(
-            `${formData.pid ? "更新" : "添加"}失败: ${res.msg}`
+            `${formData.pid ? "更新" : "添加"}失败: ${res.data}`
           );
         }
       } catch (error) {

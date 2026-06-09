@@ -14,6 +14,7 @@
 import { ref, watch, defineComponent } from "vue";
 import { GetUserPrimaryMedalAPI } from "@/api/index";
 import config from "@/config/index";
+import { getCachedImage, setCachedImage } from "@/assets/js/imageCache";
 
 export default defineComponent({
   name: "Postbar",
@@ -23,14 +24,19 @@ export default defineComponent({
 
     const fetchMedal = async (authorid: number) => {
       if (!authorid) return;
+      const cacheKey = `medal_${authorid}`
+      const cached = getCachedImage(cacheKey)
+      if (cached !== null) { medalImage.value = cached; return }
       try {
         const r = await GetUserPrimaryMedalAPI(authorid);
         if (r.status === 200 && r.data && r.data.medalImageUrl) {
-          // 补全图片URL前缀
           const url = r.data.medalImageUrl;
-          medalImage.value = url.startsWith("http") ? url : (config.baseApi + url);
+          const fullUrl = url.startsWith("http") ? url : (config.baseApi + url);
+          medalImage.value = fullUrl
+          setCachedImage(cacheKey, fullUrl)
         } else {
           medalImage.value = "";
+          setCachedImage(cacheKey, "")
         }
       } catch (e) {
         medalImage.value = "";

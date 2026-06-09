@@ -68,10 +68,13 @@
         <input type="text" v-model="user.captcha" v-if="questCaptcha" />
         <div
           class="form-quest-submit"
-          v-if="!questCaptcha"
+          v-if="!questCaptcha && captchaCountdown<=0"
           @click="forgotRequestCaptcha()"
         >
           获取验证码
+        </div>
+        <div class="form-quest-submit" v-if="captchaCountdown>0" style="background:#ccc;color:#666">
+          {{ captchaCountdown }}秒后重试
         </div>
       </div>
       <div class="form-toForgot">
@@ -116,10 +119,13 @@
         <input type="text" v-model="user.captcha" v-if="questCaptcha" />
         <div
           class="form-quest-submit"
-          v-if="!questCaptcha"
+          v-if="!questCaptcha && captchaCountdown<=0"
           @click="registerRequestCaptcha()"
         >
           获取验证码
+        </div>
+        <div class="form-quest-submit" v-if="captchaCountdown>0" style="background:#ccc;color:#666">
+          {{ captchaCountdown }}秒后重试
         </div>
       </div>
       <div class="form-toForgot">
@@ -191,6 +197,8 @@ export default {
       indexType: "login",
       // 是否请求验证码
       questCaptcha: false,
+      captchaCountdown: 0,
+      captchaTimer: null,
     };
   },
   methods: {
@@ -217,7 +225,7 @@ export default {
               // 存入登录数据
               store.commit("user/SET_USERINFO", res.data);
             } else {
-              this.content = res.msg;
+              this.content = res.data;
               this.msgShow = true;
             }
           });
@@ -229,7 +237,7 @@ export default {
             router.push("/index");
           }, 1000);
         } else {
-          this.content = res.msg;
+          this.content = res.data;
           this.msgShow = true;
         }
       });
@@ -266,6 +274,16 @@ export default {
         }
       });
     },
+    startCaptchaTimer() {
+      this.captchaCountdown = 60
+      this.captchaTimer = setInterval(() => {
+        this.captchaCountdown--
+        if (this.captchaCountdown <= 0) {
+          clearInterval(this.captchaTimer)
+          this.captchaTimer = null
+        }
+      }, 1000)
+    },
     // 忘记密码请求验证码
     forgotRequestCaptcha() {
       let email = /^([a-zA-Z0-9_\.-]+)@([\da-zA-Z\.-]+)\.([a-zA-Z\.]{2,6})$/;
@@ -287,6 +305,7 @@ export default {
           this.content = res.data;
           this.questCaptcha = true;
           this.msgShow = true;
+          this.startCaptchaTimer();
         } else {
           this.content = res.data;
           this.msgShow = true;
@@ -360,6 +379,7 @@ export default {
           this.content = res.data;
           this.questCaptcha = true;
           this.msgShow = true;
+          this.startCaptchaTimer();
         } else {
           this.content = res.data;
           this.msgShow = true;

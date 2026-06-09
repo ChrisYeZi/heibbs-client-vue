@@ -6,7 +6,7 @@
       <!-- 财政概况 -->
       <div class="card">
         <div class="card-title">会馆财政</div>
-        <div class="finance-val">{{ finance }} 妖灵币</div>
+        <div class="finance-val">{{ fmtNum(finance) }} 妖灵币</div>
         <div class="finance-sub">累计收支明细</div>
       </div>
 
@@ -14,22 +14,35 @@
       <div class="card admin-card" v-if="isAdmin" style="margin-top:10px">
         <div class="card-title">财政管理（管理员）</div>
         <div class="admin-row">
-          <el-input-number v-model="adminAmt" :min="-999999" size="small" style="width:140px" placeholder="正=存入 负=取出"/>
+          <el-input-number v-model="adminAmt" :min="-999999" :precision="2" size="small" style="width:140px" placeholder="正=存入 负=取出"/>
           <el-input v-model="adminDesc" size="small" placeholder="备注" style="width:140px;margin-left:8px"/>
           <el-button size="small" type="primary" @click="doAdminTransact" style="margin-left:8px">执行</el-button>
+        </div>
+        <div class="admin-toggles" style="margin-top:10px;display:flex;gap:20px">
+          <span>银行交易 <el-switch v-model="bankEnabled" @change="toggleConfig('bank_enabled',$event)" size="small"/></span>
+          <span>股市交易 <el-switch v-model="stockEnabled" @change="toggleConfig('stock_enabled',$event)" size="small"/></span>
         </div>
       </div>
 
       <!-- 银行 -->
       <div class="card" style="margin-top:10px">
         <div class="card-title">会馆银行</div>
-        <div class="bank-balance">存款: <strong>{{ bankBalance }}</strong> 妖灵币 | 累计利息: {{ bankInterest }} 妖灵币</div>
+        <div class="bank-balance">存款总额: <strong>{{ fmtNum(bankBalance) }}</strong> 妖灵币 | 日息约: {{ bankDailyInterest }} 妖灵币</div>
         <div class="stock-actions">
           <el-input-number v-model="bankAmt" :min="1" size="small" style="width:120px"/>
           <el-button size="small" type="warning" @click="doDeposit">存入</el-button>
-          <el-button size="small" type="danger" @click="doWithdraw" style="margin-left:8px">取出</el-button>
         </div>
-        <div class="bank-tip">月息 {{ (bankRate*100).toFixed(1) }}%，满月结算，银行存款并不会推高股价。</div>
+        <div class="bank-tip">日息 {{ (bankRate*100/30).toFixed(3) }}%，每天8点结算，利息直接到账。取出需整笔取出，利息在取出时一并结算。</div>
+        <!-- 存款明细 -->
+        <div class="deposit-list" v-if="bankDeposits.length" style="margin-top:10px">
+          <div v-for="d in bankDeposits" :key="d.id" class="deposit-item">
+            <span>{{ fmtNum(d.amount) }} 妖灵币</span>
+            <span style="font-size:11px;color:#999">{{ fmt(d.depositTime) }}</span>
+            <span v-if="d.status===1" style="font-size:11px;color:#67c23a">存款中</span>
+            <span v-else style="font-size:11px;color:#909399">已取出 {{ d.withdrawTime?fmt(d.withdrawTime):'' }}</span>
+            <el-button v-if="d.status===1" size="small" type="danger" @click="doWithdraw(d.id)">取出</el-button>
+          </div>
+        </div>
       </div>
 
       <!-- 股票 -->
@@ -118,7 +131,7 @@
       <div class="log-list" v-if="logs.length">
         <div v-for="l in logs" :key="l.id" class="log-item">
           <span :class="l.amount > 0 ? 'up' : 'down'">{{
-            l.amount > 0 ? "+" + l.amount : l.amount
+            l.amount > 0 ? "+" + fmtNum(l.amount) : fmtNum(l.amount)
           }}</span>
           <span class="log-type">{{ typeLabel(l.type) }}</span>
           <span class="log-desc">{{ l.description }}</span>
@@ -167,7 +180,9 @@ export default defineComponent({
       sellAmt = ref(1);
     const isAdmin = ref(false);
     const adminAmt = ref(0), adminDesc = ref("");
-    const bankBalance = ref(0), bankInterest = ref(0), bankRate = ref(0.05), bankAmt = ref(1);
+    const bankEnabled = ref(true), stockEnabled = ref(true);
+    const bankBalance = ref(0), bankDailyInterest = ref("0"), bankRate = ref(0.05), bankAmt = ref(1);
+    const bankDeposits = ref<any[]>([]);
 
     const currentPrice = computed(() =>
       prices.value.length
@@ -224,7 +239,9 @@ export default defineComponent({
           post_tax: "发帖税",
           rating_tax: "评分税",
           medal_tax: "勋章税",
-          item_tax: "物品税",
+          bank_interest: "利息支出",
+          item_tax: "交易税",
+          invitation_tax: "邀请码",
           stock_buy: "股票买入",
           stock_sell: "股票卖出",
           admin_deposit: "管理员存入",
@@ -235,6 +252,7 @@ export default defineComponent({
       )[t] || t);
     const fmt = (ts: number) =>
       ts ? new Date(ts * 1000).toLocaleString() : "";
+    const fmtNum = (n: any) => (n != null ? Number(n).toFixed(2) : "0.00");
 
     const fetchLogs = async () => {
       const fr = await GetBlockFinanceAPI(1, { pageNum: logPage.value, pageSize: 10 });
@@ -252,27 +270,39 @@ export default defineComponent({
         instance.get("/block-finance/bank/my"),
       ]);
       if (sr.status === 200) { stock.value = sr.data.stock; prices.value = sr.data.prices || []; }
-      if (br.status === 200) { bankBalance.value = br.data.bank?.balance||0; bankInterest.value = br.data.bank?.totalInterest||0; bankRate.value = br.data.taxRate||0.05; }
+      if (br.status === 200) { bankBalance.value = br.data.totalBalance||0; bankDeposits.value = br.data.deposits||[]; bankDailyInterest.value = br.data.dailyInterest||"0"; bankRate.value = br.data.taxRate||0.05; }
       loading.value = false;
     };
-    const doDeposit=async()=>{const r:any=await instance.post("/block-finance/bank/transact",{amount:bankAmt.value});ElMessage[r.status===200?'success':'error'](String(r.msg||''));fetch()};
-    const doWithdraw=async()=>{const r:any=await instance.post("/block-finance/bank/transact",{amount:-bankAmt.value});ElMessage[r.status===200?'success':'error'](String(r.msg||''));fetch()};
+    const doDeposit=async()=>{const r:any=await instance.post("/block-finance/bank/deposit",{amount:bankAmt.value});ElMessage[r.status===200?'success':'error'](String(r.data||''));fetch()};
+    const doWithdraw=async(bankId:number)=>{const r:any=await instance.post("/block-finance/bank/withdraw",{bankId});ElMessage[r.status===200?'success':'error'](String(r.data||''));fetch()};
     const doBuy = async () => {
       const r = await BuyStockAPI(buyAmt.value);
-      ElMessage[r.status === 200 ? "success" : "error"](String(r.msg || ""));
+      ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
       fetch();
     };
     const doSell = async () => {
       const r = await SellStockAPI(sellAmt.value);
-      ElMessage[r.status === 200 ? "success" : "error"](String(r.msg || ""));
+      ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
       fetch();
     };
     const doAdminTransact = async () => {
       const r: any = await instance.post("/block-finance/admin-transact", { amount: adminAmt.value, description: adminDesc.value });
-      ElMessage[r.status===200?'success':'error'](String(r.msg||""));
+      ElMessage[r.status===200?'success':'error'](String(r.data||""));
       fetch();
     };
-    isAdmin.value = !!(store.state.user?.info?.user?.extgroupids);
+    const u = store.state.user?.info?.user
+    isAdmin.value = (u?.extgroupids > 0) || (u?.groupid >= 8)
+    const toggleConfig = async (key: string, val: boolean) => {
+      await instance.post("/admin/config/set", { key, value: val ? "true" : "false" });
+    };
+    const loadConfig = async () => {
+      const r: any = await instance.get("/admin/config/all");
+      if (r.status === 200) {
+        bankEnabled.value = r.data.bank_enabled !== 'false';
+        stockEnabled.value = r.data.stock_enabled !== 'false';
+      }
+    };
+    if (isAdmin.value) loadConfig();
 
     onMounted(fetch);
     return {
@@ -298,11 +328,11 @@ export default defineComponent({
       shortDate,
       dateLabels,
       typeLabel,
-      fmt,
+      fmt, fmtNum,
       doBuy,
       doSell,
-      isAdmin, adminAmt, adminDesc, doAdminTransact,
-      bankBalance, bankInterest, bankRate, bankAmt, doDeposit, doWithdraw,
+      isAdmin, adminAmt, adminDesc, doAdminTransact, bankEnabled, stockEnabled, toggleConfig,
+      bankBalance, bankRate, bankDailyInterest, bankDeposits, bankAmt, doDeposit, doWithdraw,
     };
   },
 });
@@ -398,6 +428,7 @@ h2 {
   margin-top: 8px;
   padding: 8px;
 }
+.deposit-list{margin-top:8px}.deposit-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px}.deposit-item:last-child{border-bottom:none}
 .bank-balance{font-size:14px;margin-bottom:6px;color:#728567}.bank-balance strong{color:#F6AD47}.bank-tip{font-size:11px;color:rgba(114,133,103,.5);margin-top:4px}
 .loading {
   padding: 60px 0;

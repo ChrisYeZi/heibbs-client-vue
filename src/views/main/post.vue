@@ -220,7 +220,7 @@
             </div>
             <div
               class="dropdown-item danger"
-              v-if="judgmentPermission(mainPost.authorid)"
+              v-if="canDeletePost"
               @click="handleMainPostAction('delete')"
             >
               删除
@@ -248,6 +248,9 @@
         <div class="comments-title">
           <van-icon name="message-o" />
           <span>评论 ({{ replyPage.total - 1 }})</span>
+          <span class="sort-toggle" @click="toggleSortOrder">
+            {{ sortOrder === "asc" ? "最早回复" : "最新回复" }}
+          </span>
         </div>
 
         <div class="comment-list">
@@ -290,6 +293,7 @@
                 </div>
                 <div class="comment-time">
                   {{ comment.formattedCreateTime }}
+                  <span class="comment-floor">#{{ comment.floor }}</span>
                 </div>
               </div>
             </div>
@@ -504,14 +508,57 @@
         </div>
 
         <!-- 分页控件 -->
-        <div class="pagination" v-if="replyPage.pages > 1">
-          <van-pagination
-            v-model="currentPage"
-            :total-items="replyPage.total"
-            :items-per-page="pageSize"
-            :show-page-size="false"
-            @change="handlePageChange"
-          />
+        <div class="pagination-wrap" v-if="replyPage.pages > 1">
+          <div class="pagination-info">
+            第 {{ currentPage }}/{{ replyPage.pages }} 页，共
+            {{ replyPage.total - 1 }} 条回复
+          </div>
+          <div class="pagination-controls">
+            <button
+              class="page-btn"
+              :disabled="currentPage <= 1"
+              @click="handlePageChange(1)"
+              title="首页"
+            >
+              ««
+            </button>
+            <button
+              class="page-btn"
+              :disabled="currentPage <= 1"
+              @click="handlePageChange(currentPage - 1)"
+              title="上一页"
+            >
+              «
+            </button>
+            <template v-for="p in displayPages">
+              <button
+                v-if="p > 0"
+                :key="p"
+                class="page-btn"
+                :class="{ active: p === currentPage }"
+                @click="handlePageChange(p)"
+              >
+                {{ p }}
+              </button>
+              <span v-else :key="'e' + p" class="page-ellipsis">…</span>
+            </template>
+            <button
+              class="page-btn"
+              :disabled="currentPage >= replyPage.pages"
+              @click="handlePageChange(currentPage + 1)"
+              title="下一页"
+            >
+              »
+            </button>
+            <button
+              class="page-btn"
+              :disabled="currentPage >= replyPage.pages"
+              @click="handlePageChange(replyPage.pages)"
+              title="末页"
+            >
+              »»
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -641,6 +688,7 @@ import {
   GetActiveStampsAPI,
   SetPostStampAPI,
   SetPostStateAPI,
+  DeletePostAPI,
 } from "@/api/index";
 import Postbar from "@/components/common/Postbar.vue";
 import parsedContent from "@/assets/js/parsedContent";
@@ -779,6 +827,7 @@ export default defineComponent({
     });
     const currentPage = ref(1);
     const pageSize = ref(10);
+    const sortOrder = ref<"asc" | "desc">("asc"); // asc=最早回复在前, desc=最新回复在前
     const editCommentId = ref<number | null>(null);
     const editContent = ref<string>("");
 
@@ -805,7 +854,14 @@ export default defineComponent({
     const postId = Array.isArray(pidParam) ? pidParam[0] : pidParam;
 
     const comments = computed(() => {
-      return replyPage.value.records.filter((item) => item.first !== 1);
+      return replyPage.value.records
+        .filter((item) => item.first !== 1)
+        .map((item) => {
+          const recordIdx = replyPage.value.records.indexOf(item);
+          const floor =
+            (currentPage.value - 1) * pageSize.value + recordIdx + 1;
+          return { ...item, floor };
+        });
     });
 
     // 获取用户头像
@@ -950,7 +1006,7 @@ export default defineComponent({
             await getData();
           }
         } else {
-          ElMessage.error(`回复失败: ${res.msg || "服务器错误"}`);
+          ElMessage.error(`回复失败: ${res.data || "服务器错误"}`);
         }
       } catch (error: any) {
         console.error("提交回复失败:", error);
@@ -996,7 +1052,7 @@ export default defineComponent({
             await getData();
           }
         } else {
-          ElMessage.error(`回复失败: ${res.msg || "服务器错误"}`);
+          ElMessage.error(`回复失败: ${res.data || "服务器错误"}`);
         }
       } catch (error: any) {
         console.error("提交回复失败:", error);
@@ -1051,7 +1107,7 @@ export default defineComponent({
           mainPostLiked.value = res.data.liked;
           mainPostLikeCount.value = res.data.likeCount;
         } else {
-          ElMessage.error(String(res.msg || "操作失败"));
+          ElMessage.error(String(res.data || "操作失败"));
         }
       } catch (error) {
         console.error("点赞操作失败:", error);
@@ -1108,10 +1164,10 @@ export default defineComponent({
         });
         const res = await UserExtcreditsChangeAPI(data);
         if (res.status === 200) {
-          ElMessage.success(String(res.msg || "评分成功"));
+          ElMessage.success(String(res.data || "评分成功"));
           ratingDialogVisible.value = false;
         } else {
-          ElMessage.error(String(res.msg || "评分失败"));
+          ElMessage.error(String(res.data || "评分失败"));
         }
       } catch (e) {
         ElMessage.error("评分操作异常");
@@ -1144,10 +1200,10 @@ export default defineComponent({
           pid: post.pid,
           state: operateState.value,
         });
-        ElMessage[r.status === 200 ? "success" : "error"](String(r.msg || ""));
+        ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
       } else {
         const r = await SetPostStampAPI(post.pid, operateStamp.value);
-        ElMessage[r.status === 200 ? "success" : "error"](String(r.msg || ""));
+        ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
       }
       operateDlg.value = false;
     };
@@ -1180,15 +1236,17 @@ export default defineComponent({
                 reason: value.trim(),
               });
               if (res.status === 200) {
-                ElMessage.success(String(res.msg || "举报已提交"));
+                ElMessage.success(String(res.data || "举报已提交"));
               } else {
-                ElMessage.error(String(res.msg || "举报提交失败"));
+                ElMessage.error(String(res.data || "举报提交失败"));
               }
             })
             .catch(() => {});
           break;
         case "share":
-          const shareUrl = `https://www.heibbs.net/#/post/${mainPost.value!.pid}`;
+          const shareUrl = `https://www.heibbs.net/#/post/${
+            mainPost.value!.pid
+          }`;
           navigator.clipboard
             .writeText(shareUrl)
             .then(() => ElMessage.success("分享链接已复制到剪贴板"))
@@ -1203,19 +1261,16 @@ export default defineComponent({
             cancelButtonText: "取消",
             type: "warning",
           })
-            .then(() => {
-              ElMessage({
-                type: "success",
-                message: "删除成功!",
-              });
-              // 这里可以添加实际的删除API调用
+            .then(async () => {
+              const res = await DeletePostAPI(mainPost.value!.pid);
+              if (res.status === 200) {
+                ElMessage.success("删除成功");
+                router.push({ path: `/block/${mainPost.value!.fid}` });
+              } else {
+                ElMessage.error(String(res.data || "删除失败"));
+              }
             })
-            .catch(() => {
-              ElMessage({
-                type: "info",
-                message: "已取消删除",
-              });
-            });
+            .catch(() => {});
           break;
       }
     };
@@ -1246,9 +1301,9 @@ export default defineComponent({
                 reason: value.trim(),
               });
               if (res.status === 200) {
-                ElMessage.success(String(res.msg || "举报已提交"));
+                ElMessage.success(String(res.data || "举报已提交"));
               } else {
-                ElMessage.error(String(res.msg || "举报提交失败"));
+                ElMessage.error(String(res.data || "举报提交失败"));
               }
             })
             .catch(() => {});
@@ -1307,6 +1362,7 @@ export default defineComponent({
           pid: postId,
           current: currentPage.value,
           size: pageSize.value,
+          order: sortOrder.value,
         });
 
         if (res.status === 200 && res.data) {
@@ -1353,11 +1409,42 @@ export default defineComponent({
       attachSubmit.value = !attachSubmit.value;
     };
 
+    // 计算分页显示的页码列表
+    const displayPages = computed(() => {
+      const total = replyPage.value.pages;
+      const cur = currentPage.value;
+      const pages: number[] = [];
+      if (total <= 7) {
+        for (let i = 1; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (cur > 3) pages.push(0); // 0 = ellipsis
+        const start = Math.max(2, cur - 1);
+        const end = Math.min(total - 1, cur + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (cur < total - 2) pages.push(0);
+        pages.push(total);
+      }
+      return pages;
+    });
+
+    const toggleSortOrder = () => {
+      sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+      currentPage.value = 1;
+      updateRouteParams();
+      getData();
+    };
+
     const handlePageChange = (page: number) => {
       currentPage.value = page;
       updateRouteParams();
       getData();
     };
+
+    // 删除帖子权限：仅管理员(extgroupids=1)和馆长(extgroupids=2)可操作，需要 delPost 权限
+    const canDeletePost = computed(() => {
+      return userData?.extgroupids == 1 || userData?.extgroupids == 2;
+    });
 
     const judgmentPermission = (authorid: number) => {
       if (userData?.extgroupids == 1 || userData?.extgroupids == 2) {
@@ -1505,7 +1592,7 @@ export default defineComponent({
           ElMessage.success("评论修改成功");
           cancelEdit();
         } else {
-          ElMessage.error(`修改失败: ${res.msg || "服务器错误"}`);
+          ElMessage.error(`修改失败: ${res.data || "服务器错误"}`);
         }
       } catch (error) {
         console.error("编辑评论失败:", error);
@@ -1541,6 +1628,9 @@ export default defineComponent({
       comments,
       currentPage,
       pageSize,
+      sortOrder,
+      toggleSortOrder,
+      displayPages,
       attachSubmit,
       parsedContent,
       postUnknow,
@@ -1552,6 +1642,7 @@ export default defineComponent({
       handleAttachSubmit,
       getImgUrl,
       getBlockName,
+      canDeletePost,
       judgmentPermission,
       PostClick,
       gotoInfo,
@@ -1726,7 +1817,7 @@ export default defineComponent({
     color: #4b4b4b;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid #fcf9e0;
   }
   .discuz-img {
     max-width: 100% !important;
@@ -1766,13 +1857,22 @@ export default defineComponent({
   margin-bottom: 30px;
   padding: 5px 10px;
 
+  // override el-button for both post and comment actions
+  .el-button {
+    color: #728567 !important;
+    &:hover {
+      color: #f6ad47 !important;
+      background-color: #fcf9e0 !important;
+    }
+  }
+
   &.comment-actions-container {
     margin-bottom: 0;
     padding-left: 46px;
     margin-top: 8px;
   }
   .post-like {
-    color: rgba(236, 98, 18, 0.89);
+    color: #e8743a;
   }
 }
 
@@ -1785,15 +1885,18 @@ export default defineComponent({
     background: transparent;
     border: none;
     font-size: 14px;
+    color: #728567;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 5px;
     padding: 8px 12px;
     border-radius: 4px;
+    transition: all 0.2s;
 
     &:hover {
-      background-color: rgba(64, 158, 255, 0.1);
+      background-color: #fcf9e0;
+      color: #f6ad47;
     }
 
     .dropdown-icon {
@@ -1807,9 +1910,9 @@ export default defineComponent({
     top: 100%;
     right: 0;
     background-color: #fff;
-    border: 1px solid #e6e6e6;
+    border: 1px solid #728567;
     border-radius: 4px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px rgba(114, 133, 103, 0.15);
     min-width: 120px;
     z-index: 1000;
     margin-top: 5px;
@@ -1818,20 +1921,22 @@ export default defineComponent({
       padding: 8px 16px;
       cursor: pointer;
       font-size: 14px;
-      color: #333;
+      color: #728567;
+      transition: all 0.15s;
 
       &:hover {
-        background-color: #f5f7fa;
+        background-color: #fcf9e0;
+        color: #f6ad47;
       }
 
       &.danger {
-        color: #f56c6c;
+        color: #e8743a;
       }
     }
 
     .dropdown-divider {
       height: 1px;
-      background-color: #e6e6e6;
+      background-color: #fcf9e0;
       margin: 4px 0;
     }
   }
@@ -1946,18 +2051,36 @@ export default defineComponent({
     font-weight: 500;
     padding-bottom: 10px;
     margin-bottom: 15px;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid #fcf9e0;
 
     .van-icon {
       margin-right: 5px;
-      color: #1989fa;
+      color: #f6ad47;
+    }
+
+    .sort-toggle {
+      margin-left: auto;
+      font-size: 13px;
+      color: #f6ad47;
+      cursor: pointer;
+      user-select: none;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #fcf9e0;
+      border: 1px solid #f6ad47;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f6ad47;
+        color: #fcf9e0;
+      }
     }
   }
 
   .comment-list {
     .comment-item {
       padding: 10px 0;
-      border-bottom: 1px solid #f5f5f5;
+      border-bottom: 1px solid #fcf9e0;
 
       &:last-child {
         border-bottom: none;
@@ -1995,6 +2118,19 @@ export default defineComponent({
           .comment-time {
             font-size: 12px;
             color: #888;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .comment-floor {
+              font-size: 11px;
+              color: #c5c5c5;
+              background: rgba(255, 255, 255, 0);
+              border: 1px solid #c5c5c5;
+              padding: 1px 6px;
+              border-radius: 4px;
+              font-weight: 500;
+            }
           }
         }
       }
@@ -2040,10 +2176,62 @@ export default defineComponent({
     }
   }
 
-  .pagination {
+  .pagination-wrap {
     margin-top: 20px;
+    padding: 12px 0;
     text-align: center;
-    padding: 10px 0;
+
+    .pagination-info {
+      font-size: 13px;
+      color: #728567;
+      margin-bottom: 10px;
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex-wrap: wrap;
+
+      .page-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        border: 1px solid #728567;
+        border-radius: 4px;
+        background: rgba(255,255,255,0);
+        color: #728567;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover:not(:disabled) {
+          border-color: #f6ad47;
+          color: #f6ad47;
+          background: #fff;
+        }
+
+        &:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+
+        &.active {
+          background: #728567;
+          border-color: #728567;
+          color: #fcf9e0;
+          font-weight: 500;
+        }
+      }
+
+      .page-ellipsis {
+        width: 32px;
+        text-align: center;
+        color: #728567;
+        font-size: 13px;
+      }
+    }
   }
 }
 

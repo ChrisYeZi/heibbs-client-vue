@@ -419,7 +419,7 @@ export default defineComponent({
         if (res.status === 200) {
           permissionList.value = res.data || [];
         } else {
-          ElMessage.error(`获取权限列表失败: ${res.msg}`);
+          ElMessage.error(`获取权限列表失败: ${res.data}`);
         }
       } catch (error) {
         console.error("获取权限列表出错:", error);
@@ -437,7 +437,7 @@ export default defineComponent({
         if (res.status === 200) {
           groupList.value = res.data || [];
         } else {
-          ElMessage.error(`获取普通用户组列表失败: ${res.msg}`);
+          ElMessage.error(`获取普通用户组列表失败: ${res.data}`);
         }
       } catch (error) {
         console.error("获取普通用户组列表出错:", error);
@@ -455,7 +455,7 @@ export default defineComponent({
         if (res.status === 200) {
           extgroupList.value = res.data || [];
         } else {
-          ElMessage.error(`获取特殊用户组列表失败: ${res.msg}`);
+          ElMessage.error(`获取特殊用户组列表失败: ${res.data}`);
         }
       } catch (error) {
         console.error("获取特殊用户组列表出错:", error);
@@ -537,7 +537,7 @@ export default defineComponent({
               getExtgroupList();
             }
           } else {
-            ElMessage.error(`删除失败: ${res.msg}`);
+            ElMessage.error(`删除失败: ${res.data}`);
           }
         }
       } catch (error) {
@@ -583,7 +583,7 @@ export default defineComponent({
           getExtgroupList();
         } else {
           ElMessage.error(
-            `${formDataCopy.gid ? "更新" : "添加"}失败: ${res.msg}`
+            `${formDataCopy.gid ? "更新" : "添加"}失败: ${res.data}`
           );
         }
       } catch (error) {

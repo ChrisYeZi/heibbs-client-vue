@@ -1,4 +1,5 @@
 <template>
+<van-pull-refresh v-model="refreshing" @refresh="onRefresh">
   <div class="block" ref="scrollContainer">
     <!-- 板块头部区域 -->
     <div class="block-box">
@@ -16,7 +17,7 @@
       <!-- 横幅图片 -->
       <div class="block-banner">
         <img
-          src="https://i.imgs.ovh/2025/10/08/7DBO24.png"
+          :src="currentBlock.bannerurl"
           alt="板块横幅"
           class="banner-image"
         />
@@ -171,6 +172,7 @@
       <span v-else>已显示全部内容</span>
     </div>
   </div>
+  </van-pull-refresh>
 </template>
 
 <script lang="ts">
@@ -194,6 +196,7 @@ import {
   Loading,
   Icon,
   Button,
+  PullRefresh,
 } from "vant";
 import { ElMessage } from "element-plus"; // 导入ElMessage
 import parsedContent from "@/assets/js/parsedContent";
@@ -270,6 +273,7 @@ export default defineComponent({
     [Loading.name]: Loading,
     [Icon.name]: Icon,
     [Button.name]: Button,
+    [PullRefresh.name]: PullRefresh,
   },
   setup() {
     const scrollContainer = ref<HTMLDivElement>(null);
@@ -283,6 +287,8 @@ export default defineComponent({
     const groupList = ref<GroupItem>(null);
 
     const isLoading = ref(true);
+    const refreshing = ref(false);
+    const onRefresh = async () => { refreshing.value = true; await getData(1, false); refreshing.value = false; };
     const isLoadingMore = ref(false);
     const currentPage = ref(1);
     const pageSize = ref(10);
@@ -582,6 +588,7 @@ export default defineComponent({
       blockList,
       groupList,
       isLoading,
+      refreshing, onRefresh,
       isLoadingMore,
       hasMore,
       slides,
@@ -614,9 +621,8 @@ export default defineComponent({
 <style lang="scss" scoped>
 .block {
   background: rgba(255, 255, 255, 0.9);
-  margin-top: 50px;
   margin-bottom: 0px;
-  margin: 50px 10px 60px 10px;
+  margin: 0px 10px 60px 10px;
   padding: 15px 10px;
   height: calc(100vh - 0px);
   overflow-y: auto;

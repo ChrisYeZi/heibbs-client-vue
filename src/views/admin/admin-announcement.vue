@@ -203,11 +203,11 @@ export default defineComponent({
           ? await UpdateAnnouncementAPI(data)
           : await InsertAnnouncementAPI(data);
         if (res.status === 200) {
-          ElMessage.success(String(res.msg || "操作成功"));
+          ElMessage.success(String(res.data || "操作成功"));
           dialogVisible.value = false;
           fetchData();
         } else {
-          ElMessage.error(String(res.msg || "操作失败"));
+          ElMessage.error(String(res.data || "操作失败"));
         }
       } catch (error) {
         ElMessage.error("操作异常");
@@ -224,7 +224,7 @@ export default defineComponent({
           ElMessage.success("删除成功");
           fetchData();
         } else {
-          ElMessage.error(String(res.msg || "删除失败"));
+          ElMessage.error(String(res.data || "删除失败"));
         }
       }).catch(() => {});
     };

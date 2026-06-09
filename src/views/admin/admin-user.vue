@@ -177,6 +177,7 @@
             placeholder="请选择特殊用户组"
             clearable
           >
+            <el-option label="无" :value="0"/>
             <el-option
               v-for="extGroup in groupList.extgroupDo"
               :key="extGroup.gid"
@@ -494,7 +495,7 @@ export default defineComponent({
           editDialogVisible.value = false;
           getData(); // 重新加载数据
         } else {
-          ElMessage.error(`更新失败: ${res.msg || "未知错误"}`);
+          ElMessage.error(`更新失败: ${res.data || "未知错误"}`);
         }
       } catch (error: any) {
         console.error("保存失败:", error);
@@ -514,7 +515,7 @@ export default defineComponent({
           ElMessage.success(`用户已${newStatus === 0 ? "启用" : "禁用"}`);
           getData();
         } else {
-          ElMessage.error(`操作失败: ${res.msg || "未知错误"}`);
+          ElMessage.error(`操作失败: ${res.data || "未知错误"}`);
         }
       } catch (error) {
         console.error("状态修改失败:", error);

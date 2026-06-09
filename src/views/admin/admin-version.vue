@@ -320,7 +320,7 @@ export default defineComponent({
         const res = await GetAdminVersionListAPI(params);
 
         const status = toPrimitive.number(res.status);
-        const msg = toPrimitive.string(res.msg);
+        const msg = String(res.data ?? '');
 
         if (status === 200 && res.data) {
           versionList.value = res.data.records || [];
@@ -398,7 +398,7 @@ export default defineComponent({
         }
 
         const status = toPrimitive.number(res.status);
-        const msg = toPrimitive.string(res.msg);
+        const msg = String(res.data ?? '');
 
         if (status === 200) {
           ElMessage.success(isEdit.value ? "版本更新成功" : "版本添加成功");
@@ -432,7 +432,7 @@ export default defineComponent({
         if (confirm) {
           const res = await DeleteVersion(id);
           const status = toPrimitive.number(res.status);
-          const msg = toPrimitive.string(res.msg);
+          const msg = String(res.data ?? '');
 
           if (status === 200) {
             ElMessage.success("版本删除成功");

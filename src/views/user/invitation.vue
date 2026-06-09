@@ -197,7 +197,7 @@ export default {
           if (res.status == 200) {
             this.invitation = Array.isArray(res.data) ? res.data : [];
           } else {
-            this.content = res.msg || "获取邀请码失败";
+            this.content = res.data || "获取邀请码失败";
             this.msgShow = true;
             this.invitation = [];
           }

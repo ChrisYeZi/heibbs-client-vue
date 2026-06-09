@@ -45,6 +45,7 @@
       >
         {{ isCodeView ? "可视化视图" : "查看代码视图" }}
       </el-button>
+      <el-button type="text" size="small" @click="insertBilibili" :disabled="isSubmitting">插入B站视频</el-button>
       <!-- 可视化编辑视图 -->
       <Editor
         v-if="!isCodeView"
@@ -224,7 +225,7 @@ export default defineComponent({
             // router.push(`/post/${res.data.pid}`);
           }, 1000);
         } else {
-          ElMessage.error(`发布失败：${res.msg || "服务器错误"}`);
+          ElMessage.error(`发布失败：${res.data || "服务器错误"}`);
         }
       } catch (err: any) {
         console.error("发帖请求失败：", err);
@@ -277,6 +278,18 @@ export default defineComponent({
     };
 
     // 编辑器初始化
+    const insertBilibili = async () => {
+      try {
+        const { value } = await ElMessageBox.prompt('请输入Bilibili视频 BV 号', '插入B站视频', { inputPlaceholder: '如 BV1xx411c7XX' })
+        if (value) {
+          const vid = value.trim()
+          const src = `//player.bilibili.com/player.html?bvid=${vid}&page=1`
+          const html = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe src="${src}" style="position:absolute;top:0;left:0;width:100%;height:100%" frameborder="0" allowfullscreen></iframe></div>`
+          editorRef.value?.insertHtml(html)
+        }
+      } catch (e) {}
+    }
+
     const handleCreated = (editor: any) => {
       editorRef.value = editor;
     };
@@ -318,6 +331,7 @@ export default defineComponent({
       editorConfig,
       handleCreated,
       handleEditorError,
+      insertBilibili,
       valueHtml,
       postForm,
       handleSubmit,

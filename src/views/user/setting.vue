@@ -311,7 +311,7 @@ export default {
             router.push("/login");
           }, 1500);
         } else {
-          showToast(res.msg || "密码修改失败");
+          showToast(res.data || "密码修改失败");
         }
       } catch (error) {
         console.error("修改密码失败:", error);

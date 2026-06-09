@@ -396,7 +396,7 @@ export default defineComponent({
           // 无论新建或已有会话，data 都包含 plid
           router.push({ path: "/chat", query: { plid: String(r.data.plid) } });
         } else {
-          ElMessage.error(String(r.msg || "发起会话失败"));
+          ElMessage.error(String(r.data || "发起会话失败"));
         }
       } catch (e) {
         ElMessage.error("操作失败");

@@ -211,28 +211,28 @@ export default defineComponent({
       if (r.status === 200) {
         ElMessage.success(String(r.data || "已接受"));
         fetch();
-      } else ElMessage.error(String(r.data));
+      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
     };
     const doCancel = async (id: number) => {
       const r = await CancelTaskAPI(id);
       if (r.status === 200) {
         ElMessage.success("已取消");
         fetch();
-      } else ElMessage.error(String(r.data));
+      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
     };
     const doComplete = async (id: number) => {
       const r = await CompleteTaskAPI(id);
       if (r.status === 200) {
         ElMessage.success(String(r.data || "已提交"));
         fetch();
-      } else ElMessage.error(String(r.data));
+      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
     };
     const doClaim = async (id: number) => {
       const r = await ClaimTaskRewardAPI(id);
       if (r.status === 200) {
         ElMessage.success("奖励已领取");
         fetch();
-      } else ElMessage.error(String(r.data));
+      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
     };
 
     fetch();

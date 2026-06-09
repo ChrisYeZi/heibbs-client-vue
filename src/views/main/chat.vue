@@ -100,6 +100,7 @@
 
 <script lang="ts">
 import { GetMessageAPI, ReplyMessageAPI, GetUserAvatarAPI } from "@/api/index";
+import { getCachedAvatar, setCachedAvatar } from "@/assets/js/imageCache";
 import { Icon, Empty, Toast } from "vant";
 import router from "@/router";
 import store from "@/store";
@@ -237,7 +238,7 @@ export default {
           await this.getMessageList(); // 重新拉取最新消息
         } else {
           // 接口返回失败
-          this.showToast(res.msg || "消息发送失败", "error");
+          this.showToast(res.data || "消息发送失败", "error");
         }
       } catch (error: any) {
         // 网络错误或其他异常
@@ -302,8 +303,14 @@ export default {
       const uidSet = new Set<number>();
       this.messageDoList.forEach((msg: any) => { if (msg.sid) uidSet.add(msg.sid); });
       uidSet.forEach((uid: number) => {
+        const cached = getCachedAvatar(uid)
+        if (cached) { this.avatarUrls[uid] = cached; return }
         GetUserAvatarAPI(uid).then((res: any) => {
-          if (res.status === 200) this.avatarUrls[uid] = config.avatarUrl + res.data;
+          if (res.status === 200) {
+            const url = config.avatarUrl + res.data;
+            this.avatarUrls[uid] = url;
+            setCachedAvatar(uid, url);
+          }
         });
       });
     },
@@ -426,7 +433,7 @@ export default {
 .avatar {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
   margin-top: 2px;

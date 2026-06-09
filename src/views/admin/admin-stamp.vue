@@ -33,7 +33,7 @@ export default defineComponent({
     const fetch=async()=>{loading.value=true;const r=await GetStampListAPI();if(r.status===200)list.value=r.data;loading.value=false};
     const showAdd=()=>{isEdit.value=false;Object.assign(form,{id:undefined,name:"",imageUrl:"",displayOrder:0,statusBool:true});dlg.value=true};
     const showEdit=(row:any)=>{isEdit.value=true;Object.assign(form,{...row,statusBool:row.status===1});dlg.value=true};
-    const submit=async()=>{const d={...form,status:form.statusBool?1:0};const r=isEdit.value?await UpdateStampAPI(d):await InsertStampAPI(d);if(r.status===200){ElMessage.success(String(r.msg||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.msg||"失败"))};
+    const submit=async()=>{const d={...form,status:form.statusBool?1:0};const r=isEdit.value?await UpdateStampAPI(d):await InsertStampAPI(d);if(r.status===200){ElMessage.success(String(r.data||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.data||"失败"))};
     const handleDelete=(id:number)=>{ElMessageBox.confirm("确定删除?","提示",{type:"warning"}).then(async()=>{await DeleteStampAPI(id);fetch()})};
     fetch();return{loading,list,dlg,isEdit,form,showAdd,showEdit,submit,handleDelete};
   }

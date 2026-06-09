@@ -57,6 +57,7 @@ import { GetMessageListAPI, GetUserAvatarAPI } from "../../api/index";
 import store from "@/store";
 import config from "@/config/index";
 import defaultAvatar from "../../assets/img/avatar.png";
+import { getCachedAvatar, setCachedAvatar } from "../../assets/js/imageCache";
 import { Icon, Empty } from "vant";
 
 export default {
@@ -109,9 +110,13 @@ export default {
         if (otherUid) uidSet.add(otherUid);
       });
       uidSet.forEach(uid => {
+        const cached = getCachedAvatar(uid)
+        if (cached) { this.avatarUrls[uid] = cached; return }
         GetUserAvatarAPI(uid).then(res => {
           if (res.status === 200) {
-            this.avatarUrls[uid] = config.avatarUrl + res.data;
+            const url = config.avatarUrl + res.data;
+            this.avatarUrls[uid] = url;
+            setCachedAvatar(uid, url);
           }
         });
       });
@@ -227,7 +232,7 @@ export default {
     width: 48px;
     height: 48px;
     padding-left: 10px;
-    border-radius: 8px;
+    border-radius: 50%;
     object-fit: cover;
   }
 

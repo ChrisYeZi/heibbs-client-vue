@@ -169,7 +169,7 @@ export default defineComponent({
       if (r.status === 200) {
         ElMessage.success("已设为首页展示");
         fetch();
-      } else ElMessage.error(String(r.msg || "操作失败"));
+      } else ElMessage.error(String(r.data || "操作失败"));
     };
 
     const handleMedalClick = (m: MedalItem) => {
@@ -192,7 +192,7 @@ export default defineComponent({
       if (r.status === 200) {
         ElMessage.success("购买成功");
         fetch();
-      } else ElMessage.error(String(r.msg || "购买失败"));
+      } else ElMessage.error(String(r.data || "购买失败"));
     };
 
     fetch();

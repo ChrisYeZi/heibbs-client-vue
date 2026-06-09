@@ -64,8 +64,8 @@ export default defineComponent({
     const showAdd=()=>{isEdit.value=false;Object.assign(form,{id:undefined,name:"",description:"",imageUrl:"",categoryId:1,conditionDesc:"",regdateBefore:null,acquireType:"manual",creditType:"extcredits2",creditPrice:10,statusBool:true});dlg.value=true};
     const showEdit=(row:any)=>{isEdit.value=true;Object.assign(form,{...row,statusBool:row.status===1,acquireType:row.acquireType||'manual',creditType:row.creditType||'extcredits2',creditPrice:row.creditPrice||0,regdateBefore:row.regdateBefore||null});dlg.value=true};
     const showGrant=(row:any)=>{grantForm.medalId=row.id;grantForm.uids="";grantDlg.value=true};
-    const submit=async()=>{const d={...form,status:form.statusBool?1:0};const r=isEdit.value?await UpdateMedalAPI(d):await InsertMedalAPI(d);if(r.status===200){ElMessage.success(String(r.msg||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.msg||"失败"))};
-    const submitGrant=async()=>{const r=await GrantMedalAPI(grantForm);if(r.status===200){ElMessage.success(String(r.msg||"成功"));grantDlg.value=false}else ElMessage.error(String(r.msg||"失败"))};
+    const submit=async()=>{const d={...form,status:form.statusBool?1:0};const r=isEdit.value?await UpdateMedalAPI(d):await InsertMedalAPI(d);if(r.status===200){ElMessage.success(String(r.data||"成功"));dlg.value=false;fetch()}else ElMessage.error(String(r.data||"失败"))};
+    const submitGrant=async()=>{const r=await GrantMedalAPI(grantForm);if(r.status===200){ElMessage.success(String(r.data||"成功"));grantDlg.value=false}else ElMessage.error(String(r.data||"失败"))};
     const handleDelete=(id:number)=>{ElMessageBox.confirm("确定删除?","提示",{type:"warning"}).then(async()=>{await DeleteMedalAPI(id);fetch()})};
     fetch();return{loading,list,dlg,isEdit,form,grantDlg,grantForm,showAdd,showEdit,showGrant,submit,submitGrant,handleDelete};
   }

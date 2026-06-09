@@ -149,7 +149,7 @@ export default defineComponent({
       try {
         const res = await ReadAllNotificationAPI();
         if (res.status === 200) {
-          ElMessage.success(String(res.msg || "操作成功"));
+          ElMessage.success(String(res.data || "操作成功"));
           fetchData();
         }
       } catch (error) {

@@ -192,11 +192,11 @@ export default defineComponent({
           handleMsg: handleMsg.value,
         });
         if (res.status === 200) {
-          ElMessage.success(String(res.msg || "处理成功"));
+          ElMessage.success(String(res.data || "处理成功"));
           handleDialogVisible.value = false;
           fetchData();
         } else {
-          ElMessage.error(String(res.msg || "处理失败"));
+          ElMessage.error(String(res.data || "处理失败"));
         }
       } catch (error) {
         console.error("处理举报出错:", error);

@@ -127,6 +127,7 @@ export const GetPostAPI = (params: {
   pid: any;
   current: number;
   size: number;
+  order?: string;
 }): Res<String> => instance.get("/post/getpost", { params })
 
 //页面获取帖子数据

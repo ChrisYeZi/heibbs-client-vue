@@ -76,11 +76,11 @@ export default defineComponent({
 
     const fetchDefs=async()=>{const r=await GetCreditDefsAPI();if(r.status===200)defs.value=r.data};
     const fetchRules=async()=>{const r=await GetCreditRulesAPI();if(r.status===200)rules.value=r.data};
-    const saveDef=async(row:any)=>{const r=await UpdateCreditDefAPI(row);ElMessage[r.status===200?'success':'error'](String(r.msg||''))};
-    const saveRule=async(row:any)=>{const r=await UpdateCreditRuleAPI(row);ElMessage[r.status===200?'success':'error'](String(r.msg||''))};
+    const saveDef=async(row:any)=>{const r=await UpdateCreditDefAPI(row);ElMessage[r.status===200?'success':'error'](String(r.data||''))};
+    const saveRule=async(row:any)=>{const r=await UpdateCreditRuleAPI(row);ElMessage[r.status===200?'success':'error'](String(r.data||''))};
     const addRule=async()=>{const r=await InsertCreditRuleAPI({group:"新用户组",type:1,extcredits1:0,extcredits2:0,extcredits3:0,extcredits4:0,extcredits5:0,extcredits6:0,extcredits7:0,extcredits8:0});if(r.status===200)fetchRules()};
     const delRule=async(id:number)=>{try{await ElMessageBox.confirm("确定删除?")}catch{return};await DeleteCreditRuleAPI(id);fetchRules()};
-    const doGrant=async()=>{const r=await GrantCreditsAPI(grant);ElMessage[r.status===200?'success':'error'](String(r.msg||''))};
+    const doGrant=async()=>{const r=await GrantCreditsAPI(grant);ElMessage[r.status===200?'success':'error'](String(r.data||''))};
 
     onMounted(()=>{fetchDefs();fetchRules()});
     return {activeTab,defs,rules,grant,saveDef,saveRule,addRule,delRule,doGrant};

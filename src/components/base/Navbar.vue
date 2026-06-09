@@ -49,6 +49,7 @@ import store from "@/store";
 import router from "@/router";
 // 引入头像接口
 import { GetUserAvatarAPI } from "@/api/index";
+import { getCachedAvatar, setCachedAvatar } from "@/assets/js/imageCache";
 
 export default {
   name: "Navbar",
@@ -94,20 +95,20 @@ export default {
   methods: {
     // 加载用户头像
     loadUserAvatar() {
-      // 未登录时使用默认头像
       if (!this.login || !this.userId) {
         this.avatarUrl = "../../assets/img/avatar.png";
         return;
       }
-
-      // 调用接口获取头像
+      // 先查缓存
+      const cached = getCachedAvatar(this.userId)
+      if (cached) { this.avatarUrl = cached; return }
       GetUserAvatarAPI(this.userId)
         .then((res) => {
           if (res.status === 200 && res.data) {
-            // 拼接完整头像地址
-            this.avatarUrl = config.avatarUrl + res.data;
+            const url = config.avatarUrl + res.data;
+            this.avatarUrl = url;
+            setCachedAvatar(this.userId, url);
           } else {
-            // 接口返回异常时使用默认头像
             this.avatarUrl = "../../assets/img/avatar.png";
           }
         })
