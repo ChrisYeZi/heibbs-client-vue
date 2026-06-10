@@ -1,4 +1,5 @@
 <template>
+<van-pull-refresh v-model="refreshing" @refresh="onRefresh">
   <div class="bf-page">
     <van-loading v-if="loading" class="loading" />
 
@@ -32,7 +33,7 @@
           <el-input-number v-model="bankAmt" :min="1" size="small" style="width:120px"/>
           <el-button size="small" type="warning" @click="doDeposit">存入</el-button>
         </div>
-        <div class="bank-tip">日息 {{ (bankRate*100/30).toFixed(3) }}%，每天8点结算，利息直接到账。取出需整笔取出，利息在取出时一并结算。</div>
+        <div class="bank-tip">日息 {{ (bankRate*100/30).toFixed(3) }}%，每月上午8点结算，利息直接到账。取出需整笔取出，利息在取出时一并结算。</div>
         <!-- 存款明细 -->
         <div class="deposit-list" v-if="bankDeposits.length" style="margin-top:10px">
           <div v-for="d in bankDeposits" :key="d.id" class="deposit-item">
@@ -155,6 +156,7 @@
       </div>
     </template>
   </div>
+</van-pull-refresh>
 </template>
 
 <script lang="ts">
@@ -163,13 +165,14 @@ import { GetBlockFinanceAPI, GetMyStockAPI, BuyStockAPI, SellStockAPI } from "@/
 import instance from "@/config/request/request";
 import store from "@/store";
 import { ElMessage } from "element-plus";
-import { Loading } from "vant";
+import { Loading, PullRefresh } from "vant";
 
 export default defineComponent({
   name: "block-finance",
-  components: { VanLoading: Loading },
+  components: { VanLoading: Loading, [PullRefresh.name]: PullRefresh },
   setup() {
     const loading = ref(true),
+      refreshing = ref(false),
       finance = ref(0),
       logs = ref<any[]>([]),
       logPage = ref(1),
@@ -304,8 +307,16 @@ export default defineComponent({
     };
     if (isAdmin.value) loadConfig();
 
+    const onRefresh = async () => {
+      refreshing.value = true;
+      await fetch();
+      refreshing.value = false;
+    };
+
     onMounted(fetch);
     return {
+      refreshing,
+      onRefresh,
       loading,
       finance,
       logs,

@@ -876,6 +876,12 @@ interface ItemItem {
   id?: number; name: string; description?: string; icon?: string;
   type?: string; rarity?: number; price?: number;
   effectType?: string; effectValue?: number; status?: number;
+  // 系统售卖
+  sysSell?: number; sysSellPrice?: number;
+  sysSellLimitType?: string; sysSellLimitQty?: number;
+  // 系统收购
+  sysBuy?: number; sysBuyPrice?: number;
+  sysBuyLimitType?: string; sysBuyLimitQty?: number;
 }
 export const GetMyItemsAPI = (): Res<any> => instance.get("/item/mylist");
 export const UseItemAPI = (userItemId: number): Res<String> => instance.post(`/item/use/${userItemId}`);
@@ -915,6 +921,19 @@ export const BuyFixedAPI = (listingId: number): Res<String> => instance.post(`/s
 export const PlaceBidAPI = (listingId: number, amount: number): Res<String> => instance.post(`/shop/bid/${listingId}`, { amount });
 export const GetBidsAPI = (listingId: number): Res<any> => instance.get(`/shop/bids/${listingId}`);
 export const CancelListingAPI = (listingId: number): Res<String> => instance.post(`/shop/cancel/${listingId}`);
+// 系统商品
+export const GetSystemItemsAPI = (params?: { pageNum?: number; pageSize?: number }): Res<any> => {
+  const p = { pageNum: 1, pageSize: 20, ...params };
+  return instance.get("/shop/system", { params: p });
+};
+export const BuySystemItemAPI = (data: { itemId: number; quantity: number }): Res<String> =>
+  instance.post("/shop/system/buy", data);
+export const SellSystemItemAPI = (data: { itemId: number; quantity: number }): Res<String> =>
+  instance.post("/shop/system/sell", data);
+export const GetTradeHistoryAPI = (params?: { pageNum?: number; pageSize?: number }): Res<any> => {
+  const p = { pageNum: 1, pageSize: 20, ...params };
+  return instance.get("/shop/history", { params: p });
+};
 
 // ——————Stamp 图章模块
 interface StampItem { id?:number; name:string; imageUrl?:string; displayOrder?:number; status?:number }
@@ -941,6 +960,13 @@ export const UpdateCreditRuleAPI = (data:any): Res<String> => instance.post("/ad
 export const InsertCreditRuleAPI = (data:any): Res<String> => instance.post("/admin/credit/insert-rule",data);
 export const DeleteCreditRuleAPI = (id:number): Res<String> => instance.get("/admin/credit/delete-rule",{params:{id}});
 export const GrantCreditsAPI = (data:any): Res<String> => instance.post("/admin/credit/grant",data);
+export const GetUserCountAPI = (uid: number): Res<any> => instance.get("/admin/credit/user-count", { params: { uid } });
+export const SetUserCreditsAPI = (data: { uid: number; extcredits1?: number; extcredits2?: number; extcredits3?: number; extcredits4?: number }): Res<String> =>
+  instance.post("/admin/credit/set", data);
+export const UpdateUserItemAPI = (data: { userItemId: number; quantity: number }): Res<String> =>
+  instance.post("/item/admin/user-item/update", data);
+export const DeleteUserItemAPI = (data: { userItemId: number }): Res<String> =>
+  instance.post("/item/admin/user-item/delete", data);
 
 // ——————BlockFinance 会馆财政
 export const GetBlockFinanceAPI = (blockId:number, params?:any): Res<any> => instance.get(`/block-finance/finance/${blockId}`,{params});

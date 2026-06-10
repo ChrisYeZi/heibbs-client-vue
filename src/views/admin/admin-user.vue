@@ -104,16 +104,19 @@
       </el-table-column>
 
       <!-- 操作 -->
-      <el-table-column label="操作" width="200" align="center">
+      <el-table-column label="操作" width="320" align="center">
         <template #default="scope">
           <el-button size="mini" type="primary" @click="handleEdit(scope.row)"
             >编辑</el-button
           >
-          <el-button
-            size="mini"
-            type="danger"
-            @click="handleChangeStatus(scope.row)"
-            >{{ scope.row.status === 0 ? "禁用" : "启用" }}</el-button
+          <el-button size="mini" @click="openCreditDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567"
+            >积分</el-button
+          >
+          <el-button size="mini" @click="openItemDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567"
+            >物品</el-button
+          >
+          <el-button size="mini" @click="openMedalDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567"
+            >勋章</el-button
           >
         </template>
       </el-table-column>
@@ -204,11 +207,93 @@
         <el-button type="primary" @click="handleSave">保存</el-button>
       </div>
     </el-dialog>
+
+    <!-- 积分编辑对话框 — 直接编辑各积分值 -->
+    <el-dialog title="积分编辑" v-model="creditDlgVisible" width="420px">
+      <p style="margin-bottom:10px;color:#728567">用户: <b>{{ creditTarget?.username }}</b> (UID: {{ creditTarget?.uid }})</p>
+      <el-form label-width="120px">
+        <el-form-item label="灵气 (extcredits1)">
+          <el-input-number v-model="creditForm.extcredits1" :min="0" style="width:200px"/>
+        </el-form-item>
+        <el-form-item label="妖灵币 (extcredits2)">
+          <el-input-number v-model="creditForm.extcredits2" :min="0" style="width:200px"/>
+        </el-form-item>
+        <el-form-item label="值钱玉佩 (extcredits3)">
+          <el-input-number v-model="creditForm.extcredits3" :min="0" style="width:200px"/>
+        </el-form-item>
+        <el-form-item label="天明珠 (extcredits4)">
+          <el-input-number v-model="creditForm.extcredits4" :min="0" style="width:200px"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="creditDlgVisible=false">取消</el-button>
+        <el-button type="primary" @click="doSetCredit" style="background:#F6AD47;border-color:#F6AD47">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 物品管理对话框 — 已有物品 + 发放 -->
+    <el-dialog title="物品管理" v-model="itemDlgVisible" width="520px">
+      <p style="margin-bottom:10px;color:#728567">用户: <b>{{ itemTarget?.username }}</b> (UID: {{ itemTarget?.uid }})</p>
+      <!-- 已有物品 -->
+      <div v-if="userItems.length" style="margin-bottom:12px">
+        <h4 style="font-size:14px;color:#728567;margin:0 0 6px">已有物品</h4>
+        <div class="user-item-table">
+          <div v-for="ui in userItems" :key="'ui'+ui.id" class="user-item-row">
+            <img v-if="getItemInfo(ui.itemId)?.icon" :src="getItemInfo(ui.itemId).icon" style="width:28px;height:28px;border-radius:4px;object-fit:cover"/>
+            <span style="flex:1;font-size:13px;color:#728567;margin:0 8px">{{ getItemInfo(ui.itemId)?.name || '物品#'+ui.itemId }}</span>
+            <el-input v-model="editItemQtys[ui.id]" size="small" style="width:70px" placeholder="数量"/>
+            <el-button size="mini" @click="doSaveItemQty(ui.id)" style="margin-left:4px;background:#F6AD47;border-color:#F6AD47;color:#fff">保存</el-button>
+            <el-button size="mini" type="danger" @click="doDeleteItem(ui.id)" style="margin-left:4px">删除</el-button>
+          </div>
+        </div>
+      </div>
+      <van-empty v-else description="暂无物品" :image-size="[60,60]"/>
+      <!-- 发放物品 -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #FCF9E0">
+        <h4 style="font-size:14px;color:#728567;margin:0 0 6px">发放物品</h4>
+        <div style="display:flex;gap:8px;align-items:center">
+          <el-select v-model="itemForm.itemId" style="width:200px" placeholder="选择物品" filterable>
+            <el-option v-for="it in itemList" :key="it.id" :label="it.name" :value="it.id"/>
+          </el-select>
+          <el-input-number v-model="itemForm.qty" :min="1" size="small" style="width:80px"/>
+          <el-button type="primary" size="small" @click="doGrantItem" style="background:#F6AD47;border-color:#F6AD47">发放</el-button>
+        </div>
+      </div>
+      <template #footer><el-button @click="itemDlgVisible=false">关闭</el-button></template>
+    </el-dialog>
+
+    <!-- 勋章管理对话框 — 修正图片和名称字段 -->
+    <el-dialog title="勋章管理" v-model="medalDlgVisible" width="500px">
+      <p style="margin-bottom:10px;color:#728567">用户: <b>{{ medalTarget?.username }}</b> (UID: {{ medalTarget?.uid }})</p>
+      <!-- 已有勋章 -->
+      <div class="medal-section" v-if="userMedals.length">
+        <h4 style="font-size:14px;color:#728567;margin:0 0 6px">已有勋章</h4>
+        <div class="user-medal-list">
+          <div v-for="m in userMedals" :key="'um'+m.id" class="user-medal-item">
+            <img :src="m.medalImageUrl" style="width:32px;height:32px;border-radius:4px;object-fit:contain"/>
+            <span style="flex:1;font-size:13px;color:#728567">{{ m.medalName }}</span>
+            <el-button size="mini" type="danger" @click="doRevokeMedal(m.id)">收回</el-button>
+          </div>
+        </div>
+      </div>
+      <van-empty v-else description="暂无勋章" :image-size="[60,60]"/>
+      <!-- 发放勋章 -->
+      <div style="margin-top:14px">
+        <h4 style="font-size:14px;color:#728567;margin:0 0 6px">发放勋章</h4>
+        <div style="display:flex;gap:8px">
+          <el-select v-model="medalForm.medalId" style="flex:1" placeholder="选择勋章" filterable>
+            <el-option v-for="m in medalList" :key="m.id" :label="m.name" :value="m.id"/>
+          </el-select>
+          <el-button type="primary" @click="doGrantMedal" style="background:#F6AD47;border-color:#F6AD47;white-space:nowrap">发放</el-button>
+        </div>
+      </div>
+      <template #footer><el-button @click="medalDlgVisible=false">关闭</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts">
-import { ref, onMounted, defineComponent, computed, watch } from "vue";
+import { ref, reactive, onMounted, defineComponent, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
   ElMessage,
@@ -224,7 +309,8 @@ import {
   ElOption,
   ElSwitch,
 } from "element-plus";
-import { SelectUserAPI, UpdateUserAPI, GetGroupListAPI, SearchUserAPI } from "@/api/index";
+import { Empty } from "vant";
+import { SelectUserAPI, UpdateUserAPI, GetGroupListAPI, SearchUserAPI, GetUserCountAPI, SetUserCreditsAPI, GetAdminItemListAPI, GrantItemAPI, GetAdminUserItemsAPI, UpdateUserItemAPI, DeleteUserItemAPI, GetAdminMedalListAPI, GrantMedalAPI, RevokeMedalAPI, GetUserMedalsAPI } from "@/api/index";
 
 // 分页结果接口
 interface PageResult<T> {
@@ -276,17 +362,9 @@ interface GroupItem {
 export default defineComponent({
   name: "admin-user",
   components: {
-    ElTable,
-    ElTableColumn,
-    ElTag,
-    ElButton,
-    ElDialog,
-    ElForm,
-    ElFormItem,
-    ElInput,
-    ElSelect,
-    ElOption,
-    ElSwitch,
+    ElTable, ElTableColumn, ElTag, ElButton, ElDialog, ElForm, ElFormItem,
+    ElInput, ElSelect, ElOption, ElSwitch,
+    VanEmpty: Empty,
   },
   setup() {
     const router = useRouter();
@@ -326,6 +404,26 @@ export default defineComponent({
       lastvisit: 0,
       lastip: "",
     });
+
+    // ===== 积分调整 =====
+    const creditDlgVisible = ref(false);
+    const creditTarget = ref<UserItem | null>(null);
+    const creditForm = ref({ extcredits1: 0, extcredits2: 0, extcredits3: 0, extcredits4: 0 });
+
+    // ===== 物品发放 =====
+    const itemDlgVisible = ref(false);
+    const itemTarget = ref<UserItem | null>(null);
+    const userItems = ref<any[]>([]);
+    const itemList = ref<any[]>([]);
+    const editItemQtys = reactive<Record<number, string>>({});
+    const itemForm = ref({ itemId: 0, qty: 1 });
+
+    // ===== 勋章管理 =====
+    const medalDlgVisible = ref(false);
+    const medalTarget = ref<UserItem | null>(null);
+    const medalList = ref<any[]>([]);
+    const userMedals = ref<any[]>([]);
+    const medalForm = ref({ medalId: 0 });
 
     // 表单验证规则
     const rules = {
@@ -465,6 +563,91 @@ export default defineComponent({
       }
     };
 
+    // ===== 积分操作 — 直接编辑各积分值 =====
+    const openCreditDlg = async (row: UserItem) => {
+      creditTarget.value = row;
+      creditDlgVisible.value = true;
+      // 加载当前积分
+      const r = await GetUserCountAPI(row.uid);
+      if (r.status === 200) {
+        creditForm.value = {
+          extcredits1: r.data.extcredits1 || 0,
+          extcredits2: r.data.extcredits2 || 0,
+          extcredits3: r.data.extcredits3 || 0,
+          extcredits4: r.data.extcredits4 || 0,
+        };
+      }
+    };
+    const doSetCredit = async () => {
+      if (!creditTarget.value) return;
+      const r = await SetUserCreditsAPI({ uid: creditTarget.value.uid, ...creditForm.value });
+      if (r.status === 200) { ElMessage.success("积分更新成功"); creditDlgVisible.value = false; getData(); }
+      else ElMessage.error(String(r.data || "更新失败"));
+    };
+
+    // ===== 物品操作 — 管理用户已有物品 =====
+    const openItemDlg = async (row: UserItem) => {
+      itemTarget.value = row;
+      itemDlgVisible.value = true;
+      const [ui, ai] = await Promise.all([GetAdminUserItemsAPI(row.uid), GetAdminItemListAPI()]);
+      if (ai.status === 200) itemList.value = ai.data.records || [];
+      if (ui.status === 200) {
+        userItems.value = ui.data || [];
+        Object.keys(editItemQtys).forEach(k => delete editItemQtys[Number(k)]);
+        userItems.value.forEach((u:any) => { editItemQtys[u.id] = String(u.quantity ?? 0); });
+      }
+      itemForm.value = { itemId: 0, qty: 1 };
+    };
+    const doSaveItemQty = async (userItemId: number) => {
+      const val = Number(editItemQtys[userItemId]);
+      if (isNaN(val) || val < 0) { ElMessage.warning("请输入有效数量"); return; }
+      const r = await UpdateUserItemAPI({ userItemId, quantity: val });
+      if (r.status === 200) { ElMessage.success("已保存"); openItemDlg(itemTarget.value! as any); }
+      else ElMessage.error(String(r.data || "更新失败"));
+    };
+    const doDeleteItem = async (userItemId: number) => {
+      const r = await DeleteUserItemAPI({ userItemId });
+      if (r.status === 200) { ElMessage.success("已删除"); openItemDlg(itemTarget.value! as any); }
+      else ElMessage.error(String(r.data || "删除失败"));
+    };
+    const getItemInfo = (itemId: number) => itemList.value.find((it: any) => it.id === itemId);
+
+    const doGrantItem = async () => {
+      if (!itemForm.value.itemId || !itemTarget.value) { ElMessage.warning("请选择物品"); return; }
+      const r = await GrantItemAPI({ itemId: itemForm.value.itemId, quantity: itemForm.value.qty, uids: String(itemTarget.value.uid) });
+      if (r.status === 200) { ElMessage.success("发放成功"); openItemDlg(itemTarget.value! as any); }
+      else ElMessage.error(String(r.data || "发放失败"));
+    };
+
+    // ===== 勋章操作 — 修正图片和名称字段 =====
+    const openMedalDlg = async (row: UserItem) => {
+      medalTarget.value = row;
+      medalForm.value = { medalId: 0 };
+      const [ml, um] = await Promise.all([GetAdminMedalListAPI(), GetUserMedalsAPI(row.uid)]);
+      if (ml.status === 200) medalList.value = ml.data.records || ml.data || [];
+      if (um.status === 200) userMedals.value = um.data || [];
+      medalDlgVisible.value = true;
+    };
+    const doGrantMedal = async () => {
+      if (!medalForm.value.medalId || !medalTarget.value) { ElMessage.warning("请选择勋章"); return; }
+      const r = await GrantMedalAPI({ medalId: medalForm.value.medalId, uids: String(medalTarget.value.uid) });
+      if (r.status === 200) {
+        ElMessage.success("勋章发放成功");
+        const um = await GetUserMedalsAPI(medalTarget.value.uid);
+        if (um.status === 200) userMedals.value = um.data || [];
+      } else ElMessage.error(String(r.data || "发放失败"));
+    };
+    const doRevokeMedal = async (userMedalId: number) => {
+      const r = await RevokeMedalAPI(userMedalId);
+      if (r.status === 200) {
+        ElMessage.success("已收回");
+        if (medalTarget.value) {
+          const um = await GetUserMedalsAPI(medalTarget.value.uid);
+          if (um.status === 200) userMedals.value = um.data || [];
+        }
+      } else ElMessage.error(String(r.data || "操作失败"));
+    };
+
     // 编辑用户
     const handleEdit = (row: UserItem) => {
       form.value = { ...row };
@@ -595,7 +778,11 @@ export default defineComponent({
       getExtGroupName,
       getExtGroupColor,
       handleSearch,
-      resetSearch
+      resetSearch,
+      // 积分/物品/勋章
+      creditDlgVisible, creditTarget, creditForm, openCreditDlg, doSetCredit,
+      itemDlgVisible, itemTarget, userItems, editItemQtys, itemList, itemForm, getItemInfo, openItemDlg, doSaveItemQty, doDeleteItem, doGrantItem,
+      medalDlgVisible, medalTarget, medalList, userMedals, medalForm, openMedalDlg, doGrantMedal, doRevokeMedal,
     };
   },
 });
@@ -658,5 +845,38 @@ export default defineComponent({
 
 ::v-deep .el-form-item {
   margin-bottom: 15px;
+}
+
+// 勋章列表
+.user-medal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.user-medal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FCF9E0;
+  border: 1px solid rgba(246, 173, 71, 0.3);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 200px;
+}
+.medal-section {
+  margin-bottom: 10px;
+}
+.user-item-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.user-item-row {
+  display: flex;
+  align-items: center;
+  background: #FCF9E0;
+  border: 1px solid rgba(246, 173, 71, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 </style>

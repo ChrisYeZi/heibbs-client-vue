@@ -1,6 +1,7 @@
 <template>
-  <van-pull-refresh v-model="refreshing" @refresh="onRefresh" class="index">
-  <div ref="scrollContainer">
+<div ref="scrollContainer" class="scroll-wrapper">
+  <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+  <div class="index-content">
     <!-- 搜索框 -->
     <div class="search-bar">
       <van-search
@@ -30,8 +31,9 @@
     </van-swipe>
 
     <van-notice-bar
+      v-if="noticeEnabled"
       left-icon="volume-o"
-      text="罗小黑妖灵论坛测试开发中，登录账户请注意账户安全"
+      :text="noticeText"
     />
 
     <!-- 排序切换标签 -->
@@ -156,6 +158,7 @@
     </div>
   </div>
   </van-pull-refresh>
+</div>
 </template>
 
 <script lang="ts">
@@ -170,6 +173,7 @@ import {
   GetPostTopAPI,
   GetAdminBannerAPI,
   GetUserAvatarAPI,
+  GetSystemConfigAPI,
 } from "@/api/index";
 import {
   Swipe,
@@ -279,9 +283,24 @@ export default defineComponent({
     const refreshing = ref(false);
     const onRefresh = async () => {
       refreshing.value = true;
-      await changeSortType(sortType.value);
+      currentPage.value = 1;
+      hasMore.value = true;
+      await getData(1, false);
       refreshing.value = false;
     };
+    const noticeEnabled = ref(true);
+    const noticeText = ref("罗小黑妖灵论坛测试开发中，登录账户请注意账户安全");
+    const fetchNoticeConfig = async () => {
+      try {
+        const r = await GetSystemConfigAPI();
+        if (r.status === 200) {
+          noticeEnabled.value = r.data.notice_enabled !== 'false';
+          noticeText.value = r.data.notice_text || noticeText.value;
+        }
+      } catch (e) {}
+    };
+    fetchNoticeConfig();
+
     const searchKeyword = ref("");
     const doSearch = () => {
       if (searchKeyword.value.trim()) {
@@ -491,6 +510,7 @@ export default defineComponent({
       handleBannerClick,
       sortType,
       refreshing, onRefresh,
+      noticeEnabled, noticeText,
       searchKeyword,
       doSearch,
       changeSortType, // 导出切换方法
@@ -505,14 +525,17 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.index {
+.scroll-wrapper {
+  height: calc(100vh - 119px);
+  overflow-y: auto;
+}
+.index-content {
   background: rgba(255, 255, 255, 0.9);
   margin-bottom: 60px;
   margin: 0px 5px 60px 5px;
   padding: 5px 10px 15px 10px;
   line-height: 1.5em;
-  height: calc(100vh - 125px);
-  overflow-y: auto;
+  min-height: 100%;
   user-select: none;
   .search-bar {
   }

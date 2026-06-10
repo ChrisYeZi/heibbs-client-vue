@@ -2,10 +2,18 @@
   <div class="admin-attachment">
     <div class="page-header">
       <h2>附件管理</h2>
-      <el-upload :action="uploadUrl" :headers="uploadHeaders" :data="uploadData" :show-file-list="false"
-        :on-success="onUploadSuccess" :on-error="onUploadError" accept="image/*,.pdf,.zip,.rar,.7z,.doc,.docx,.xls,.xlsx,.mp3,.mp4,.wav">
-        <el-button type="primary">上传系统附件</el-button>
-      </el-upload>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;color:#728567">压缩:</span>
+        <el-select v-model="compressLevel" size="small" style="width:100px">
+          <el-option label="512x512" :value="512"/><el-option label="256x256" :value="256"/>
+          <el-option label="128x128" :value="128"/><el-option label="64x64" :value="64"/>
+          <el-option label="不压缩" :value="0"/>
+        </el-select>
+        <el-upload :action="uploadUrl" :headers="uploadHeaders" :data="uploadData" :show-file-list="false"
+          :on-success="onUploadSuccess" :on-error="onUploadError" accept="image/*,.pdf,.zip,.rar,.7z,.doc,.docx,.xls,.xlsx,.mp3,.mp4,.wav">
+          <el-button type="primary">上传系统附件</el-button>
+        </el-upload>
+      </div>
     </div>
 
     <div class="filter-bar">
@@ -51,7 +59,7 @@
 </template>
 
 <script lang="ts">
-import { ref, watch, defineComponent } from "vue";
+import { ref, watch, defineComponent, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import config from "@/config/index";
 import { GetAdminAttachmentListAPI, DeleteAdminAttachmentAPI } from "@/api/index";
@@ -67,7 +75,8 @@ export default defineComponent({
     const filterType=ref("all"),filterCategory=ref("all");
     const uploadUrl=config.baseApi+"/admin/attachment/upload";
     const uploadHeaders={Authorization:localStorage.getItem("heibbs.token")||""};
-    const uploadData={systemCategory:"systemUi"};
+    const compressLevel=ref(512);
+    const uploadData=computed(()=>({systemCategory:"systemUi",compress:compressLevel.value}));
 
     const fetchData=async()=>{
       loading.value=true;
@@ -87,7 +96,7 @@ export default defineComponent({
     const handlePageChange=(p:number)=>{currentPage.value=p;fetchData()};
     watch([filterType, filterCategory], ()=>{ currentPage.value=1; fetchData(); });
     fetchData();
-    return{baseUrl,loading,list,currentPage,pageSize,filterType,filterCategory,uploadUrl,uploadHeaders,uploadData,onUploadSuccess,onUploadError,getFileIcon,formatSize,copyUrl,handleDelete,handlePageChange};
+    return{baseUrl,loading,list,currentPage,pageSize,filterType,filterCategory,compressLevel,uploadUrl,uploadHeaders,uploadData,onUploadSuccess,onUploadError,getFileIcon,formatSize,copyUrl,handleDelete,handlePageChange};
   }
 });
 </script>

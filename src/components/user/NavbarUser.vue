@@ -1,21 +1,11 @@
 <template>
   <div class="NavbarUser">
     <div class="avatarBox">
-      <!-- 头像区域：支持点击上传 -->
-      <div class="avatar-container" @click="triggerAvatarUpload">
+      <!-- 头像区域：点击跳转到设置页面更换头像 -->
+      <div class="avatar-container" @click="goToSettingAvatar">
         <img :src="avatarUrl" alt="用户头像" class="user-avatar" />
-        <!-- 上传提示（登录状态显示） -->
         <div class="avatar-tip" v-if="login">更换头像</div>
       </div>
-
-      <!-- 隐藏的文件选择器 -->
-      <input
-        type="file"
-        ref="avatarInput"
-        class="avatar-input"
-        accept="image/*"
-        @change="handleAvatarSelect"
-      />
 
       <div class="avatarBox-content" v-if="login">{{ username }}</div>
       <div class="avatarBox-content" v-else @click="toLogin()">
@@ -56,27 +46,22 @@ import { defineComponent, ref, watch } from "vue";
 import config from "@/config/index";
 import store from "@/store";
 import router from "@/router";
-import { GetUserAvatarAPI } from "@/api/index"; // 引入获取头像接口
-import { UploadAvatarAPI } from "@/api/index"; // 引入上传头像接口
-import { ElMessage } from "element-plus";
+import { GetUserAvatarAPI } from "@/api/index";
 
 export default defineComponent({
   name: "NavbarUser",
   setup() {
-    const avatarInput = ref<HTMLInputElement | null>(null); // 文件选择器ref
-    const avatarUrl = ref<string>("../../assets/img/avatar.png"); // 头像地址
+    const avatarUrl = ref<string>("../../assets/img/avatar.png");
     const uid = ref<number | null>(store.state.user?.info?.user?.uid);
-    const login = ref<boolean>(!!store.state.user?.login); // 确保是boolean原始类型
+    const login = ref<boolean>(!!store.state.user?.login);
     const username = ref<string>(store.state.user?.info?.user?.username || "");
     const admin = ref<number | null>(store.state.user?.info?.user?.extgroupids);
 
-    // 加载用户头像
     const loadUserAvatar = async () => {
       if (!login.value || !uid.value) {
         avatarUrl.value = "../../assets/img/avatar.png";
         return;
       }
-
       try {
         const res = await GetUserAvatarAPI(uid.value);
         if (res.status === 200 && res.data) {
@@ -88,65 +73,24 @@ export default defineComponent({
       }
     };
 
-    // 触发文件选择器
-    const triggerAvatarUpload = () => {
-      if (!login.value) return;
-      avatarInput.value?.click();
+    // 点击头像跳转到设置页面
+    const goToSettingAvatar = () => {
+      if (!login.value) { toLogin(); return; }
+      router.push("/setting");
     };
 
-    // 处理头像选择
-    const handleAvatarSelect = async (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (!file) return;
-
-      // 校验文件类型和大小（限制2MB以内的图片）
-      const isImage = file.type.startsWith("image/");
-      const isLt3M = file.size / 1024 / 1024 < 3;
-
-      if (!isImage) {
-        ElMessage.error("请选择图片文件！");
-        return;
-      }
-      if (!isLt3M) {
-        ElMessage.error("图片大小不能超过3MB!");
-        return;
-      }
-
-      try {
-        // 上传头像
-        const res = await UploadAvatarAPI(file);
-        if (res.status === 200) {
-          ElMessage.success("头像上传成功！");
-          // 如果用vant Toast：Toast.success("头像上传成功！");
-
-          // 重新加载最新头像
-          await loadUserAvatar();
-          // 清空文件选择器
-          target.value = "";
-        }
-      } catch (error) {
-        console.error("上传头像失败:", error);
-        ElMessage.error("头像上传失败，请重试！");
-        // 如果用vant Toast：Toast.fail("头像上传失败，请重试！");
-        target.value = "";
-      }
-    };
-
-    // 监听登录状态和UID变化
     watch(
       [() => store.state.user?.login, () => store.state.user?.info?.user?.uid],
       () => {
         uid.value = store.state.user?.info?.user?.uid;
-        login.value = !!store.state.user?.login; // 强制转为boolean原始类型
+        login.value = !!store.state.user?.login;
         username.value = store.state.user?.info?.user?.username || "";
         admin.value = store.state.user?.info?.user?.extgroupids;
-        loadUserAvatar(); // 重新加载头像
+        loadUserAvatar();
       },
       { immediate: true }
     );
 
-    // 跳转登录
     const toLogin = () => {
       router.push({
         path: "/login",
@@ -155,16 +99,8 @@ export default defineComponent({
     };
 
     return {
-      avatarInput,
-      avatarUrl,
-      uid,
-      login,
-      username,
-      admin,
-      loadUserAvatar,
-      triggerAvatarUpload,
-      handleAvatarSelect,
-      toLogin,
+      avatarUrl, uid, login, username, admin,
+      loadUserAvatar, goToSettingAvatar, toLogin,
     };
   },
 });
@@ -219,10 +155,6 @@ export default defineComponent({
       &:hover .avatar-tip {
         opacity: 1;
       }
-    }
-
-    .avatar-input {
-      display: none; // 隐藏原生文件选择器
     }
 
     .avatarBox-content {

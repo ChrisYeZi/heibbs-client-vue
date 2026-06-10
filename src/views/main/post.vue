@@ -579,6 +579,7 @@
       >
         <el-radio-button value="state">状态设置</el-radio-button>
         <el-radio-button value="stamp">图章设置</el-radio-button>
+        <el-radio-button value="move" v-if="canDeletePost">更改板块</el-radio-button>
       </el-radio-group>
       <div v-if="operateType === 'state'" class="state-opts">
         <el-radio-group v-model="operateState">
@@ -597,13 +598,19 @@
           >
         </el-radio-group>
       </div>
-      <div v-else>
+      <div v-else-if="operateType === 'stamp'">
         <el-radio-group v-model="operateStamp">
           <el-radio :value="null">无图章</el-radio>
           <el-radio v-for="s in operateStampList" :key="s.id" :value="s.id">{{
             s.name
           }}</el-radio>
         </el-radio-group>
+      </div>
+      <div v-else-if="operateType === 'move'" class="move-block-select">
+        <p style="font-size:13px;color:#728567;margin-bottom:8px">选择目标板块，帖子及其所有回复将一同移动</p>
+        <el-select v-model="operateTargetFid" style="width:100%" placeholder="请选择目标板块" filterable>
+          <el-option v-for="b in blockList" :key="b.id" :label="b.name" :value="b.id"/>
+        </el-select>
       </div>
       <template #footer>
         <el-button @click="operateDlg = false">取消</el-button>
@@ -612,11 +619,11 @@
     </el-dialog>
 
     <!-- 评分对话框 -->
-    <el-dialog v-model="ratingDialogVisible" title="帖子评分" width="380px">
+    <el-dialog v-model="ratingDialogVisible" title="帖子评分" width="400px" custom-class="rating-dialog">
       <div class="rating-info">
-        <p>评分帖子: #{{ ratingTargetPid }}</p>
-        <p style="font-size: 12px; color: #909399">
-          请为以下积分类型设置评分值（正数加分，负数扣分）
+        <p>评分帖子: <strong>#{{ ratingTargetPid }}</strong></p>
+        <p style="font-size: 12px; color: rgba(114,133,103,0.7)">
+          正数加分，负数扣分，请在额度范围内评分
         </p>
       </div>
       <div class="rating-credits" v-if="ratingData">
@@ -652,9 +659,9 @@
         show-word-limit
       />
       <template #footer>
-        <el-button @click="ratingDialogVisible = false">取消</el-button>
+        <el-button class="rating-dialog-btn-cancel" @click="ratingDialogVisible = false">取消</el-button>
         <el-button
-          type="primary"
+          class="rating-dialog-btn-submit"
           @click="submitRating"
           :disabled="!hasRatingValue"
           >提交评分</el-button
@@ -689,6 +696,7 @@ import {
   SetPostStampAPI,
   SetPostStateAPI,
   DeletePostAPI,
+  MovePostAPI,
 } from "@/api/index";
 import Postbar from "@/components/common/Postbar.vue";
 import parsedContent from "@/assets/js/parsedContent";
@@ -1177,16 +1185,18 @@ export default defineComponent({
     // 图章设置
     const operateDlg = ref(false);
     const operatePost = ref<any>(null);
-    const operateType = ref("state"); // state | stamp
+    const operateType = ref("state"); // state | stamp | move
     const operateState = ref(0);
     const operateStamp = ref<number | null>(null);
     const operateStampList = ref<any[]>([]);
+    const operateTargetFid = ref(0);
 
     const openPostOperate = async (post: any) => {
       operatePost.value = post;
       operateType.value = "state";
       operateState.value = post.state || 0;
       operateStamp.value = post.stampId || null;
+      operateTargetFid.value = post.fid || 0;
       const r = await GetActiveStampsAPI();
       operateStampList.value = r.data || [];
       operateDlg.value = true;
@@ -1201,9 +1211,17 @@ export default defineComponent({
           state: operateState.value,
         });
         ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
-      } else {
+      } else if (operateType.value === "stamp") {
         const r = await SetPostStampAPI(post.pid, operateStamp.value);
         ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
+      } else if (operateType.value === "move") {
+        if (!operateTargetFid.value) { ElMessage.warning("请选择目标板块"); return; }
+        const r = await MovePostAPI({ pid: post.pid, targetFid: operateTargetFid.value });
+        if (r.status === 200) {
+          ElMessage.success("帖子已移动到目标板块");
+          operateDlg.value = false;
+          getData();
+        } else ElMessage.error(String(r.data || "移动失败"));
       }
       operateDlg.value = false;
     };
@@ -1699,6 +1717,7 @@ export default defineComponent({
       operateState,
       operateStamp,
       operateStampList,
+      operateTargetFid,
       submitOperate,
     };
   },
@@ -2000,13 +2019,14 @@ export default defineComponent({
 .extcredits-records {
   margin: 15px 0;
   padding: 10px;
-  background-color: #fdfcfb;
+  background-color: #FCF9E0;
   border-radius: 6px;
+  border: 1px solid rgba(246, 173, 71, 0.2);
 
   .records-title {
     font-size: 14px;
     font-weight: 500;
-    color: #27231a;
+    color: #728567;
     margin-bottom: 8px;
   }
 
@@ -2019,12 +2039,12 @@ export default defineComponent({
     td {
       padding: 8px 10px;
       text-align: left;
-      border: 1px solid #faf6ef;
+      border: 1px solid rgba(246, 173, 71, 0.15);
     }
 
     th {
-      background-color: #fffbf1;
-      color: #666;
+      background-color: rgba(246, 173, 71, 0.1);
+      color: #728567;
     }
 
     tr:nth-child(even) {
@@ -2035,6 +2055,66 @@ export default defineComponent({
       font-weight: 500;
     }
   }
+}
+
+// 评分对话框样式
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid #728567;
+  .el-dialog__title { color: #728567; font-weight: 600; }
+}
+:deep(.el-dialog__footer) {
+  border-top: 1px solid #FCF9E0;
+  padding: 12px 20px;
+}
+.rating-info {
+  p { color: #728567; margin: 2px 0; }
+}
+.rating-credits { margin-top: 12px; }
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(246, 173, 71, 0.2);
+  border-radius: 8px;
+}
+.rating-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #F6AD47;
+  min-width: 60px;
+}
+.rating-limit {
+  font-size: 11px;
+  color: #F6AD47;
+  flex: 1;
+}
+:deep(.rating-row .el-input-number) {
+  .el-input__inner {
+    border-color: rgba(246, 173, 71, 0.4);
+    color: #728567;
+    text-align: center;
+    &:focus { border-color: #F6AD47; }
+  }
+  .el-input-number__decrease, .el-input-number__increase {
+    background: #FCF9E0;
+    color: #728567;
+    border-color: rgba(246, 173, 71, 0.3);
+    &:hover { color: #F6AD47; }
+  }
+}
+.rating-dialog-btn-cancel {
+  border-color: #728567 !important;
+  color: #728567 !important;
+  &:hover { border-color: #F6AD47 !important; color: #F6AD47 !important; background: #FCF9E0 !important; }
+}
+.rating-dialog-btn-submit {
+  background: #F6AD47 !important;
+  border-color: #F6AD47 !important;
+  color: #fff !important;
+  &:hover { background: darken(#F6AD47, 8%) !important; border-color: darken(#F6AD47, 8%) !important; }
+  &.is-disabled { background: #ddd !important; border-color: #ddd !important; }
 }
 
 // 评论区样式

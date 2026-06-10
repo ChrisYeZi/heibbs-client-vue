@@ -5,8 +5,9 @@
     </div>
 
     <van-notice-bar
+      v-if="noticeEnabled"
       left-icon="volume-o"
-      text="当前论坛开发当中，为确保论坛稳定，暂不开放注册功能。"
+      :text="noticeText"
     />
     <!--        登录         -->
     <div class="login-form" v-if="indexType == 'login'">
@@ -168,6 +169,7 @@ import {
   UpdateForgotPasswordAPI,
   GetRegisterCaptchaAPI,
   RegisterAPI,
+  GetSystemConfigAPI,
 } from "../../api/index";
 import MessagebarVue from "@/components/common/Messagebar.vue";
 import store from "@/store";
@@ -199,9 +201,22 @@ export default {
       questCaptcha: false,
       captchaCountdown: 0,
       captchaTimer: null,
+      noticeEnabled: true,
+      noticeText: "罗小黑妖灵论坛测试开发中，登录账户请注意账户安全",
     };
   },
+  created() {
+    this.loadNoticeConfig();
+  },
   methods: {
+    loadNoticeConfig() {
+      GetSystemConfigAPI().then(res => {
+        if (res.status === 200) {
+          this.noticeEnabled = res.data.notice_enabled !== 'false';
+          this.noticeText = res.data.notice_text || this.noticeText;
+        }
+      }).catch(() => {});
+    },
     // 跳转首页
     toIndex() {
       router.push("/index");

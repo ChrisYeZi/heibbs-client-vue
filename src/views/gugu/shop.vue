@@ -26,6 +26,22 @@
         "
         >拍卖</span
       >
+      <span
+        :class="{ active: filterType === 'system' }"
+        @click="
+          filterType = 'system';
+          fetch();
+        "
+        >系统商品</span
+      >
+      <span
+        :class="{ active: filterType === 'history' }"
+        @click="
+          filterType = 'history';
+          fetch();
+        "
+        >交易记录</span
+      >
     </div>
     <van-loading v-if="loading" class="loading" />
     <van-empty
@@ -41,15 +57,15 @@
       >
         <div class="listing-header">
           <img v-if="item.itemIcon" :src="item.itemIcon" class="listing-icon" />
-          <span v-else class="listing-icon-placeholder">📦</span>
+          <span v-else class="listing-icon-placeholder"></span>
           <div class="listing-info">
-            <div class="listing-name">{{ item.itemName }}</div>
+            <div class="listing-name">{{ item.itemName }} · x{{ item.quantity }}</div>
             <div class="listing-seller">
-              {{ item.sellerName }} · x{{ item.quantity }}
+              {{ item.sellerName }}
             </div>
           </div>
           <span class="listing-type-tag" :class="item.type">{{
-            item.type === "fixed" ? "一口价" : "拍卖"
+            item.type === "fixed" ? "一口价" : item.type === "system" ? "系统" : "拍卖"
           }}</span>
         </div>
         <!-- 拍卖倒计时+最高出价者 -->
@@ -78,7 +94,13 @@
             >{{ item.bidCount || 0 }}次出价</span
           >
           <el-button
-            v-if="item.type === 'fixed'"
+            v-if="item.type === 'system'"
+            size="small"
+            @click="buySystem(item)"
+            >购买</el-button
+          >
+          <el-button
+            v-else-if="item.type === 'fixed'"
             size="small"
             @click="buyFixed(item)"
             >购买</el-button
@@ -87,6 +109,22 @@
         </div>
       </div>
     </div>
+    <!-- 交易记录列表 -->
+    <div class="history-list" v-if="filterType === 'history' && tradeLogs.length">
+      <div class="history-item" v-for="log in tradeLogs" :key="log.id">
+        <img v-if="log.itemIcon" :src="log.itemIcon" class="history-icon"/>
+        <div class="history-info">
+          <div class="history-name">{{ log.itemName }} x{{ log.quantity }}</div>
+          <div class="history-detail">
+            <span :class="log.type==='fixed'?'tag-fixed':'tag-auction'">{{ log.type==='fixed'?'一口价':'拍卖' }}</span>
+            {{ log.sellerName }}
+          </div>
+        </div>
+        <div class="history-price">{{ log.finalPrice || log.price }} 妖灵币</div>
+        <div class="history-time">{{ fmtBidTime(log.dateline) }}</div>
+      </div>
+    </div>
+    <van-empty v-if="filterType === 'history' && !loading && !tradeLogs.length" description="暂无交易记录"/>
     <el-pagination
       v-if="total > pageSize"
       layout="prev,pager,next"
@@ -130,7 +168,7 @@
 
 <script lang="ts">
 import { ref, defineComponent } from "vue";
-import { GetShopListingsAPI, BuyFixedAPI, PlaceBidAPI } from "@/api/index";
+import { GetShopListingsAPI, BuyFixedAPI, PlaceBidAPI, GetSystemItemsAPI, BuySystemItemAPI, SellSystemItemAPI, GetTradeHistoryAPI } from "@/api/index";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Loading, Empty, PullRefresh } from "vant";
 
@@ -150,23 +188,48 @@ export default defineComponent({
       page = ref(1),
       pageSize = ref(20),
       total = ref(0),
-      filterType = ref("");
+      filterType = ref(""),
+      refreshing = ref(false),
+      tradeLogs = ref<any[]>([]);
     const bidDlg = ref(false),
       bidTarget = ref<any>({}),
       bidAmount = ref(0);
     const rarityClass = (r: any) => rarityColors[r] || "common";
     const fetch = async () => {
       loading.value = true;
-      const r = await GetShopListingsAPI({
-        pageNum: page.value,
-        pageSize: pageSize.value,
-        type: filterType.value || undefined,
-      });
-      if (r.status === 200) {
-        list.value = r.data.records || [];
-        total.value = r.data.total || 0;
+      if (filterType.value === 'history') {
+        const r = await GetTradeHistoryAPI({ pageNum: page.value, pageSize: pageSize.value });
+        if (r.status === 200) {
+          tradeLogs.value = r.data.records || [];
+          total.value = r.data.total || 0;
+        }
+        list.value = [];
+      } else if (filterType.value === 'system') {
+        const r = await GetSystemItemsAPI({ pageNum: page.value, pageSize: pageSize.value });
+        if (r.status === 200) {
+          list.value = (r.data.records || []).map((item: any) => ({
+            ...item, type: 'system', itemName: item.name, itemIcon: item.icon,
+            itemRarity: item.rarity, sellerName: '系统', price: item.sysSellPrice, quantity: 1
+          }));
+          total.value = r.data.total || 0;
+        }
+      } else {
+        const r = await GetShopListingsAPI({
+          pageNum: page.value, pageSize: pageSize.value,
+          type: filterType.value || undefined,
+        });
+        if (r.status === 200) {
+          list.value = r.data.records || [];
+          total.value = r.data.total || 0;
+        }
       }
       loading.value = false;
+    };
+    const onRefresh = async () => {
+      refreshing.value = true;
+      page.value = 1;
+      await fetch();
+      refreshing.value = false;
     };
     const buyFixed = async (item: any) => {
       try {
@@ -217,6 +280,28 @@ export default defineComponent({
         fetch();
       } else ElMessage.error(String(r.data||r.msg||'操作失败'));
     };
+    const buySystem = async (item: any) => {
+      try {
+        await ElMessageBox.confirm(
+          `花费 ${item.sysSellPrice} 妖灵币购买「${item.itemName || item.name}」？`,
+          "确认购买"
+        );
+      } catch { return; }
+      const r = await BuySystemItemAPI({ itemId: item.id, quantity: 1 });
+      if (r.status === 200) { ElMessage.success("购买成功"); fetch(); }
+      else ElMessage.error(String(r.data || "购买失败"));
+    };
+    const sellSystem = async (item: any) => {
+      try {
+        await ElMessageBox.confirm(
+          `以 ${item.sysBuyPrice} 妖灵币出售「${item.itemName || item.name}」？`,
+          "确认出售"
+        );
+      } catch { return; }
+      const r = await SellSystemItemAPI({ itemId: item.id, quantity: 1 });
+      if (r.status === 200) { ElMessage.success("出售成功"); fetch(); }
+      else ElMessage.error(String(r.data || "出售失败"));
+    };
     fetch();
     return {
       loading,
@@ -225,11 +310,16 @@ export default defineComponent({
       pageSize,
       total,
       filterType,
+      refreshing,
+      onRefresh,
       fetch,
       rarityClass,
       buyFixed,
       showBid,
       doBid,
+      buySystem,
+      sellSystem,
+      tradeLogs,
       countdownText,
       fmtBidTime,
       bidDlg,
@@ -334,6 +424,45 @@ h2 {
   background: rgba(246, 173, 71, 0.15);
   color: #f6ad47;
 }
+.listing-type-tag.system {
+  background: rgba(64, 158, 255, 0.12);
+  color: #409eff;
+}
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #FCF9E0;
+  border: 1px solid rgba(246,173,71,0.2);
+  border-radius: 8px;
+}
+.history-icon {
+  width: 36px; height: 36px;
+  border-radius: 6px; object-fit: cover;
+  flex-shrink: 0;
+}
+.history-info { flex: 1; min-width: 0; }
+.history-name { font-size: 13px; color: #728567; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-detail { font-size: 11px; color: #999; margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-detail .tag-fixed {
+  display: inline-block; font-size: 10px; padding: 0 4px; border-radius: 3px;
+  background: rgba(114,133,103,0.12); color: #728567; margin-right: 4px;
+}
+.history-detail .tag-auction {
+  display: inline-block; font-size: 10px; padding: 0 4px; border-radius: 3px;
+  background: rgba(246,173,71,0.15); color: #F6AD47; margin-right: 4px;
+}
+.history-price { font-size: 14px; font-weight: 600; color: #F6AD47; white-space: nowrap; }
+.history-time { font-size: 11px; color: #ccc; white-space: nowrap; }
 .listing-footer {
   display: flex;
   align-items: center;

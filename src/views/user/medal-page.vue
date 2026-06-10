@@ -265,7 +265,7 @@ h2 {
 }
 .medal-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 10px;
 }
 .medal-card {
@@ -273,7 +273,6 @@ h2 {
   border-radius: 10px;
   padding: 8px;
   text-align: center;
-  width: 90px;
   cursor: pointer;
   border: 1px solid #eee;
   transition: transform 0.1s;

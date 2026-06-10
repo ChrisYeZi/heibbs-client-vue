@@ -1,6 +1,7 @@
 <template>
+<div ref="scrollContainer" class="scroll-wrapper">
 <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-  <div class="block" ref="scrollContainer">
+  <div class="block">
     <!-- 板块头部区域 -->
     <div class="block-box">
       <!-- 板块图标 -->
@@ -64,8 +65,9 @@
 
     <!-- 其余模板内容保持不变 -->
     <van-notice-bar
+      v-if="noticeEnabled"
       left-icon="volume-o"
-      text="罗小黑妖灵论坛测试开发中，登录账户请注意账户安全"
+      :text="noticeText"
     />
 
     <!-- 帖子列表 -->
@@ -173,6 +175,7 @@
     </div>
   </div>
   </van-pull-refresh>
+</div>
 </template>
 
 <script lang="ts">
@@ -185,7 +188,8 @@ import {
   GetBlockListAPI,
   GetGroupListAPI,
   GetPostTopAPI,
-  GetUsernameInformationAPI, // 导入用户名获取用户信息API
+  GetUsernameInformationAPI,
+  GetSystemConfigAPI,
 } from "@/api/index";
 import {
   Swipe,
@@ -289,6 +293,18 @@ export default defineComponent({
     const isLoading = ref(true);
     const refreshing = ref(false);
     const onRefresh = async () => { refreshing.value = true; await getData(1, false); refreshing.value = false; };
+    const noticeEnabled = ref(true);
+    const noticeText = ref("罗小黑妖灵论坛测试开发中，登录账户请注意账户安全");
+    const fetchNoticeConfig = async () => {
+      try {
+        const r = await GetSystemConfigAPI();
+        if (r.status === 200) {
+          noticeEnabled.value = r.data.notice_enabled !== 'false';
+          noticeText.value = r.data.notice_text || noticeText.value;
+        }
+      } catch (e) {}
+    };
+    fetchNoticeConfig();
     const isLoadingMore = ref(false);
     const currentPage = ref(1);
     const pageSize = ref(10);
@@ -589,6 +605,7 @@ export default defineComponent({
       groupList,
       isLoading,
       refreshing, onRefresh,
+      noticeEnabled, noticeText,
       isLoadingMore,
       hasMore,
       slides,
@@ -619,13 +636,16 @@ export default defineComponent({
 
 <!-- 样式部分保持不变 -->
 <style lang="scss" scoped>
+.scroll-wrapper {
+  height: calc(100vh - 0px);
+  overflow-y: auto;
+}
 .block {
   background: rgba(255, 255, 255, 0.9);
   margin-bottom: 0px;
   margin: 0px 10px 60px 10px;
   padding: 15px 10px;
-  height: calc(100vh - 0px);
-  overflow-y: auto;
+  min-height: 100%;
   user-select: none;
   .block-box {
     border: 1px solid rgba(0, 0, 0, 0.05);

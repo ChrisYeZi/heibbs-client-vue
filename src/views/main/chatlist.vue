@@ -13,8 +13,8 @@
           :alt="item.sname"
           class="avatar-img"
         />
-        <!-- 未读提示点 -->
-        <div class="unread-dot" v-if="!item.read"></div>
+        <!-- 未读气泡 -->
+        <div class="unread-badge" v-if="unreadCounts[item.plid]">{{ unreadCounts[item.plid] >= 99 ? '99+' : unreadCounts[item.plid] }}</div>
       </div>
 
       <!-- 消息内容区域 -->
@@ -69,9 +69,9 @@ export default {
   data() {
     return {
       chatList: [],
-      unreadPlids: [1],
       userdata: store.state.user?.info,
       avatarUrls: {},
+      unreadCounts: {},
     };
   },
   computed: {
@@ -79,10 +79,8 @@ export default {
       return this.chatList.map((item) => {
         return {
           ...item,
-          // 2. 直接调用组件内的 formatChatTime 函数（不再依赖外部文件）
           formattedTime: this.formatChatTime(item.dateline),
           shortSubject: this.truncateText(item.subject, 20),
-          read: !this.unreadPlids.includes(item.plid),
         };
       });
     },
@@ -95,11 +93,34 @@ export default {
       GetMessageListAPI().then((res) => {
         if (res.status === 200) {
           this.chatList = res.data || [];
+          this.loadUnreadCounts();
           this.loadAvatars();
         } else {
           console.log("获取消息失败：", res.msg);
         }
       });
+    },
+    loadUnreadCounts() {
+      try {
+        const raw = localStorage.getItem("heibbs_chat_unread");
+        if (raw) this.unreadCounts = JSON.parse(raw);
+      } catch (e) { this.unreadCounts = {}; }
+      // 为新消息设置初始未读计数
+      this.chatList.forEach(item => {
+        if (!(item.plid in this.unreadCounts)) {
+          this.unreadCounts[item.plid] = 1;
+        }
+      });
+      this.saveUnreadCounts();
+    },
+    saveUnreadCounts() {
+      localStorage.setItem("heibbs_chat_unread", JSON.stringify(this.unreadCounts));
+      // 触发 Navbar 刷新（通过自定义事件）
+      window.dispatchEvent(new Event("heibbs-unread-changed"));
+    },
+    clearUnread(plid) {
+      this.unreadCounts[plid] = 0;
+      this.saveUnreadCounts();
     },
 
     loadAvatars() {
@@ -174,12 +195,8 @@ export default {
 
     // 点击事件
     handleChatClick(item) {
-      // console.log("进入：", item);
-      // this.$router.push({ path: `"/chat/"+${item.plid}`});
+      this.clearUnread(item.plid);
       this.$router.push({ path: "/chat", query: { plid: item.plid } });
-      // 可添加路由跳转逻辑，例：
-      // this.$router.push({ path: "/chat/detail", query: { plid: item.plid } });
-      // this.unreadPlids = this.unreadPlids.filter(plid => plid !== item.plid);
     },
   },
 };
@@ -236,15 +253,22 @@ export default {
     object-fit: cover;
   }
 
-  .unread-dot {
+  .unread-badge {
     position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background-color: #ff4d4f;
+    top: -6px;
+    right: -8px;
+    min-width: 20px;
+    height: 20px;
+    line-height: 20px;
+    border-radius: 10px;
+    background-color: #F6AD47;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 0 5px;
     border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   }
 }
 

@@ -49,6 +49,38 @@
       </div>
     </el-card>
 
+    <!-- 上传图片大小控制 -->
+    <el-card shadow="hover" style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <strong>上传图片大小限制</strong>
+          <div style="font-size:12px;color:#728567;margin-top:4px">
+            当前限制: {{ uploadMaxSize }} MB（编辑器图片上传和附件上传）
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <el-input-number v-model="uploadMaxSize" :min="1" :max="50" size="small" style="width:100px"/>
+          <span style="color:#728567">MB</span>
+          <el-button size="small" @click="saveUploadMaxSize" style="background:#F6AD47;border-color:#F6AD47;color:#fff">保存</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 通知栏控制 -->
+    <el-card shadow="hover" style="margin-top:16px">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <strong>全站通知栏</strong>
+          <el-switch v-model="noticeEnabled" @change="saveNoticeConfig" active-text="开启" inactive-text="关闭"/>
+        </div>
+        <div style="font-size:12px;color:#728567;margin-bottom:6px" v-if="noticeEnabled">自定义通知内容：</div>
+        <div style="display:flex;align-items:center;gap:8px" v-if="noticeEnabled">
+          <el-input v-model="noticeText" size="small" style="flex:1" placeholder="请输入通知内容"/>
+          <el-button size="small" @click="saveNoticeConfig" style="background:#F6AD47;border-color:#F6AD47;color:#fff;white-space:nowrap">保存</el-button>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 数据表格区域 -->
     <el-row :gutter="16" style="margin-top: 20px">
       <!-- 最新注册用户 -->
@@ -154,12 +186,29 @@ export default defineComponent({
     const fetchConfig = async () => {
       try {
         const r = await GetSystemConfigAPI();
-        if (r.status === 200) loginEnabled.value = r.data.login_enabled === 'true';
+        if (r.status === 200) {
+          loginEnabled.value = r.data.login_enabled === 'true';
+          uploadMaxSize.value = parseInt(r.data.upload_max_size_mb) || 10;
+          noticeEnabled.value = r.data.notice_enabled !== 'false';
+          noticeText.value = r.data.notice_text || "罗小黑妖灵论坛测试开发中，登录账户请注意账户安全";
+        }
       } catch (e) {}
     };
     const toggleLogin = async (val: boolean) => {
       const r = await SetSystemConfigAPI("login_enabled", val ? "true" : "false");
       ElMessage[r.status===200?'success':'error'](String(r.data||''));
+    };
+    const uploadMaxSize = ref(10);
+    const saveUploadMaxSize = async () => {
+      const r = await SetSystemConfigAPI("upload_max_size_mb", String(uploadMaxSize.value));
+      ElMessage[r.status===200?'success':'error'](String(r.data||'保存成功'));
+    };
+    const noticeEnabled = ref(true);
+    const noticeText = ref("罗小黑妖灵论坛测试开发中，登录账户请注意账户安全");
+    const saveNoticeConfig = async () => {
+      await SetSystemConfigAPI("notice_enabled", noticeEnabled.value ? "true" : "false");
+      const r = await SetSystemConfigAPI("notice_text", noticeText.value);
+      ElMessage[r.status===200?'success':'error'](String(r.data||'保存成功'));
     };
 
     // 获取仪表盘数据
@@ -196,6 +245,11 @@ export default defineComponent({
       dashboardData,
       loginEnabled,
       toggleLogin,
+      uploadMaxSize,
+      saveUploadMaxSize,
+      noticeEnabled,
+      noticeText,
+      saveNoticeConfig,
       handleViewPost,
     };
   },
