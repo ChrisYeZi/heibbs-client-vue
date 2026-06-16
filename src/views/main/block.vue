@@ -1,53 +1,53 @@
 <template>
-<div ref="scrollContainer" class="scroll-wrapper">
-<van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-  <div class="block">
-    <!-- 板块头部区域 -->
-    <div class="block-box">
-      <!-- 板块图标 -->
-      <div class="block-icon">
-        <img
-          :src="currentBlock.imgUrl || slides.imageUrl"
-          :alt="currentBlock.name || slides.altText"
-          class="icon-image"
-        />
-        <!-- 板块名称 -->
-        <div class="block-title">{{ currentBlock.name || "未知板块" }}</div>
-      </div>
+  <div ref="scrollContainer" class="scroll-wrapper">
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <div class="block">
+        <!-- 板块头部区域 -->
+        <div class="block-box">
+          <!-- 板块图标 -->
+          <div class="block-icon">
+            <img
+              :src="currentBlock.imgUrl || slides.imageUrl"
+              :alt="currentBlock.name || slides.altText"
+              class="icon-image"
+            />
+            <!-- 板块名称 -->
+            <div class="block-title">{{ currentBlock.name || "未知板块" }}</div>
+          </div>
 
-      <!-- 横幅图片 -->
-      <div class="block-banner">
-        <img
-          :src="currentBlock.bannerurl"
-          alt="板块横幅"
-          class="banner-image"
-        />
-      </div>
+          <!-- 横幅图片 -->
+          <div class="block-banner">
+            <img
+              :src="currentBlock.bannerurl"
+              alt="板块横幅"
+              class="banner-image"
+            />
+          </div>
 
-      <!-- 板块管理者 -->
-      <div class="block-managers" v-if="blockManagers.length">
-        <span class="manager-label">馆长：</span>
-        <span
-          class="manager-name"
-          v-for="manager in blockManagers"
-          :key="manager"
-          @click="gotoManagerInfo(manager)"
-        >
-          {{ manager }}
-        </span>
-      </div>
+          <!-- 板块管理者 -->
+          <div class="block-managers" v-if="blockManagers.length">
+            <span class="manager-label">馆长：</span>
+            <span
+              class="manager-name"
+              v-for="manager in blockManagers"
+              :key="manager"
+              @click="gotoManagerInfo(manager)"
+            >
+              {{ manager }}
+            </span>
+          </div>
 
-      <!-- 功能按钮区域 -->
-      <div class="block-buttons">
-        <!-- 修改会馆发帖按钮，确保有板块ID时才显示 -->
-        <van-button
-          type="primary"
-          size="normal"
-          @click="gotoNewPost"
-          v-if="validBlockId"
-          >会馆发帖</van-button
-        >
-        <!-- <van-button
+          <!-- 功能按钮区域 -->
+          <div class="block-buttons">
+            <!-- 修改会馆发帖按钮，确保有板块ID时才显示 -->
+            <van-button
+              type="primary"
+              size="normal"
+              @click="gotoNewPost"
+              v-if="validBlockId"
+              >会馆发帖</van-button
+            >
+            <!-- <van-button
           type="default"
           size="normal"
           @click="placeholder('加入会馆')"
@@ -60,122 +60,123 @@
           v-if="isManagerOrAdmin"
           >管理会馆</van-button
         > -->
-      </div>
-    </div>
-
-    <!-- 其余模板内容保持不变 -->
-    <van-notice-bar
-      v-if="noticeEnabled"
-      left-icon="volume-o"
-      :text="noticeText"
-    />
-
-    <!-- 帖子列表 -->
-    <div v-if="postList.records && postList.records.length">
-      <!-- 置顶帖 -->
-      <div class="index-post-top">
-        <div
-          class="index-post"
-          v-for="(item, index) in postTopList"
-          :key="item.pid || index"
-          @click="PostClick(item)"
-        >
-          <div class="index-post-title">
-            <span class="index-post-title-block-top">置顶 </span
-            >{{ item.subject }}
           </div>
         </div>
-      </div>
 
-      <div
-        class="index-post"
-        v-for="(item, index) in postList.records"
-        :key="item.pid || index"
-        @click="PostClick(item)"
-      >
-        <!-- 会馆 -->
-        <div class="index-post-title">
-          <span class="index-post-title-block-top" v-if="item?.state == 5"
-            >会馆置顶 </span
-          ><span class="index-post-title-block" v-if="item?.state != 5"
-            >{{ getBlockName(item.fid) }} </span
-          >{{ item.subject }}
-          <span v-if="item.state === 2" class="post-lock">🔒</span>
-          <span v-if="item.stampName" class="post-stamp-seal">{{
-            item.stampName
-          }}</span>
-        </div>
-        <div class="post-hidden-note" v-if="item.state === 1">
-          ⚠ 内容已被隐藏
-        </div>
-        <div class="index-post-meta">
-          <span>
-            <!-- 用户组 -->
-            <span
-              class="index-post-meta-group"
-              v-if="item.extgroupid == 0"
-              :style="{
-                backgroundColor: groupList.groupDo[item?.groupid - 1]?.color,
-              }"
-              >{{ groupList.groupDo[item.groupid - 1]?.gname }}</span
+        <!-- 其余模板内容保持不变 -->
+        <van-notice-bar
+          v-if="noticeEnabled"
+          left-icon="volume-o"
+          :text="noticeText"
+        />
+
+        <!-- 帖子列表 -->
+        <div v-if="postList.records && postList.records.length">
+          <!-- 置顶帖 -->
+          <div class="index-post-top">
+            <div
+              class="index-post"
+              v-for="(item, index) in postTopList"
+              :key="item.pid || index"
+              @click="PostClick(item)"
             >
-            <span
-              class="index-post-meta-admingroup"
-              v-if="item.extgroupid != 0"
-              :style="{
-                backgroundColor:
-                  groupList.extgroupDo[item?.extgroupid - 1]?.color,
-              }"
-              >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
-            >
-            {{ item.author }}
-            <PostbarVue :postObj="item" />
-          </span>
-          <span>{{ item.formattedCreateTime }}</span>
+              <div class="index-post-title">
+                <span class="index-post-title-block-top">置顶 </span
+                >{{ item.subject }}
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="index-post"
+            v-for="(item, index) in postList.records"
+            :key="item.pid || index"
+            @click="PostClick(item)"
+          >
+            <!-- 会馆 -->
+            <div class="index-post-title">
+              <span class="index-post-title-block-top" v-if="item?.state == 5"
+                >会馆置顶 </span
+              ><span class="index-post-title-block" v-if="item?.state != 5"
+                >{{ getBlockName(item.fid) }} </span
+              >{{ item.subject }}
+              <span v-if="item.state === 2" class="post-lock">🔒</span>
+              <span v-if="item.stampName" class="post-stamp-seal">{{
+                item.stampName
+              }}</span>
+            </div>
+            <div class="post-hidden-note" v-if="item.state === 1">
+              ⚠ 内容已被隐藏
+            </div>
+            <div class="index-post-meta">
+              <span>
+                <!-- 用户组 -->
+                <span
+                  class="index-post-meta-group"
+                  v-if="item.extgroupid == 0"
+                  :style="{
+                    backgroundColor:
+                      groupList.groupDo[item?.groupid - 1]?.color,
+                  }"
+                  >{{ groupList.groupDo[item.groupid - 1]?.gname }}</span
+                >
+                <span
+                  class="index-post-meta-admingroup"
+                  v-if="item.extgroupid != 0"
+                  :style="{
+                    backgroundColor:
+                      groupList.extgroupDo[item?.extgroupid - 1]?.color,
+                  }"
+                  >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
+                >
+                {{ item.author }}
+                <PostbarVue :postObj="item" />
+              </span>
+              <span>{{ item.formattedCreateTime }}</span>
+            </div>
+            <div class="post-content" v-if="item?.state != 4">
+              {{ parsedPlainText(item.message) }}
+            </div>
+
+            <!-- 帖子互动信息 -->
+            <div class="post-actions" v-if="item?.state != 4">
+              <span class="action-item"
+                ><van-icon name="eye-o" /> {{ item.viewCount || 0 }}</span
+              >
+              <span class="action-item"
+                ><van-icon name="chat-o" /> {{ item.replyCount || 0 }}</span
+              >
+            </div>
+          </div>
         </div>
+
+        <!-- 加载状态和空状态 -->
+        <van-loading
+          v-if="isLoading && postList.records.length === 0"
+          color="#1989fa"
+          class="loading-indicator"
+        />
+        <van-empty
+          :image="require('@/assets/img/404.png')"
+          image-size="45%"
+          v-if="
+            !isLoading && (!postList.records || postList.records.length === 0)
+          "
+          description="暂无帖子内容"
+        />
+
+        <!-- 加载更多提示 -->
         <div
-          class="post-content"
-          v-html="parsedContent.parsedIndexContent(item.message)"
-          v-if="item?.state != 4"
-        ></div>
-
-        <!-- 帖子互动信息 -->
-        <div class="post-actions" v-if="item?.state != 4">
-          <span class="action-item"
-            ><van-icon name="eye-o" /> {{ item.viewCount || 0 }}</span
-          >
-          <span class="action-item"
-            ><van-icon name="chat-o" /> {{ item.replyCount || 0 }}</span
-          >
+          v-if="postList.records && postList.records.length > 0"
+          class="load-more"
+        >
+          <van-loading v-if="isLoadingMore" size="16" color="#1989fa" />
+          <span v-else-if="hasMore">上拉加载更多</span>
+          <span v-else>已显示全部内容</span>
         </div>
       </div>
-    </div>
-
-    <!-- 加载状态和空状态 -->
-    <van-loading
-      v-if="isLoading && postList.records.length === 0"
-      color="#1989fa"
-      class="loading-indicator"
-    />
-    <van-empty
-      image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
-      :image-size="[200, 220]"
-      v-if="!isLoading && (!postList.records || postList.records.length === 0)"
-      description="暂无帖子内容"
-    />
-
-    <!-- 加载更多提示 -->
-    <div
-      v-if="postList.records && postList.records.length > 0"
-      class="load-more"
-    >
-      <van-loading v-if="isLoadingMore" size="16" color="#1989fa" />
-      <span v-else-if="hasMore">上拉加载更多</span>
-      <span v-else>已显示全部内容</span>
-    </div>
+    </van-pull-refresh>
   </div>
-  </van-pull-refresh>
-</div>
 </template>
 
 <script lang="ts">
@@ -203,7 +204,7 @@ import {
   PullRefresh,
 } from "vant";
 import { ElMessage } from "element-plus"; // 导入ElMessage
-import parsedContent from "@/assets/js/parsedContent";
+import parsedContent, { parsedPlainText } from "@/assets/js/parsedContent";
 import router from "@/router";
 
 // 定义接口
@@ -292,14 +293,18 @@ export default defineComponent({
 
     const isLoading = ref(true);
     const refreshing = ref(false);
-    const onRefresh = async () => { refreshing.value = true; await getData(1, false); refreshing.value = false; };
+    const onRefresh = async () => {
+      refreshing.value = true;
+      await getData(1, false);
+      refreshing.value = false;
+    };
     const noticeEnabled = ref(true);
     const noticeText = ref("罗小黑妖灵论坛测试开发中，登录账户请注意账户安全");
     const fetchNoticeConfig = async () => {
       try {
         const r = await GetSystemConfigAPI();
         if (r.status === 200) {
-          noticeEnabled.value = r.data.notice_enabled !== 'false';
+          noticeEnabled.value = r.data.notice_enabled !== "false";
           noticeText.value = r.data.notice_text || noticeText.value;
         }
       } catch (e) {}
@@ -604,12 +609,15 @@ export default defineComponent({
       blockList,
       groupList,
       isLoading,
-      refreshing, onRefresh,
-      noticeEnabled, noticeText,
+      refreshing,
+      onRefresh,
+      noticeEnabled,
+      noticeText,
       isLoadingMore,
       hasMore,
       slides,
       parsedContent,
+      parsedPlainText,
       scrollContainer,
       blockid,
       postTopList,

@@ -575,7 +575,10 @@ interface BlockItem {
   type?: number; // 板块类型（1-会馆；2-地方会馆；3-小组）
   repost?: boolean; // 是否可发表搬运内容
   finance?: number; // 板块财政
-  taxRate?: number; // 税率
+  taxRate?: number; // 普通税率
+  itemTaxRate: number; // 商品税率
+  stockTaxRate: number; // 股票税率
+  bankInterestRate: number; // 银行利率（月息）
   title?: string; // 板块可选内容标题
   imgUrl?: string; // 板块图标地址
   bindex?: number; // 排序序列（数值越高越靠前）
@@ -587,6 +590,7 @@ interface BlockItem {
 export const InsertBlockAPI = (data: BlockItem): Res<String> => instance.post("/admin/insert-block", data);
 
 // 更新会馆
+export const GetAdminBlockListAPI = (): Res<BlockItem[]> => instance.get("/admin/select-block-all");
 export const UpdateBlockAPI = (data: BlockItem): Res<String> => instance.post("/admin/update-block", data);
 
 // 删除会馆

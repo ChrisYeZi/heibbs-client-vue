@@ -1,174 +1,340 @@
 <template>
   <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-<div class="shop-page">
-    <div class="shop-tabs">
-      <span
-        :class="{ active: filterType === '' }"
-        @click="
-          filterType = '';
-          fetch();
-        "
-        >全部</span
-      >
-      <span
-        :class="{ active: filterType === 'fixed' }"
-        @click="
-          filterType = 'fixed';
-          fetch();
-        "
-        >售卖</span
-      >
-      <span
-        :class="{ active: filterType === 'auction' }"
-        @click="
-          filterType = 'auction';
-          fetch();
-        "
-        >拍卖</span
-      >
-      <span
-        :class="{ active: filterType === 'system' }"
-        @click="
-          filterType = 'system';
-          fetch();
-        "
-        >系统商品</span
-      >
-      <span
-        :class="{ active: filterType === 'history' }"
-        @click="
-          filterType = 'history';
-          fetch();
-        "
-        >交易记录</span
-      >
-    </div>
-    <van-loading v-if="loading" class="loading" />
-    <van-empty
-      v-if="!loading && list.length === 0"
-      description="集市暂无商品"
-    />
-    <div class="listing-grid">
+    <div class="shop-page">
+      <div class="shop-tabs">
+        <span
+          :class="{ active: filterType === '' }"
+          @click="
+            filterType = '';
+            fetch();
+          "
+          >全部</span
+        >
+        <span
+          :class="{ active: filterType === 'fixed' }"
+          @click="
+            filterType = 'fixed';
+            fetch();
+          "
+          >售卖</span
+        >
+        <span
+          :class="{ active: filterType === 'auction' }"
+          @click="
+            filterType = 'auction';
+            fetch();
+          "
+          >拍卖</span
+        >
+        <span
+          :class="{ active: filterType === 'system' }"
+          @click="
+            filterType = 'system';
+            fetch();
+          "
+          >系统商品</span
+        >
+        <span
+          :class="{ active: filterType === 'history' }"
+          @click="
+            filterType = 'history';
+            fetch();
+          "
+          >交易记录</span
+        >
+      </div>
+      <van-loading v-if="loading" class="loading" />
+      <van-empty
+        v-if="!loading && filterType !== 'history' && list.length === 0"
+        description="集市暂无商品"
+        :image="require('@/assets/img/404.png')"
+        image-size="45%"
+      />
+      <div class="listing-grid">
+        <div
+          v-for="item in list"
+          :key="item.id"
+          class="listing-card"
+          :class="rarityClass(item.itemRarity)"
+        >
+          <div class="listing-header">
+            <img
+              v-if="item.itemIcon"
+              :src="item.itemIcon"
+              class="listing-icon"
+            />
+            <span v-else class="listing-icon-placeholder"></span>
+            <div class="listing-info">
+              <div class="listing-name">
+                {{ item.itemName }} · x{{ item.quantity }}
+              </div>
+              <div class="listing-seller">
+                {{ item.sellerName }}
+              </div>
+            </div>
+            <span class="listing-type-tag" :class="item.type">{{
+              item.type === "fixed"
+                ? "一口价"
+                : item.type === "system"
+                ? "系统"
+                : "拍卖"
+            }}</span>
+          </div>
+          <!-- 拍卖倒计时+最高出价者 -->
+          <div
+            class="auction-info"
+            v-if="item.type === 'auction' && item.auctionEndTime"
+          >
+            <span class="countdown">{{
+              countdownText(item.auctionEndTime)
+            }}</span>
+            <span class="bidder-info" v-if="item.highestBidderName">
+              {{ item.highestBidderName }} · {{ item.highestBid }}妖灵币 ·
+              {{ fmtBidTime(item.highestBidTime) }}
+            </span>
+          </div>
+          <div class="listing-footer">
+            <span class="listing-price"
+              >{{
+                item.type === "auction" && item.highestBid
+                  ? "当前:" + item.highestBid
+                  : item.price
+              }}
+              妖灵币</span
+            >
+            <span v-if="item.type === 'auction'" class="listing-bids"
+              >{{ item.bidCount || 0 }}次出价</span
+            >
+            <el-button
+              v-if="item.type === 'system' && item.sysBuy"
+              size="small"
+              style="background: #728567; border-color: #728567; color: #fff"
+              @click="openSellSystem(item)"
+              >出售</el-button
+            >
+            <el-button
+              v-if="item.type === 'system'"
+              size="small"
+              @click="openBuySystem(item)"
+              >购买</el-button
+            >
+            <el-button
+              v-else-if="item.type === 'fixed'"
+              size="small"
+              @click="buyFixed(item)"
+              >购买</el-button
+            >
+            <el-button v-else size="small" @click="showBid(item)"
+              >出价</el-button
+            >
+          </div>
+        </div>
+      </div>
+      <!-- 交易记录列表 -->
       <div
-        v-for="item in list"
-        :key="item.id"
-        class="listing-card"
-        :class="rarityClass(item.itemRarity)"
+        class="history-list"
+        v-if="filterType === 'history' && tradeLogs.length"
       >
-        <div class="listing-header">
-          <img v-if="item.itemIcon" :src="item.itemIcon" class="listing-icon" />
-          <span v-else class="listing-icon-placeholder"></span>
-          <div class="listing-info">
-            <div class="listing-name">{{ item.itemName }} · x{{ item.quantity }}</div>
-            <div class="listing-seller">
-              {{ item.sellerName }}
+        <div class="history-item" v-for="log in tradeLogs" :key="log.id">
+          <img v-if="log.itemIcon" :src="log.itemIcon" class="history-icon" />
+          <div class="history-info">
+            <div class="history-name">
+              {{ log.itemName }} x{{ log.quantity }}
+            </div>
+            <div class="history-detail">
+              <span
+                :class="log.type === 'fixed' ? 'tag-fixed' : 'tag-auction'"
+                >{{ log.type === "fixed" ? "一口价" : "拍卖" }}</span
+              >
+              {{ log.sellerName }}
             </div>
           </div>
-          <span class="listing-type-tag" :class="item.type">{{
-            item.type === "fixed" ? "一口价" : item.type === "system" ? "系统" : "拍卖"
-          }}</span>
-        </div>
-        <!-- 拍卖倒计时+最高出价者 -->
-        <div
-          class="auction-info"
-          v-if="item.type === 'auction' && item.auctionEndTime"
-        >
-          <span class="countdown">{{
-            countdownText(item.auctionEndTime)
-          }}</span>
-          <span class="bidder-info" v-if="item.highestBidderName">
-            {{ item.highestBidderName }} · {{ item.highestBid }}妖灵币 ·
-            {{ fmtBidTime(item.highestBidTime) }}
-          </span>
-        </div>
-        <div class="listing-footer">
-          <span class="listing-price"
-            >{{
-              item.type === "auction" && item.highestBid
-                ? "当前:" + item.highestBid
-                : item.price
-            }}
-            妖灵币</span
-          >
-          <span v-if="item.type === 'auction'" class="listing-bids"
-            >{{ item.bidCount || 0 }}次出价</span
-          >
-          <el-button
-            v-if="item.type === 'system'"
-            size="small"
-            @click="buySystem(item)"
-            >购买</el-button
-          >
-          <el-button
-            v-else-if="item.type === 'fixed'"
-            size="small"
-            @click="buyFixed(item)"
-            >购买</el-button
-          >
-          <el-button v-else size="small" @click="showBid(item)">出价</el-button>
-        </div>
-      </div>
-    </div>
-    <!-- 交易记录列表 -->
-    <div class="history-list" v-if="filterType === 'history' && tradeLogs.length">
-      <div class="history-item" v-for="log in tradeLogs" :key="log.id">
-        <img v-if="log.itemIcon" :src="log.itemIcon" class="history-icon"/>
-        <div class="history-info">
-          <div class="history-name">{{ log.itemName }} x{{ log.quantity }}</div>
-          <div class="history-detail">
-            <span :class="log.type==='fixed'?'tag-fixed':'tag-auction'">{{ log.type==='fixed'?'一口价':'拍卖' }}</span>
-            {{ log.sellerName }}
+          <div class="history-price">
+            {{ log.finalPrice || log.price }} 妖灵币
           </div>
+          <div class="history-time">{{ fmtBidTime(log.dateline) }}</div>
         </div>
-        <div class="history-price">{{ log.finalPrice || log.price }} 妖灵币</div>
-        <div class="history-time">{{ fmtBidTime(log.dateline) }}</div>
       </div>
-    </div>
-    <van-empty v-if="filterType === 'history' && !loading && !tradeLogs.length" description="暂无交易记录"/>
-    <el-pagination
-      v-if="total > pageSize"
-      layout="prev,pager,next"
-      :total="total"
-      :page-size="pageSize"
-      :current-page="page"
-      @current-change="
-        (p) => {
-          page = p;
-          fetch();
-        }
-      "
-    />
-    <el-dialog v-model="bidDlg" title="拍卖出价" width="340px">
-      <p v-if="bidTarget.highestBidderName">
-        当前最高: <b>{{ bidTarget.highestBidderName }}</b> 出价
-        <b>{{ bidTarget.highestBid }}</b> 妖灵币
-        <span style="font-size: 11px; color: #999">
-          · {{ fmtBidTime(bidTarget.highestBidTime) }}</span
-        >
-      </p>
-      <p v-else>
-        起拍价: <b>{{ bidTarget.price }}</b> 妖灵币（暂无出价）
-      </p>
-      <p style="font-size: 12px; color: #e8743a">
-        {{ countdownText(bidTarget.auctionEndTime) }}
-      </p>
-      <el-input-number
-        v-model="bidAmount"
-        :min="(bidTarget.highestBid || bidTarget.price) + 1"
-        style="width: 100%"
+      <van-empty
+        v-if="filterType === 'history' && !loading && !tradeLogs.length"
+        description="暂无交易记录"
+        :image="require('@/assets/img/404.png')"
+        image-size="45%"
       />
-      <template #footer
-        ><el-button @click="bidDlg = false">取消</el-button
-        ><el-button type="primary" @click="doBid">出价</el-button></template
-      >
-    </el-dialog>
-  </div>
-</van-pull-refresh>
+      <el-pagination
+        v-if="total > pageSize"
+        layout="prev,pager,next"
+        :total="total"
+        :page-size="pageSize"
+        :current-page="page"
+        @current-change="
+          (p) => {
+            page = p;
+            fetch();
+          }
+        "
+      />
+      <el-dialog v-model="bidDlg" title="拍卖出价" width="340px">
+        <p v-if="bidTarget.highestBidderName">
+          当前最高: <b>{{ bidTarget.highestBidderName }}</b> 出价
+          <b>{{ bidTarget.highestBid }}</b> 妖灵币
+          <span style="font-size: 11px; color: #999">
+            · {{ fmtBidTime(bidTarget.highestBidTime) }}</span
+          >
+        </p>
+        <p v-else>
+          起拍价: <b>{{ bidTarget.price }}</b> 妖灵币（暂无出价）
+        </p>
+        <p style="font-size: 12px; color: #e8743a">
+          {{ countdownText(bidTarget.auctionEndTime) }}
+        </p>
+        <el-input-number
+          v-model="bidAmount"
+          :min="(bidTarget.highestBid || bidTarget.price) + 1"
+          style="width: 100%"
+        />
+        <template #footer
+          ><el-button @click="bidDlg = false">取消</el-button
+          ><el-button type="primary" @click="doBid">出价</el-button></template
+        >
+      </el-dialog>
+
+      <!-- 系统商品购买数量对话框 -->
+      <el-dialog v-model="sysBuyDlg" title="购买系统商品" width="360px">
+        <p style="color: #728567">
+          物品: <b>{{ sysBuyTarget.itemName || sysBuyTarget.name }}</b>
+        </p>
+        <p style="color: #728567">
+          单价:
+          <b style="color: #f6ad47">{{
+            sysBuyTarget.sysSellPrice || sysBuyTarget.price
+          }}</b>
+          妖灵币
+        </p>
+        <p
+          style="color: #728567; font-size: 12px"
+          v-if="getOwnedQty(sysBuyTarget.id) > 0"
+        >
+          当前拥有: {{ getOwnedQty(sysBuyTarget.id) }} 个
+        </p>
+        <p
+          style="color: #e8743a; font-size: 12px"
+          v-if="
+            sysBuyTarget.sysSellLimitType &&
+            sysBuyTarget.sysSellLimitType !== 'unlimited'
+          "
+        >
+          限购:
+          {{
+            {
+              daily: "每人每日",
+              weekly: "每人每周",
+              monthly: "每人每月",
+              daily_all: "全员每日",
+              weekly_all: "全员每周",
+              monthly_all: "全员每月",
+            }[sysBuyTarget.sysSellLimitType] || sysBuyTarget.sysSellLimitType
+          }}
+          {{ sysBuyTarget.sysSellLimitQty }} 个
+        </p>
+        <el-form label-width="80px" style="margin-top: 10px">
+          <el-form-item label="购买数量">
+            <el-input-number v-model="sysBuyQty" :min="1" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="合计">
+            <b style="color: #f6ad47; font-size: 16px"
+              >{{
+                (sysBuyTarget.sysSellPrice || sysBuyTarget.price || 0) *
+                sysBuyQty
+              }}
+              妖灵币</b
+            >
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="sysBuyDlg = false">取消</el-button>
+          <el-button
+            type="primary"
+            @click="doBuySystem"
+            style="background: #f6ad47; border-color: #f6ad47"
+            >确认购买</el-button
+          >
+        </template>
+      </el-dialog>
+
+      <!-- 系统商品出售数量对话框 -->
+      <el-dialog v-model="sysSellDlg" title="出售给系统" width="360px">
+        <p style="color: #728567">
+          物品: <b>{{ sysSellTarget.itemName || sysSellTarget.name }}</b>
+        </p>
+        <p style="color: #728567">
+          收购单价:
+          <b style="color: #728567">{{ sysSellTarget.sysBuyPrice }}</b> 妖灵币
+        </p>
+        <p style="color: #728567; font-size: 12px">
+          当前拥有: <b>{{ getOwnedQty(sysSellTarget.id) }}</b> 个
+        </p>
+        <p
+          style="color: #e8743a; font-size: 12px"
+          v-if="
+            sysSellTarget.sysBuyLimitType &&
+            sysSellTarget.sysBuyLimitType !== 'unlimited'
+          "
+        >
+          限售:
+          {{
+            {
+              daily: "每人每日",
+              weekly: "每人每周",
+              monthly: "每人每月",
+              daily_all: "全员每日",
+              weekly_all: "全员每周",
+              monthly_all: "全员每月",
+            }[sysSellTarget.sysBuyLimitType] || sysSellTarget.sysBuyLimitType
+          }}
+          {{ sysSellTarget.sysBuyLimitQty }} 个
+        </p>
+        <el-form label-width="80px" style="margin-top: 10px">
+          <el-form-item label="出售数量">
+            <el-input-number
+              v-model="sysSellQty"
+              :min="1"
+              :max="getOwnedQty(sysSellTarget.id)"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item label="合计收入">
+            <b style="color: #728567; font-size: 16px"
+              >{{ (sysSellTarget.sysBuyPrice || 0) * sysSellQty }} 妖灵币</b
+            >
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="sysSellDlg = false">取消</el-button>
+          <el-button
+            type="primary"
+            @click="doSellSystem"
+            style="background: #728567; border-color: #728567; color: #fff"
+            >确认出售</el-button
+          >
+        </template>
+      </el-dialog>
+    </div>
+  </van-pull-refresh>
 </template>
 
 <script lang="ts">
 import { ref, defineComponent } from "vue";
-import { GetShopListingsAPI, BuyFixedAPI, PlaceBidAPI, GetSystemItemsAPI, BuySystemItemAPI, SellSystemItemAPI, GetTradeHistoryAPI } from "@/api/index";
+import {
+  GetShopListingsAPI,
+  BuyFixedAPI,
+  PlaceBidAPI,
+  GetSystemItemsAPI,
+  BuySystemItemAPI,
+  SellSystemItemAPI,
+  GetTradeHistoryAPI,
+  GetMyItemsAPI,
+} from "@/api/index";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Loading, Empty, PullRefresh } from "vant";
 
@@ -181,7 +347,11 @@ const rarityColors: Record<number, string> = {
 
 export default defineComponent({
   name: "shop",
-  components: { VanLoading: Loading, VanEmpty: Empty, [PullRefresh.name]: PullRefresh },
+  components: {
+    VanLoading: Loading,
+    VanEmpty: Empty,
+    [PullRefresh.name]: PullRefresh,
+  },
   setup() {
     const loading = ref(true),
       list = ref<any[]>([]),
@@ -194,28 +364,59 @@ export default defineComponent({
     const bidDlg = ref(false),
       bidTarget = ref<any>({}),
       bidAmount = ref(0);
+    // 系统商品购买/出售对话框
+    const sysBuyDlg = ref(false),
+      sysBuyTarget = ref<any>({}),
+      sysBuyQty = ref(1);
+    const sysSellDlg = ref(false),
+      sysSellTarget = ref<any>({}),
+      sysSellQty = ref(1);
+    const myItems = ref<any[]>([]);
     const rarityClass = (r: any) => rarityColors[r] || "common";
+    const getOwnedQty = (itemId: number) => {
+      const found = myItems.value.find((m: any) => m.item?.id === itemId);
+      return found?.userItem?.quantity || 0;
+    };
     const fetch = async () => {
       loading.value = true;
-      if (filterType.value === 'history') {
-        const r = await GetTradeHistoryAPI({ pageNum: page.value, pageSize: pageSize.value });
+      if (filterType.value === "history") {
+        const r = await GetTradeHistoryAPI({
+          pageNum: page.value,
+          pageSize: pageSize.value,
+        });
         if (r.status === 200) {
           tradeLogs.value = r.data.records || [];
           total.value = r.data.total || 0;
         }
         list.value = [];
-      } else if (filterType.value === 'system') {
-        const r = await GetSystemItemsAPI({ pageNum: page.value, pageSize: pageSize.value });
+      } else if (filterType.value === "system") {
+        const r = await GetSystemItemsAPI({
+          pageNum: page.value,
+          pageSize: pageSize.value,
+        });
+        try {
+          const mr = await GetMyItemsAPI();
+          if (mr.status === 200) myItems.value = mr.data || [];
+        } catch (e) {}
         if (r.status === 200) {
           list.value = (r.data.records || []).map((item: any) => ({
-            ...item, type: 'system', itemName: item.name, itemIcon: item.icon,
-            itemRarity: item.rarity, sellerName: '系统', price: item.sysSellPrice, quantity: 1
+            ...item,
+            type: "system",
+            itemName: item.name,
+            itemIcon: item.icon,
+            itemRarity: item.rarity,
+            sellerName: "系统",
+            price: item.sysSellPrice,
+            sysBuyPrice: item.sysBuyPrice,
+            sysBuy: item.sysBuy,
+            quantity: 1,
           }));
           total.value = r.data.total || 0;
         }
       } else {
         const r = await GetShopListingsAPI({
-          pageNum: page.value, pageSize: pageSize.value,
+          pageNum: page.value,
+          pageSize: pageSize.value,
           type: filterType.value || undefined,
         });
         if (r.status === 200) {
@@ -278,29 +479,41 @@ export default defineComponent({
         ElMessage.success("出价成功");
         bidDlg.value = false;
         fetch();
-      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
+      } else ElMessage.error(String(r.data || r.msg || "操作失败"));
     };
-    const buySystem = async (item: any) => {
-      try {
-        await ElMessageBox.confirm(
-          `花费 ${item.sysSellPrice} 妖灵币购买「${item.itemName || item.name}」？`,
-          "确认购买"
-        );
-      } catch { return; }
-      const r = await BuySystemItemAPI({ itemId: item.id, quantity: 1 });
-      if (r.status === 200) { ElMessage.success("购买成功"); fetch(); }
-      else ElMessage.error(String(r.data || "购买失败"));
+    const openBuySystem = (item: any) => {
+      sysBuyTarget.value = item;
+      sysBuyQty.value = 1;
+      sysBuyDlg.value = true;
     };
-    const sellSystem = async (item: any) => {
-      try {
-        await ElMessageBox.confirm(
-          `以 ${item.sysBuyPrice} 妖灵币出售「${item.itemName || item.name}」？`,
-          "确认出售"
-        );
-      } catch { return; }
-      const r = await SellSystemItemAPI({ itemId: item.id, quantity: 1 });
-      if (r.status === 200) { ElMessage.success("出售成功"); fetch(); }
-      else ElMessage.error(String(r.data || "出售失败"));
+    const openSellSystem = (item: any) => {
+      sysSellTarget.value = item;
+      sysSellQty.value = 1;
+      sysSellDlg.value = true;
+    };
+    const doBuySystem = async () => {
+      const item = sysBuyTarget.value;
+      const r = await BuySystemItemAPI({
+        itemId: item.id,
+        quantity: sysBuyQty.value,
+      });
+      if (r.status === 200) {
+        ElMessage.success("购买成功");
+        sysBuyDlg.value = false;
+        fetch();
+      } else ElMessage.error(String(r.data || "购买失败"));
+    };
+    const doSellSystem = async () => {
+      const item = sysSellTarget.value;
+      const r = await SellSystemItemAPI({
+        itemId: item.id,
+        quantity: sysSellQty.value,
+      });
+      if (r.status === 200) {
+        ElMessage.success("出售成功");
+        sysSellDlg.value = false;
+        fetch();
+      } else ElMessage.error(String(r.data || "出售失败"));
     };
     fetch();
     return {
@@ -317,8 +530,19 @@ export default defineComponent({
       buyFixed,
       showBid,
       doBid,
-      buySystem,
-      sellSystem,
+      buySystem: openBuySystem,
+      sellSystem: openSellSystem,
+      openBuySystem,
+      openSellSystem,
+      doBuySystem,
+      doSellSystem,
+      sysBuyDlg,
+      sysBuyTarget,
+      sysBuyQty,
+      sysSellDlg,
+      sysSellTarget,
+      sysSellQty,
+      getOwnedQty,
       tradeLogs,
       countdownText,
       fmtBidTime,
@@ -439,30 +663,66 @@ h2 {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #FCF9E0;
-  border: 1px solid rgba(246,173,71,0.2);
+  background: #fcf9e0;
+  border: 1px solid rgba(246, 173, 71, 0.2);
   border-radius: 8px;
 }
 .history-icon {
-  width: 36px; height: 36px;
-  border-radius: 6px; object-fit: cover;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
   flex-shrink: 0;
 }
-.history-info { flex: 1; min-width: 0; }
-.history-name { font-size: 13px; color: #728567; font-weight: 500;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history-detail { font-size: 11px; color: #999; margin-top: 2px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+.history-name {
+  font-size: 13px;
+  color: #728567;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-detail {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .history-detail .tag-fixed {
-  display: inline-block; font-size: 10px; padding: 0 4px; border-radius: 3px;
-  background: rgba(114,133,103,0.12); color: #728567; margin-right: 4px;
+  display: inline-block;
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(114, 133, 103, 0.12);
+  color: #728567;
+  margin-right: 4px;
 }
 .history-detail .tag-auction {
-  display: inline-block; font-size: 10px; padding: 0 4px; border-radius: 3px;
-  background: rgba(246,173,71,0.15); color: #F6AD47; margin-right: 4px;
+  display: inline-block;
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(246, 173, 71, 0.15);
+  color: #f6ad47;
+  margin-right: 4px;
 }
-.history-price { font-size: 14px; font-weight: 600; color: #F6AD47; white-space: nowrap; }
-.history-time { font-size: 11px; color: #ccc; white-space: nowrap; }
+.history-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f6ad47;
+  white-space: nowrap;
+}
+.history-time {
+  font-size: 11px;
+  color: #ccc;
+  white-space: nowrap;
+}
 .listing-footer {
   display: flex;
   align-items: center;

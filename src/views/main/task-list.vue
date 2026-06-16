@@ -13,13 +13,18 @@
     </div>
 
     <van-loading v-if="loading" class="loading" />
-    <van-empty v-if="!loading && tasks.length === 0" description="暂无任务" />
+    <van-empty
+      v-if="!loading && tasks.length === 0"
+      description="暂无任务"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
+    />
 
     <div class="task-list">
       <div v-for="item in filteredTasks" :key="item.task.id" class="task-card">
         <div class="task-header">
-          <span class="task-title">{{ item.task.title }}</span>
-          <span class="task-tag">{{ cycleLabel(item.task.cycleType) }}</span>
+          <span class="task-tag">{{ cycleLabel(item.task.cycleType) }}</span
+          ><span class="task-title">{{ item.task.title }}</span>
         </div>
         <div class="task-desc">{{ item.task.description }}</div>
         <div class="task-meta">
@@ -28,6 +33,43 @@
             {{ item.task.conditionValue }}</span
           >
           <span>奖励: {{ rewardLabel(item.task) }}</span>
+        </div>
+        <!-- 随机奖励详情 -->
+        <div
+          class="random-reward-box"
+          v-if="item.task.rewardType === 'random' && item.task.rewardRandom"
+        >
+          <div
+            class="random-reward-toggle"
+            @click="item._showRandom = !item._showRandom"
+          >
+            随机奖励 ({{
+              parseRandomPool(item.task.rewardRandom).length
+            }}种可能)
+            <span style="font-size: 11px; color: #728567">{{
+              item._showRandom ? "▲" : "▼"
+            }}</span>
+          </div>
+          <div class="random-reward-list" v-if="item._showRandom">
+            <div
+              v-for="(r, i) in parseRandomPool(item.task.rewardRandom)"
+              :key="i"
+              class="random-reward-item"
+            >
+              <img
+                v-if="r.type === 'item' && getItemIcon(r.id)"
+                :src="getItemIcon(r.id)"
+                class="random-icon"
+              />
+              <img
+                v-if="r.type === 'medal' && getMedalIcon(r.id)"
+                :src="getMedalIcon(r.id)"
+                class="random-icon"
+              />
+              <span class="random-reward-name">{{ randomRewardText(r) }}</span>
+              <span class="random-reward-prob">{{ r.prob }}%</span>
+            </div>
+          </div>
         </div>
 
         <!-- 进度条 -->
@@ -132,6 +174,9 @@ import {
   CompleteTaskAPI,
   ClaimTaskRewardAPI,
   GetCompletedTasksAPI,
+  GetAdminItemListAPI,
+  GetAdminMedalListAPI,
+  GetCreditDefsAPI,
 } from "@/api/index";
 import { ElMessage } from "element-plus";
 import { Loading, Empty } from "vant";
@@ -179,7 +224,33 @@ export default defineComponent({
           group_level: "用户组等级",
         } as any
       )[c] || c);
+    const parseRandomPool = (json: string) => { try { return JSON.parse(json) || []; } catch (e) { return []; } };
+    const itemList = ref<any[]>([]);
+    const medalList = ref<any[]>([]);
+    const creditDefList = ref<any[]>([]);
+    const getItemIcon = (id: number) => { const it = itemList.value.find((i: any) => i.id === id); return it ? it.icon : ''; };
+    const getMedalIcon = (id: number) => { const m = medalList.value.find((i: any) => i.id === id); return m ? m.imageUrl : ''; };
+    const getCreditName = (key: string) => { const d = creditDefList.value.find((i: any) => i.extcreditsKey === key || i.id === key); return d ? d.title : key.replace('extcredits', '积分'); };
+    const getItemName = (id: number) => { const it = itemList.value.find((i: any) => i.id === id); return it ? it.name : '物品#' + id; };
+    const getMedalName = (id: number) => { const m = medalList.value.find((i: any) => i.id === id); return m ? m.name : '勋章#' + id; };
+    const randomRewardText = (r: any) => {
+      if (r.type === "credit") return getCreditName(r.credit || 'extcredits2') + '+' + (r.value || 0);
+      if (r.type === "item") return getItemName(r.id) + ' x' + (r.qty || 1);
+      if (r.type === "medal") return getMedalName(r.id);
+      return '';
+    };
+    const loadRefData = async () => {
+      const [it, md, cd] = await Promise.all([GetAdminItemListAPI(), GetAdminMedalListAPI(), GetCreditDefsAPI()]);
+      if (it.status === 200) itemList.value = it.data.records || [];
+      if (md.status === 200) medalList.value = md.data.records || [];
+      if (cd.status === 200) creditDefList.value = cd.data || [];
+    };
+    loadRefData();
     const rewardLabel = (t: any) => {
+      if (t.rewardType === "random") {
+        const p = parseRandomPool(t.rewardRandom);
+        return "随机(" + p.length + "种)";
+      }
       const parts = [];
       if (t.rewardType && t.rewardValue)
         parts.push(
@@ -211,28 +282,28 @@ export default defineComponent({
       if (r.status === 200) {
         ElMessage.success(String(r.data || "已接受"));
         fetch();
-      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
+      } else ElMessage.error(String(r.data || r.msg || "操作失败"));
     };
     const doCancel = async (id: number) => {
       const r = await CancelTaskAPI(id);
       if (r.status === 200) {
         ElMessage.success("已取消");
         fetch();
-      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
+      } else ElMessage.error(String(r.data || r.msg || "操作失败"));
     };
     const doComplete = async (id: number) => {
       const r = await CompleteTaskAPI(id);
       if (r.status === 200) {
         ElMessage.success(String(r.data || "已提交"));
         fetch();
-      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
+      } else ElMessage.error(String(r.data || r.msg || "操作失败"));
     };
     const doClaim = async (id: number) => {
       const r = await ClaimTaskRewardAPI(id);
       if (r.status === 200) {
         ElMessage.success("奖励已领取");
         fetch();
-      } else ElMessage.error(String(r.data||r.msg||'操作失败'));
+      } else ElMessage.error(String(r.data || r.msg || "操作失败"));
     };
 
     fetch();
@@ -251,6 +322,10 @@ export default defineComponent({
       doCancel,
       doComplete,
       doClaim,
+      parseRandomPool,
+      getItemIcon,
+      getMedalIcon,
+      randomRewardText,
       fmtTime,
     };
   },
@@ -302,9 +377,12 @@ h2 {
   color: #728567;
 }
 .task-tag {
-  font-size: 11px;
-  background: rgba(246, 173, 71, 0.15);
-  color: #f6ad47;
+  font-size: 13px;
+  padding: 1px 2px;
+  font-weight: 600;
+  background: rgba(114, 133, 103, 0.8);
+  color: rgba(255, 255, 255, 1);
+  margin: 0px 5px;
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -388,5 +466,47 @@ h2 {
 .completed-time {
   color: rgba(114, 133, 103, 0.6);
   font-size: 12px;
+}
+.random-reward-box {
+  margin-top: 6px;
+}
+.random-reward-toggle {
+  font-size: 12px;
+  color: #f6ad47;
+  cursor: pointer;
+  padding: 4px 8px;
+  background: #fcf9e0;
+  border-radius: 4px;
+  display: inline-block;
+}
+.random-reward-list {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.random-reward-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(246, 173, 71, 0.06);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #728567;
+}
+.random-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+.random-reward-name {
+  flex: 1;
+}
+.random-reward-prob {
+  color: #f6ad47;
+  font-weight: 600;
+  font-size: 11px;
 }
 </style>

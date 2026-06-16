@@ -5,6 +5,8 @@
       v-if="hasError"
       description="获取用户信息失败"
       class="error-empty"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
     >
       <van-button type="primary" @click="fetchUserInfo">重新加载</van-button>
     </van-empty>
@@ -52,8 +54,13 @@
       </div>
 
       <!-- 操作按钮 -->
-      <div class="user-actions" v-if="userdata?.uid && userdata.uid !== currentUid">
-        <van-button type="primary" size="small" @click="sendMessageToUser">发送消息</van-button>
+      <div
+        class="user-actions"
+        v-if="userdata?.uid && userdata.uid !== currentUid"
+      >
+        <van-button type="primary" size="small" @click="sendMessageToUser"
+          >发送消息</van-button
+        >
       </div>
 
       <!-- 注册信息 -->
@@ -70,11 +77,19 @@
     </div>
 
     <!-- 用户勋章展示 -->
-    <div class="info-medals" v-if="userMedals.length>0">
+    <div class="info-medals" v-if="userMedals.length > 0">
       <div class="medal-row">
-        <div v-for="m in userMedals" :key="m.id" class="info-medal-item"
-          :class="{ primary: m.isPrimary===1 }">
-          <img :src="m.medalImageUrl" :alt="m.medalName" class="info-medal-img"/>
+        <div
+          v-for="m in userMedals"
+          :key="m.id"
+          class="info-medal-item"
+          :class="{ primary: m.isPrimary === 1 }"
+        >
+          <img
+            :src="m.medalImageUrl"
+            :alt="m.medalName"
+            class="info-medal-img"
+          />
         </div>
       </div>
     </div>
@@ -590,9 +605,26 @@ export default defineComponent({
 }
 .info-medals {
   padding: 0 16px 8px;
-  .medal-row { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
-  .info-medal-item { width:36px; height:36px; border-radius:6px; overflow:hidden; border:1px solid #e0e0e0; }
-  .info-medal-item.primary { border-color:#f4a400; }
-  .info-medal-img { width:100%; height:100%; object-fit:contain; }
+  .medal-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .info-medal-item {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+  }
+  .info-medal-item.primary {
+    border-color: #f4a400;
+  }
+  .info-medal-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 }
 </style>

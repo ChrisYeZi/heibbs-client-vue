@@ -74,7 +74,12 @@
       </div>
     </template>
 
-    <van-empty v-if="!loading && !mainEps.length" description="暂无数据" />
+    <van-empty
+      v-if="!loading && !mainEps.length"
+      description="暂无数据"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
+    />
   </div>
 </template>
 

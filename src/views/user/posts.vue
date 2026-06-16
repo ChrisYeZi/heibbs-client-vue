@@ -21,7 +21,12 @@
       >
     </div>
     <van-loading v-if="loading" class="loading" />
-    <van-empty v-if="!loading && list.length === 0" description="暂无帖子" />
+    <van-empty
+      v-if="!loading && list.length === 0"
+      description="暂无帖子"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
+    />
 
     <div
       v-for="item in list"

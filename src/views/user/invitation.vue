@@ -94,8 +94,8 @@
     <!-- 空状态（适配风格） -->
     <div class="noInvitation" v-else-if="invitation !== null">
       <van-empty
-        image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
-        :image-size="[250, 280]"
+        :image="require('@/assets/img/404.png')"
+        image-size="45%"
         description="暂无邀请码"
         class="empty-style"
       />
@@ -126,7 +126,7 @@
 import { showConfirmDialog, Toast, Icon } from "vant"; // 引入Icon组件
 import config from "@/config/index";
 import MessagebarVue from "@/components/common/Messagebar.vue";
-import { ElMessage } from 'element-plus'
+import { ElMessage } from "element-plus";
 import { GetUserInvitationAPI, CreateInvitationAPI } from "../../api/index";
 
 export default {

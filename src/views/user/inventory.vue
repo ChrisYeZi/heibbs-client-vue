@@ -1,7 +1,12 @@
 <template>
   <div class="inventory-page">
     <van-loading v-if="loading" class="loading" />
-    <van-empty v-if="!loading && items.length === 0" description="暂无物品" />
+    <van-empty
+      v-if="!loading && items.length === 0"
+      description="暂无物品"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
+    />
     <div class="item-grid">
       <div
         v-for="entry in items"

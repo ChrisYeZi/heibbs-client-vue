@@ -28,6 +28,8 @@
     <van-empty
       v-if="!loading && list.length === 0"
       description="未找到相关帖子"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
     />
     <div
       v-for="item in list"
@@ -120,7 +122,7 @@ export default defineComponent({
 <style scoped>
 .search-page {
   padding: 10px 20px;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 0 0 10px 10px;
 }
 .sort-row {
@@ -147,7 +149,6 @@ export default defineComponent({
   margin-bottom: 8px;
   cursor: pointer;
   border: 1px solid rgba(114, 133, 103, 0.2);
-
 }
 .post-subject {
   font-size: 15px;

@@ -60,8 +60,8 @@
       <!-- 空状态 -->
       <div class="empty-state" v-if="messageDoList.length === 0">
         <van-empty
-          image="https://img.yzcdn.cn/vant/empty-image-default.png"
-          image-size="100"
+          :image="require('@/assets/img/404.png')"
+          image-size="45%"
           description="暂无聊天记录"
         />
       </div>
@@ -188,7 +188,7 @@ export default {
     getMessageList() {
       // 显示加载动画
       store.dispatch("system/SET_SYSLOADING_ACTION", true);
-      
+
       GetMessageAPI({ plid: this.pidParam })
         .then((res: any) => {
           if (res.status === 200) {
@@ -216,7 +216,7 @@ export default {
 
       // 防止重复发送
       this.isSending = true;
-      
+
       // 构建请求参数
       const requestData: ReplyMessageQuery = {
         plid: Number(this.pidParam), // 确保plid是数字类型
@@ -226,10 +226,10 @@ export default {
       try {
         // 显示加载动画
         store.dispatch("system/SET_SYSLOADING_ACTION", true);
-        
+
         // 调用实际的回复接口
         const res = await ReplyMessageAPI(requestData);
-        
+
         if (res.status === 200) {
           // 发送成功，重新获取消息列表更新界面
           this.showToast("消息发送成功");
@@ -255,7 +255,7 @@ export default {
       this.toastContent = content;
       this.toastType = type;
       this.msgShow = true;
-      
+
       // 自动关闭
       setTimeout(() => {
         this.msgShow = false;
@@ -301,10 +301,15 @@ export default {
 
     loadAvatars() {
       const uidSet = new Set<number>();
-      this.messageDoList.forEach((msg: any) => { if (msg.sid) uidSet.add(msg.sid); });
+      this.messageDoList.forEach((msg: any) => {
+        if (msg.sid) uidSet.add(msg.sid);
+      });
       uidSet.forEach((uid: number) => {
-        const cached = getCachedAvatar(uid)
-        if (cached) { this.avatarUrls[uid] = cached; return }
+        const cached = getCachedAvatar(uid);
+        if (cached) {
+          this.avatarUrls[uid] = cached;
+          return;
+        }
         GetUserAvatarAPI(uid).then((res: any) => {
           if (res.status === 200) {
             const url = config.avatarUrl + res.data;

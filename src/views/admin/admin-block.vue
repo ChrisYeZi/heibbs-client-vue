@@ -156,7 +156,9 @@
             :popper-append-to-body="false"
           >
             <!-- 添加空数据提示 -->
-            <template v-if="userList.length === 0 && !searchLoading && searchKeyword">
+            <template
+              v-if="userList.length === 0 && !searchLoading && searchKeyword"
+            >
               <el-option disabled value="">暂无匹配用户</el-option>
             </template>
             <el-option
@@ -169,7 +171,7 @@
           <!-- 显示已选用户 -->
           <div v-if="formData.management.length > 0" class="selected-users">
             <span class="label">已选择：</span>
-            <span class="names">{{ formData.management.join('、') }}</span>
+            <span class="names">{{ formData.management.join("、") }}</span>
           </div>
         </el-form-item>
 
@@ -182,14 +184,51 @@
           />
         </el-form-item>
 
-        <el-form-item label="税率(%)" prop="taxRate">
+        <el-form-item label="普通税率(%)" prop="taxRate">
           <el-input-number
             v-model="formData.taxRate"
             :min="0"
             :max="100"
-            placeholder="请输入税率"
+            placeholder="普通税率"
             style="width: 100%"
           />
+          <div style="font-size: 11px; color: #909399">
+            发帖奖励、邀请码等其他交易使用
+          </div>
+        </el-form-item>
+        <el-form-item label="商品税率(%)" prop="itemTaxRate">
+          <el-input-number
+            v-model="formData.itemTaxRate"
+            :min="0"
+            :max="100"
+            placeholder="商品税率"
+            style="width: 100%"
+          />
+          <div style="font-size: 11px; color: #909399">
+            集市一口价、拍卖交易使用
+          </div>
+        </el-form-item>
+        <el-form-item label="股票税率(%)" prop="stockTaxRate">
+          <el-input-number
+            v-model="formData.stockTaxRate"
+            :min="0"
+            :max="100"
+            placeholder="股票税率"
+            style="width: 100%"
+          />
+          <div style="font-size: 11px; color: #909399">会馆股票卖出时使用</div>
+        </el-form-item>
+        <el-form-item label="银行利率(%)" prop="bankInterestRate">
+          <el-input-number
+            v-model="formData.bankInterestRate"
+            :min="0"
+            :max="100"
+            placeholder="银行利率（月息）"
+            style="width: 100%"
+          />
+          <div style="font-size: 11px; color: #909399">
+            银行月利率，日息=月息÷30
+          </div>
         </el-form-item>
 
         <el-form-item label="权限设置" prop="license">
@@ -220,9 +259,9 @@
 
         <el-form-item label="会馆图标" prop="imgUrl">
           <div class="form-item-media">
-            <el-input 
-              v-model="formData.imgUrl" 
-              placeholder="请输入图标URL（建议尺寸40x40）" 
+            <el-input
+              v-model="formData.imgUrl"
+              placeholder="请输入图标URL（建议尺寸40x40）"
               style="width: 70%"
             />
             <!-- 图标预览 -->
@@ -242,9 +281,9 @@
 
         <el-form-item label="横幅图片" prop="bannerurl">
           <div class="form-item-media">
-            <el-input 
-              v-model="formData.bannerurl" 
-              placeholder="请输入横幅URL（建议尺寸1200x300）" 
+            <el-input
+              v-model="formData.bannerurl"
+              placeholder="请输入横幅URL（建议尺寸1200x300）"
               style="width: 70%"
             />
             <!-- 横幅预览 -->
@@ -261,7 +300,7 @@
             </div>
           </div>
         </el-form-item>
-        
+
         <el-form-item label="标题" prop="title">
           <el-input v-model="formData.title" placeholder="请输入标题" />
         </el-form-item>
@@ -297,7 +336,7 @@ import {
 } from "element-plus";
 import { Plus } from "@element-plus/icons-vue";
 import {
-  GetBlockListAPI,
+  GetAdminBlockListAPI,
   InsertBlockAPI,
   UpdateBlockAPI,
   DeleteBlockAPI,
@@ -344,6 +383,9 @@ interface BlockItem {
   repost?: boolean;
   finance?: number;
   taxRate?: number;
+  itemTaxRate: number;
+  stockTaxRate: number;
+  bankInterestRate: number;
   title?: string | string[];
   imgUrl?: string;
   bindex?: number;
@@ -399,7 +441,7 @@ export default defineComponent({
     const userList = ref<UserItem[]>([]);
     const searchLoading = ref(false);
     const searchKeyword = ref("");
-    
+
     // 防抖处理的远程搜索函数
     const debouncedSearch = debounce(async (keyword: string) => {
       await remoteSearchUser(keyword);
@@ -420,6 +462,9 @@ export default defineComponent({
       repost: boolean;
       finance: number;
       taxRate: number;
+      itemTaxRate: number;
+      stockTaxRate: number;
+      bankInterestRate: number;
       title: string;
       imgUrl: string;
       bindex: number;
@@ -433,6 +478,9 @@ export default defineComponent({
       repost: false,
       finance: 0,
       taxRate: 0,
+      itemTaxRate: 5,
+      stockTaxRate: 5,
+      bankInterestRate: 5,
       title: "",
       imgUrl: "",
       bindex: 0,
@@ -497,7 +545,7 @@ export default defineComponent({
     const remoteSearchUser = async (keyword: string) => {
       searchKeyword.value = keyword.trim();
       console.log("搜索用户:", searchKeyword.value);
-      
+
       if (!searchKeyword.value) {
         userList.value = [];
         return;
@@ -511,31 +559,30 @@ export default defineComponent({
           pageSize: 30,
         };
         const res: any = await SearchUserAPI(params);
-        
+
         console.log("API返回:", res);
-        
+
         // 正确处理API返回数据结构：从records数组获取用户列表
         let users = [];
         if (res && res.status === 200 && res.data) {
           // API返回的是data.records数组
           users = Array.isArray(res.data.records) ? res.data.records : [];
         }
-        
+
         console.log("用户列表:", users);
-        
+
         // 过滤有效用户数据
-        userList.value = users.filter(user => {
+        userList.value = users.filter((user) => {
           return user && user.username; // 确保有用户名
         });
-        
+
         console.log("过滤后用户列表:", userList.value);
-        
+
         // 如果有数据但显示有问题，手动触发更新
         if (userList.value.length > 0) {
           // 强制更新
           userList.value = [...userList.value];
         }
-        
       } catch (error) {
         console.error("搜索用户出错:", error);
         userList.value = [];
@@ -549,7 +596,7 @@ export default defineComponent({
     const getBlockList = async () => {
       try {
         isLoading.value = true;
-        const res: any = await GetBlockListAPI();
+        const res: any = await GetAdminBlockListAPI();
         if (res.status === 200) {
           blockList.value = res.data || [];
           total.value = blockList.value.length;
@@ -583,6 +630,9 @@ export default defineComponent({
         repost: false,
         finance: 0,
         taxRate: 0,
+        itemTaxRate: 5,
+        stockTaxRate: 5,
+        bankInterestRate: 5,
         title: "",
         imgUrl: "",
         bindex: 0,
@@ -596,10 +646,10 @@ export default defineComponent({
     // 打开编辑弹窗
     const handleEdit = (row: BlockItem) => {
       dialogType.value = "edit";
-      
+
       // 处理管理者字段（逗号分隔的字符串转数组）
-      const managementArr = row.management 
-        ? row.management.split(",").filter(item => item.trim()) 
+      const managementArr = row.management
+        ? row.management.split(",").filter((item) => item.trim())
         : [];
 
       console.log("编辑时的管理者:", managementArr);
@@ -613,19 +663,22 @@ export default defineComponent({
       }
 
       // 复制数据到表单
-      Object.assign(formData, {
-        ...row,
-        management: managementArr, // 转为数组用于回显
-        title: titleStr,
-        license: row.license !== undefined ? Number(row.license) : 0,
-        type: row.type !== undefined ? Number(row.type) : 1,
-        finance: row.finance || 0,
-        taxRate: row.taxRate || 0,
-        bindex: row.bindex || 0,
-        repost: row.repost || false,
-        imgUrl: row.imgUrl || "",
-        bannerurl: row.bannerurl || "",
-      });
+      formData.id = row.id;
+      formData.name = row.name || "";
+      formData.management = managementArr;
+      formData.title = titleStr;
+      formData.license = row.license !== undefined ? Number(row.license) : 0;
+      formData.type = row.type !== undefined ? Number(row.type) : 1;
+      formData.finance = row.finance || 0;
+      formData.taxRate = Number(row.taxRate ?? 0);
+      formData.itemTaxRate = Number(row.itemTaxRate ?? 5);
+      formData.stockTaxRate = Number(row.stockTaxRate ?? 5);
+      formData.bankInterestRate = Number(row.bankInterestRate ?? 5);
+      formData.bindex = row.bindex || 0;
+      formData.repost = row.repost || false;
+      formData.imgUrl = row.imgUrl || "";
+      formData.bannerurl = row.bannerurl || "";
+      formData.players = row.players || "";
 
       dialogVisible.value = true;
     };
@@ -683,8 +736,11 @@ export default defineComponent({
         // 构造提交数据
         const formDataCopy = {
           ...formData,
-          management: managementStr || null, // 空数组转为null
+          management: managementStr || null,
           title: titleValue || "",
+          itemTaxRate: Number(formData.itemTaxRate ?? 5),
+          stockTaxRate: Number(formData.stockTaxRate ?? 5),
+          bankInterestRate: Number(formData.bankInterestRate ?? 5),
         };
 
         let res: any;
@@ -710,7 +766,10 @@ export default defineComponent({
           `${dialogType.value === "add" ? "添加" : "更新"}会馆出错:`,
           error
         );
-        if ((error as any).message && !(error as any).message.includes("Validation failed")) {
+        if (
+          (error as any).message &&
+          !(error as any).message.includes("Validation failed")
+        ) {
           ElMessage.error(
             `${dialogType.value === "add" ? "添加" : "更新"}会馆失败`
           );
@@ -719,9 +778,13 @@ export default defineComponent({
     };
 
     // 监听用户列表变化，调试用
-    watch(userList, (newVal) => {
-      console.log("用户列表变化:", newVal);
-    }, { deep: true });
+    watch(
+      userList,
+      (newVal) => {
+        console.log("用户列表变化:", newVal);
+      },
+      { deep: true }
+    );
 
     // 初始化加载数据
     onMounted(() => {
@@ -793,14 +856,14 @@ export default defineComponent({
   display: flex;
   justify-content: center;
   align-items: center;
-  
+
   .block-icon {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     border: 1px solid #eee;
   }
-  
+
   .no-icon {
     width: 40px;
     height: 40px;
@@ -818,19 +881,19 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 10px;
-  
+
   .media-preview {
     display: flex;
     justify-content: center;
     align-items: center;
-    
+
     .icon-preview {
       width: 40px;
       height: 40px;
       border-radius: 4px;
       border: 1px solid #eee;
     }
-    
+
     .no-preview {
       width: 40px;
       height: 40px;
@@ -842,7 +905,7 @@ export default defineComponent({
       border-radius: 4px;
     }
   }
-  
+
   .banner-preview-container {
     .banner-preview {
       width: 120px;
@@ -850,7 +913,7 @@ export default defineComponent({
       border-radius: 4px;
       border: 1px solid #eee;
     }
-    
+
     .no-preview {
       width: 120px;
       height: 30px;
@@ -885,12 +948,12 @@ export default defineComponent({
 .selected-users {
   margin-top: 8px;
   font-size: 12px;
-  
+
   .label {
     color: #999;
     margin-right: 4px;
   }
-  
+
   .names {
     color: #666;
     word-break: break-all;

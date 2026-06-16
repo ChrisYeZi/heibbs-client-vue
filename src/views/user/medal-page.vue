@@ -23,6 +23,8 @@
     <van-empty
       v-if="!loading && ownedMedals.length === 0 && allFlat.length === 0"
       description="暂无勋章"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
     />
 
     <!-- 全部勋章 -->

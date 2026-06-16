@@ -8,13 +8,7 @@
     >
       <!-- 头像区域 -->
       <div class="chat-avatar">
-        <img
-          :src="getAvatarUrl(item)"
-          :alt="item.sname"
-          class="avatar-img"
-        />
-        <!-- 未读气泡 -->
-        <div class="unread-badge" v-if="unreadCounts[item.plid]">{{ unreadCounts[item.plid] >= 99 ? '99+' : unreadCounts[item.plid] }}</div>
+        <img :src="getAvatarUrl(item)" :alt="item.sname" class="avatar-img" />
       </div>
 
       <!-- 消息内容区域 -->
@@ -43,8 +37,8 @@
     <!-- 空状态 -->
     <div class="chat-empty" v-if="formattedChatList.length === 0">
       <van-empty
-        image="https://img.yzcdn.cn/vant/empty-image-default.png"
-        image-size="120"
+        :image="require('@/assets/img/404.png')"
+        image-size="45%"
         description="暂无消息"
       />
     </div>
@@ -71,7 +65,6 @@ export default {
       chatList: [],
       userdata: store.state.user?.info,
       avatarUrls: {},
-      unreadCounts: {},
     };
   },
   computed: {
@@ -93,47 +86,26 @@ export default {
       GetMessageListAPI().then((res) => {
         if (res.status === 200) {
           this.chatList = res.data || [];
-          this.loadUnreadCounts();
           this.loadAvatars();
         } else {
           console.log("获取消息失败：", res.msg);
         }
       });
     },
-    loadUnreadCounts() {
-      try {
-        const raw = localStorage.getItem("heibbs_chat_unread");
-        if (raw) this.unreadCounts = JSON.parse(raw);
-      } catch (e) { this.unreadCounts = {}; }
-      // 为新消息设置初始未读计数
-      this.chatList.forEach(item => {
-        if (!(item.plid in this.unreadCounts)) {
-          this.unreadCounts[item.plid] = 1;
-        }
-      });
-      this.saveUnreadCounts();
-    },
-    saveUnreadCounts() {
-      localStorage.setItem("heibbs_chat_unread", JSON.stringify(this.unreadCounts));
-      // 触发 Navbar 刷新（通过自定义事件）
-      window.dispatchEvent(new Event("heibbs-unread-changed"));
-    },
-    clearUnread(plid) {
-      this.unreadCounts[plid] = 0;
-      this.saveUnreadCounts();
-    },
-
     loadAvatars() {
       const uidSet = new Set();
       const currentUid = store.state.user?.info?.user?.uid;
-      this.chatList.forEach(item => {
+      this.chatList.forEach((item) => {
         const otherUid = item.tid === currentUid ? item.sid : item.tid;
         if (otherUid) uidSet.add(otherUid);
       });
-      uidSet.forEach(uid => {
-        const cached = getCachedAvatar(uid)
-        if (cached) { this.avatarUrls[uid] = cached; return }
-        GetUserAvatarAPI(uid).then(res => {
+      uidSet.forEach((uid) => {
+        const cached = getCachedAvatar(uid);
+        if (cached) {
+          this.avatarUrls[uid] = cached;
+          return;
+        }
+        GetUserAvatarAPI(uid).then((res) => {
           if (res.status === 200) {
             const url = config.avatarUrl + res.data;
             this.avatarUrls[uid] = url;
@@ -192,10 +164,8 @@ export default {
       return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
     },
 
-
     // 点击事件
     handleChatClick(item) {
-      this.clearUnread(item.plid);
       this.$router.push({ path: "/chat", query: { plid: item.plid } });
     },
   },
@@ -253,23 +223,7 @@ export default {
     object-fit: cover;
   }
 
-  .unread-badge {
-    position: absolute;
-    top: -6px;
-    right: -8px;
-    min-width: 20px;
-    height: 20px;
-    line-height: 20px;
-    border-radius: 10px;
-    background-color: #F6AD47;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    text-align: center;
-    padding: 0 5px;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  }
+
 }
 
 .chat-content {

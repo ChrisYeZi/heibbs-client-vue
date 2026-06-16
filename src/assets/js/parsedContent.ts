@@ -268,5 +268,77 @@ export const parsedIndexContent = (content: string): string => {
   return DOMPurify.sanitize(html);
 };
 
+/**
+ * 纯文本转录：去除所有 BBCode，仅保留文字内容。图片转为链接地址展示。
+ * 用于首页列表等不需要渲染富文本的场景。
+ */
+const stripBBCode = (text: string): string => {
+  return text
+    // 图片 [img]xxx[/img] → 图片链接
+    .replace(/\[img=\d+,\d+\]([\s\S]*?)\[\/img\]/g, '[图片:$1]')
+    .replace(/\[img\]([\s\S]*?)\[\/img\]/g, '[图片:$1]')
+    // 附件
+    .replace(/\[attach\]\d+\[\/attach\]/g, '[附件]')
+    // 视频/音频 → 链接文字
+    .replace(/\[video\]([\s\S]*?)\[\/video\]/g, '[视频:$1]')
+    .replace(/\[audio\]([\s\S]*?)\[\/audio\]/g, '[音频:$1]')
+    .replace(/\[bili\]\d+\[\/bili\]/g, '[B站视频]')
+    // URL链接 → 保留文字+链接
+    .replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/g, '$2($1)')
+    .replace(/\[url\]([\s\S]*?)\[\/url\]/g, '$1')
+    .replace(/\[email=([^\]]+)\]([\s\S]*?)\[\/email\]/g, '$2')
+    .replace(/\[email\]([\s\S]*?)\[\/email\]/g, '$1')
+    // 引用 → "引用:..."
+    .replace(/\[quote=[^\]]*\]([\s\S]*?)\[\/quote\]/g, '「引用」')
+    .replace(/\[quote\]([\s\S]*?)\[\/quote\]/g, '「引用」')
+    .replace(/\[code\]([\s\S]*?)\[\/code\]/g, '「代码」')
+    // 列表项
+    .replace(/\[\*\]([\s\S]*?)(?=\[\*\]|\[\/list\]|$)/g, '·$1\n')
+    .replace(/\[list[^\]]*\]([\s\S]*?)\[\/list\]/g, '$1')
+    // 表格 → 纯文本
+    .replace(/\[table[^\]]*\]([\s\S]*?)\[\/table\]/g, '$1')
+    .replace(/\[tr\]([\s\S]*?)\[\/tr\]/g, '$1\n')
+    .replace(/\[td\]([\s\S]*?)\[\/td\]/g, '$1 ')
+    // 标题 → 保留文字
+    .replace(/\[h[1-6]\]([\s\S]*?)\[\/h[1-6]\]/g, '$1')
+    // 格式化标签 → 去掉标签保留文字
+    .replace(/\[size=\d+\]([\s\S]*?)\[\/size\]/g, '$1')
+    .replace(/\[color=[^\]]*\]([\s\S]*?)\[\/color\]/g, '$1')
+    .replace(/\[font=[^\]]*\]([\s\S]*?)\[\/font\]/g, '$1')
+    .replace(/\[b\]([\s\S]*?)\[\/b\]/g, '$1')
+    .replace(/\[i\]([\s\S]*?)\[\/i\]/g, '$1')
+    .replace(/\[u\]([\s\S]*?)\[\/u\]/g, '$1')
+    .replace(/\[s\]([\s\S]*?)\[\/s\]/g, '$1')
+    .replace(/\[align=[^\]]*\]([\s\S]*?)\[\/align\]/g, '$1')
+    .replace(/\[center\]([\s\S]*?)\[\/center\]/g, '$1')
+    // 其他特殊标签
+    .replace(/\[hr\]/g, '---\n')
+    .replace(/\[page\]([\s\S]*?)\[\/page\]/g, '$1')
+    .replace(/\[hide\]([\s\S]*?)\[\/hide\]/g, '「隐藏内容」')
+    .replace(/\[i=s\][\s\S]*?\[\/i=s\]/g, '')
+    // 表情 → 文字
+    .replace(/\[(\w+|[一-龥]+)\]/g, (match: string, key: string) => {
+      const knownEmojis = ['smile','laugh','cry','angry','惊讶','疑问'];
+      return knownEmojis.includes(key) ? '' : match;
+    })
+    // 清理多余空白
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
+export const parsedPlainText = (content: string): string => {
+  if (!content || !content.trim()) return '';
+  let text = stripBBCode(content);
+  // 完全去除所有残留 HTML 标签和实体
+  text = text
+    .replace(/<[^>]*>/g, '')          // 去除所有 HTML 标签
+    .replace(/&[a-z]+;/g, '')         // 去除 HTML 实体如 &lt; &gt; &amp; &nbsp;
+    .replace(/&#?\w+;/g, '')          // 去除数字实体
+    .replace(/\s+/g, ' ')             // 合并连续空白
+    .trim();
+  if (text.length > 200) text = text.substring(0, 200) + '...';
+  return text;
+};
+
 // 对外暴露
-export default { parsedContent, parsedIndexContent };
+export default { parsedContent, parsedIndexContent, parsedPlainText };

@@ -6,8 +6,8 @@
 
     <!-- 空状态 -->
     <van-empty
-      image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
-      :image-size="[250, 280]"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
       v-if="!isLoading && !replyPage?.records?.length"
       :description="postUnknow || '暂无帖子数据'"
       class="empty-state"
@@ -579,7 +579,9 @@
       >
         <el-radio-button value="state">状态设置</el-radio-button>
         <el-radio-button value="stamp">图章设置</el-radio-button>
-        <el-radio-button value="move" v-if="canDeletePost">更改板块</el-radio-button>
+        <el-radio-button value="move" v-if="canDeletePost"
+          >更改板块</el-radio-button
+        >
       </el-radio-group>
       <div v-if="operateType === 'state'" class="state-opts">
         <el-radio-group v-model="operateState">
@@ -607,9 +609,21 @@
         </el-radio-group>
       </div>
       <div v-else-if="operateType === 'move'" class="move-block-select">
-        <p style="font-size:13px;color:#728567;margin-bottom:8px">选择目标板块，帖子及其所有回复将一同移动</p>
-        <el-select v-model="operateTargetFid" style="width:100%" placeholder="请选择目标板块" filterable>
-          <el-option v-for="b in blockList" :key="b.id" :label="b.name" :value="b.id"/>
+        <p style="font-size: 13px; color: #728567; margin-bottom: 8px">
+          选择目标板块，帖子及其所有回复将一同移动
+        </p>
+        <el-select
+          v-model="operateTargetFid"
+          style="width: 100%"
+          placeholder="请选择目标板块"
+          filterable
+        >
+          <el-option
+            v-for="b in blockList"
+            :key="b.id"
+            :label="b.name"
+            :value="b.id"
+          />
         </el-select>
       </div>
       <template #footer>
@@ -619,10 +633,17 @@
     </el-dialog>
 
     <!-- 评分对话框 -->
-    <el-dialog v-model="ratingDialogVisible" title="帖子评分" width="400px" custom-class="rating-dialog">
+    <el-dialog
+      v-model="ratingDialogVisible"
+      title="帖子评分"
+      width="400px"
+      custom-class="rating-dialog"
+    >
       <div class="rating-info">
-        <p>评分帖子: <strong>#{{ ratingTargetPid }}</strong></p>
-        <p style="font-size: 12px; color: rgba(114,133,103,0.7)">
+        <p>
+          评分帖子: <strong>#{{ ratingTargetPid }}</strong>
+        </p>
+        <p style="font-size: 12px; color: rgba(114, 133, 103, 0.7)">
           正数加分，负数扣分，请在额度范围内评分
         </p>
       </div>
@@ -659,7 +680,11 @@
         show-word-limit
       />
       <template #footer>
-        <el-button class="rating-dialog-btn-cancel" @click="ratingDialogVisible = false">取消</el-button>
+        <el-button
+          class="rating-dialog-btn-cancel"
+          @click="ratingDialogVisible = false"
+          >取消</el-button
+        >
         <el-button
           class="rating-dialog-btn-submit"
           @click="submitRating"
@@ -1215,8 +1240,14 @@ export default defineComponent({
         const r = await SetPostStampAPI(post.pid, operateStamp.value);
         ElMessage[r.status === 200 ? "success" : "error"](String(r.data || ""));
       } else if (operateType.value === "move") {
-        if (!operateTargetFid.value) { ElMessage.warning("请选择目标板块"); return; }
-        const r = await MovePostAPI({ pid: post.pid, targetFid: operateTargetFid.value });
+        if (!operateTargetFid.value) {
+          ElMessage.warning("请选择目标板块");
+          return;
+        }
+        const r = await MovePostAPI({
+          pid: post.pid,
+          targetFid: operateTargetFid.value,
+        });
         if (r.status === 200) {
           ElMessage.success("帖子已移动到目标板块");
           operateDlg.value = false;
@@ -2019,7 +2050,7 @@ export default defineComponent({
 .extcredits-records {
   margin: 15px 0;
   padding: 10px;
-  background-color: #FCF9E0;
+  background-color: #fcf9e0;
   border-radius: 6px;
   border: 1px solid rgba(246, 173, 71, 0.2);
 
@@ -2059,35 +2090,48 @@ export default defineComponent({
 
 // 评分对话框样式
 :deep(.el-dialog__header) {
-  border-bottom: 1px solid #728567;
-  .el-dialog__title { color: #728567; font-weight: 600; }
+  .el-dialog__title {
+    color: rgba(255, 255, 255, 1);
+    font-weight: 600;
+    background: #728567;
+    padding: 5px;
+    border-radius: 5px;
+    span {
+      color: #728567;
+      background: rgba(255, 255, 255, 1);
+    }
+  }
 }
 :deep(.el-dialog__footer) {
-  border-top: 1px solid #FCF9E0;
   padding: 12px 20px;
 }
 .rating-info {
-  p { color: #728567; margin: 2px 0; }
+  p {
+    color: #728567;
+    margin: 2px 0;
+  }
 }
-.rating-credits { margin-top: 12px; }
+.rating-credits {
+  margin-top: 12px;
+}
 .rating-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  border: 1px solid rgba(246, 173, 71, 0.2);
-  border-radius: 8px;
+  padding: 5px 12px;
+  margin-bottom: 3px;
+  border: 1px solid #72856780;
+  border-radius: 5px;
 }
 .rating-label {
   font-size: 14px;
   font-weight: 500;
-  color: #F6AD47;
+  color: #728567;
   min-width: 60px;
 }
 .rating-limit {
   font-size: 11px;
-  color: #F6AD47;
+  color: #728567;
   flex: 1;
 }
 :deep(.rating-row .el-input-number) {
@@ -2095,26 +2139,41 @@ export default defineComponent({
     border-color: rgba(246, 173, 71, 0.4);
     color: #728567;
     text-align: center;
-    &:focus { border-color: #F6AD47; }
+    &:focus {
+      border-color: #f6ad47;
+    }
   }
-  .el-input-number__decrease, .el-input-number__increase {
-    background: #FCF9E0;
+  .el-input-number__decrease,
+  .el-input-number__increase {
+    background: #fcf9e0;
     color: #728567;
     border-color: rgba(246, 173, 71, 0.3);
-    &:hover { color: #F6AD47; }
+    &:hover {
+      color: #f6ad47;
+    }
   }
 }
 .rating-dialog-btn-cancel {
   border-color: #728567 !important;
   color: #728567 !important;
-  &:hover { border-color: #F6AD47 !important; color: #F6AD47 !important; background: #FCF9E0 !important; }
+  &:hover {
+    border-color: #f6ad47 !important;
+    color: #f6ad47 !important;
+    background: #fcf9e0 !important;
+  }
 }
 .rating-dialog-btn-submit {
-  background: #F6AD47 !important;
-  border-color: #F6AD47 !important;
+  background: #f6ad47 !important;
+  border-color: #f6ad47 !important;
   color: #fff !important;
-  &:hover { background: darken(#F6AD47, 8%) !important; border-color: darken(#F6AD47, 8%) !important; }
-  &.is-disabled { background: #ddd !important; border-color: #ddd !important; }
+  &:hover {
+    background: darken(#f6ad47, 8%) !important;
+    border-color: darken(#f6ad47, 8%) !important;
+  }
+  &.is-disabled {
+    background: #ddd !important;
+    border-color: #ddd !important;
+  }
 }
 
 // 评论区样式
@@ -2280,7 +2339,7 @@ export default defineComponent({
         padding: 0 8px;
         border: 1px solid #728567;
         border-radius: 4px;
-        background: rgba(255,255,255,0);
+        background: rgba(255, 255, 255, 0);
         color: #728567;
         font-size: 13px;
         cursor: pointer;

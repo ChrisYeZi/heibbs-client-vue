@@ -4,8 +4,8 @@
 
   <!-- 空状态 -->
   <van-empty
-    image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
-    :image-size="[250, 280]"
+    :image="require('@/assets/img/404.png')"
+    image-size="45%"
     v-if="!isLoading && !blockList"
     :description="blockUnknow || '暂无帖子数据'"
     class="empty-state"
@@ -24,6 +24,11 @@
         </div>
         <div class="block-head-title">
           {{ item?.name }}
+          <span
+            v-if="item?.license >= 2"
+            style="font-size: 11px; color: #f6ad47; margin-left: 4px"
+            >🔒</span
+          >
         </div>
       </div>
       <div class="block-content">
@@ -46,14 +51,15 @@ import { ref, defineComponent } from "vue";
 interface BlockItem {
   id?: number;
   name?: string;
-  management?: [];
-  license?: boolean;
+  management?: string;
+  license?: number;
   type?: number;
   repost?: boolean;
   finance?: number;
   taxRate?: number;
-  title?: [];
+  title?: string;
   imgUrl?: string;
+  players?: string;
 }
 
 export default defineComponent({

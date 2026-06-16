@@ -27,8 +27,9 @@
         <el-form-item label="售卖价格" v-if="form.sysSellBool"><el-input-number v-model="form.sysSellPrice" :min="0"/></el-form-item>
         <el-form-item label="售卖限制" v-if="form.sysSellBool">
           <el-select v-model="form.sysSellLimitType" style="width:120px">
-            <el-option label="无限制" value="unlimited"/><el-option label="每日" value="daily"/>
-            <el-option label="每月" value="monthly"/><el-option label="每年" value="yearly"/>
+            <el-option label="无限制" value="unlimited"/>
+            <el-option label="每人每日" value="daily"/><el-option label="每人每周" value="weekly"/><el-option label="每人每月" value="monthly"/>
+            <el-option label="全员每日" value="daily_all"/><el-option label="全员每周" value="weekly_all"/><el-option label="全员每月" value="monthly_all"/>
           </el-select>
           <el-input-number v-if="form.sysSellLimitType&&form.sysSellLimitType!=='unlimited'" v-model="form.sysSellLimitQty" :min="1" style="margin-left:8px;width:100px" placeholder="数量"/>
         </el-form-item>
@@ -37,8 +38,9 @@
         <el-form-item label="收购价格" v-if="form.sysBuyBool"><el-input-number v-model="form.sysBuyPrice" :min="0"/></el-form-item>
         <el-form-item label="收购限制" v-if="form.sysBuyBool">
           <el-select v-model="form.sysBuyLimitType" style="width:120px">
-            <el-option label="无限制" value="unlimited"/><el-option label="每日" value="daily"/>
-            <el-option label="每月" value="monthly"/><el-option label="每年" value="yearly"/>
+            <el-option label="无限制" value="unlimited"/>
+            <el-option label="每人每日" value="daily"/><el-option label="每人每周" value="weekly"/><el-option label="每人每月" value="monthly"/>
+            <el-option label="全员每日" value="daily_all"/><el-option label="全员每周" value="weekly_all"/><el-option label="全员每月" value="monthly_all"/>
           </el-select>
           <el-input-number v-if="form.sysBuyLimitType&&form.sysBuyLimitType!=='unlimited'" v-model="form.sysBuyLimitQty" :min="1" style="margin-left:8px;width:100px" placeholder="数量"/>
         </el-form-item>

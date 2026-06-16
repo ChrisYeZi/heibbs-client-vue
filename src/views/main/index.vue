@@ -1,164 +1,165 @@
 <template>
-<div ref="scrollContainer" class="scroll-wrapper">
-  <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-  <div class="index-content">
-    <!-- 搜索框 -->
-    <div class="search-bar">
-      <van-search
-        v-model="searchKeyword"
-        placeholder="搜索帖子标题或用户名"
-        @search="doSearch"
-      />
-    </div>
-    <!-- 轮播图区域 -->
-    <van-swipe
-      v-if="slides.length"
-      class="my-swipe"
-      :autoplay="3500"
-      indicator-color="white"
-    >
-      <van-swipe-item
-        v-for="(slide, index) in slides"
-        :key="slide.id || index"
-        @click="handleBannerClick(slide)"
-      >
-        <div class="swipe-container">
-          <img :src="slide.url" :alt="slide.title" class="swipe-image" />
-          <!-- Banner标题层 -->
-          <div class="swipe-title">{{ slide.title }}</div>
+  <div ref="scrollContainer" class="scroll-wrapper">
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <div class="index-content">
+        <!-- 搜索框 -->
+        <div class="search-bar">
+          <van-search
+            v-model="searchKeyword"
+            placeholder="搜索帖子标题或用户名"
+            @search="doSearch"
+          />
         </div>
-      </van-swipe-item>
-    </van-swipe>
-
-    <van-notice-bar
-      v-if="noticeEnabled"
-      left-icon="volume-o"
-      :text="noticeText"
-    />
-
-    <!-- 排序切换标签 -->
-    <div class="index-post-rule">
-      <span
-        class="sort-tab"
-        :class="{ active: sortType === 'latestPost' }"
-        @click="changeSortType('latestPost')"
-        >最新发帖</span
-      >
-      <span
-        class="sort-tab"
-        :class="{ active: sortType === 'latestReply' }"
-        @click="changeSortType('latestReply')"
-        >最新回复</span
-      >
-    </div>
-
-    <!-- 帖子列表 -->
-    <div v-if="postList.records && postList.records.length">
-      <!-- 置顶帖 -->
-      <div class="index-post-top">
-        <div
-          class="index-post"
-          v-for="(item, index) in postTopList"
-          :key="item.pid || index"
-          @click="PostClick(item)"
+        <!-- 轮播图区域 -->
+        <van-swipe
+          v-if="slides.length"
+          class="my-swipe"
+          :autoplay="3500"
+          indicator-color="white"
         >
-          <div class="index-post-title">
-            <span class="index-post-title-block-top">置顶 </span
-            >{{ item.subject }}
+          <van-swipe-item
+            v-for="(slide, index) in slides"
+            :key="slide.id || index"
+            @click="handleBannerClick(slide)"
+          >
+            <div class="swipe-container">
+              <img :src="slide.url" :alt="slide.title" class="swipe-image" />
+              <!-- Banner标题层 -->
+              <div class="swipe-title">{{ slide.title }}</div>
+            </div>
+          </van-swipe-item>
+        </van-swipe>
+
+        <van-notice-bar
+          v-if="noticeEnabled"
+          left-icon="volume-o"
+          :text="noticeText"
+        />
+
+        <!-- 排序切换标签 -->
+        <div class="index-post-rule">
+          <span
+            class="sort-tab"
+            :class="{ active: sortType === 'latestPost' }"
+            @click="changeSortType('latestPost')"
+            >最新发帖</span
+          >
+          <span
+            class="sort-tab"
+            :class="{ active: sortType === 'latestReply' }"
+            @click="changeSortType('latestReply')"
+            >最新回复</span
+          >
+        </div>
+
+        <!-- 帖子列表 -->
+        <div v-if="postList.records && postList.records.length">
+          <!-- 置顶帖 -->
+          <div class="index-post-top">
+            <div
+              class="index-post"
+              v-for="(item, index) in postTopList"
+              :key="item.pid || index"
+              @click="PostClick(item)"
+            >
+              <div class="index-post-title">
+                <span class="index-post-title-block-top">置顶 </span
+                >{{ item.subject }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 正常帖 -->
+          <div
+            class="index-post"
+            v-for="(item, index) in postList.records"
+            :key="item.pid || index"
+            @click="PostClick(item)"
+          >
+            <!-- 会馆 -->
+            <div class="index-post-title">
+              <span class="index-post-title-block">{{
+                getBlockName(item.fid)
+              }}</span>
+              {{ item.subject }}
+              <span v-if="item.state === 2" class="post-lock">🔒</span>
+              <span v-if="item.stampName" class="post-stamp-seal">{{
+                item.stampName
+              }}</span>
+            </div>
+            <div class="post-hidden-note" v-if="item.state === 1">
+              ⚠ 内容已被隐藏
+            </div>
+            <div class="index-post-meta">
+              <span>
+                <!-- 用户组 -->
+                <span
+                  class="index-post-meta-group"
+                  v-if="item.extgroupid == 0"
+                  :style="{
+                    backgroundColor:
+                      groupList.groupDo[item?.groupid - 1]?.color,
+                  }"
+                  >{{ groupList.groupDo[item.groupid - 1]?.gname }}</span
+                >
+                <span
+                  class="index-post-meta-admingroup"
+                  v-if="item.extgroupid != 0"
+                  :style="{
+                    backgroundColor:
+                      groupList.extgroupDo[item?.extgroupid - 1]?.color,
+                  }"
+                  >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
+                >
+                <!-- 用户名 -->
+                <span class="post-username">{{ item.author }}</span>
+                <PostbarVue :postObj="item" />
+              </span>
+              <span>{{ item.formattedCreateTime }}</span>
+            </div>
+            <div class="post-content" v-if="item?.state != 4">
+              {{ parsedPlainText(item.message) }}
+            </div>
+
+            <!-- 帖子互动信息 -->
+            <div class="post-actions" v-if="item?.state != 4">
+              <span class="action-item"
+                ><van-icon name="eye-o" /> {{ item.viewCount || 0 }}</span
+              >
+              <span class="action-item"
+                ><van-icon name="chat-o" /> {{ item.replyCount || 0 }}</span
+              >
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 正常帖 -->
-      <div
-        class="index-post"
-        v-for="(item, index) in postList.records"
-        :key="item.pid || index"
-        @click="PostClick(item)"
-      >
-        <!-- 会馆 -->
-        <div class="index-post-title">
-          <span class="index-post-title-block">{{
-            getBlockName(item.fid)
-          }}</span>
-          {{ item.subject }}
-          <span v-if="item.state === 2" class="post-lock">🔒</span>
-          <span v-if="item.stampName" class="post-stamp-seal">{{
-            item.stampName
-          }}</span>
-        </div>
-        <div class="post-hidden-note" v-if="item.state === 1">
-          ⚠ 内容已被隐藏
-        </div>
-        <div class="index-post-meta">
-          <span>
-            <!-- 用户组 -->
-            <span
-              class="index-post-meta-group"
-              v-if="item.extgroupid == 0"
-              :style="{
-                backgroundColor: groupList.groupDo[item?.groupid - 1]?.color,
-              }"
-              >{{ groupList.groupDo[item.groupid - 1]?.gname }}</span
-            >
-            <span
-              class="index-post-meta-admingroup"
-              v-if="item.extgroupid != 0"
-              :style="{
-                backgroundColor:
-                  groupList.extgroupDo[item?.extgroupid - 1]?.color,
-              }"
-              >{{ groupList.extgroupDo[item.extgroupid - 1]?.gname }}</span
-            >
-            <!-- 用户名 -->
-            <span class="post-username">{{ item.author }}</span>
-            <PostbarVue :postObj="item" />
-          </span>
-          <span>{{ item.formattedCreateTime }}</span>
-        </div>
+        <!-- 加载状态和空状态 -->
+        <van-loading
+          v-if="isLoading && postList.records.length === 0"
+          color="#1989fa"
+          class="loading-indicator"
+        />
+        <van-empty
+          :image="require('@/assets/img/404.png')"
+          image-size="45%"
+          v-if="
+            !isLoading && (!postList.records || postList.records.length === 0)
+          "
+          description="暂无帖子内容"
+        />
+
+        <!-- 加载更多提示 -->
         <div
-          class="post-content"
-          v-html="parsedContent.parsedIndexContent(item.message)"
-          v-if="item?.state != 4"
-        ></div>
-
-        <!-- 帖子互动信息 -->
-        <div class="post-actions" v-if="item?.state != 4">
-          <span class="action-item"
-            ><van-icon name="eye-o" /> {{ item.viewCount || 0 }}</span
-          >
-          <span class="action-item"
-            ><van-icon name="chat-o" /> {{ item.replyCount || 0 }}</span
-          >
+          v-if="postList.records && postList.records.length > 0"
+          class="load-more"
+        >
+          <van-loading v-if="isLoadingMore" size="16" color="#1989fa" />
+          <span v-else-if="hasMore">上拉加载更多</span>
+          <span v-else>已显示全部内容</span>
         </div>
       </div>
-    </div>
-
-    <!-- 加载状态和空状态 -->
-    <van-loading
-      v-if="isLoading && postList.records.length === 0"
-      color="#1989fa"
-      class="loading-indicator"
-    />
-    <van-empty
-      image="http://www.heibbs.net:8081/api/attachment/200000/404.png"
-      :image-size="[250, 280]"
-      v-if="!isLoading && (!postList.records || postList.records.length === 0)"
-      description="暂无帖子内容"
-    />
-
-    <!-- 加载更多提示 -->
-    <div
-      v-if="postList.records && postList.records.length > 0"
-      class="load-more"
-    >
-      <van-loading v-if="isLoadingMore" size="16" color="#1989fa" />
-      <span v-else-if="hasMore">上拉加载更多</span>
-      <span v-else>已显示全部内容</span>
-    </div>
+    </van-pull-refresh>
   </div>
-  </van-pull-refresh>
-</div>
 </template>
 
 <script lang="ts">
@@ -186,7 +187,7 @@ import {
   Search,
   PullRefresh,
 } from "vant";
-import parsedContent from "@/assets/js/parsedContent";
+import parsedContent, { parsedPlainText } from "@/assets/js/parsedContent";
 import router from "@/router";
 
 // 定义帖子项的接口
@@ -294,7 +295,7 @@ export default defineComponent({
       try {
         const r = await GetSystemConfigAPI();
         if (r.status === 200) {
-          noticeEnabled.value = r.data.notice_enabled !== 'false';
+          noticeEnabled.value = r.data.notice_enabled !== "false";
           noticeText.value = r.data.notice_text || noticeText.value;
         }
       } catch (e) {}
@@ -503,14 +504,17 @@ export default defineComponent({
       hasMore,
       slides,
       parsedContent,
+      parsedPlainText,
       scrollContainer,
       postTopList,
       getBlockName,
       gotoInfo,
       handleBannerClick,
       sortType,
-      refreshing, onRefresh,
-      noticeEnabled, noticeText,
+      refreshing,
+      onRefresh,
+      noticeEnabled,
+      noticeText,
       searchKeyword,
       doSearch,
       changeSortType, // 导出切换方法

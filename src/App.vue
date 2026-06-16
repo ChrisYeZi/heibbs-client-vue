@@ -13,12 +13,15 @@ import { GetLatestVersionAPI } from "@/api/index";
 export default defineComponent({
   name: "App",
   setup() {
+    // 状态栏设置暗色调
+
     // 状态栏背景色（跟随 App 背景 #FCF9E0）
     const setStatusBar = () => {
       try {
         const plus = (window as any).plus;
+        plus.navigator.setStatusBarStyle("dark");
         if (plus?.navigator?.setStatusBarBackground) {
-          plus.navigator.setStatusBarBackground("#FCF9E0");
+          plus.navigator.setStatusBarBackground("#FFFEF9");
         }
       } catch (e) {
         /* ignore */

@@ -24,7 +24,12 @@
       </div>
 
       <!-- 明细列表 -->
-      <van-empty v-if="!records.length" description="暂无记录" />
+      <van-empty
+        v-if="!records.length"
+        description="暂无记录"
+        :image="require('@/assets/img/404.png')"
+        image-size="45%"
+      />
       <div class="record-list">
         <div v-for="r in records" :key="r.id" class="record-item">
           <div class="rec-left">
@@ -42,9 +47,21 @@
           <div class="rec-time">{{ fmtTime(r.time) }}</div>
         </div>
       </div>
-      <el-pagination v-if="recTotal>11" layout="prev,pager,next" :total="recTotal"
-        :page-size="11" :current-page="recPage" @current-change="p=>{recPage=p;fetch()}" size="small"
-        style="justify-content:center;margin-top:11px"/>
+      <el-pagination
+        v-if="recTotal > 11"
+        layout="prev,pager,next"
+        :total="recTotal"
+        :page-size="11"
+        :current-page="recPage"
+        @current-change="
+          (p) => {
+            recPage = p;
+            fetch();
+          }
+        "
+        size="small"
+        style="justify-content: center; margin-top: 11px"
+      />
     </template>
   </div>
 </template>
@@ -61,7 +78,8 @@ export default defineComponent({
     const loading = ref(true),
       count = ref<any>(null),
       records = ref<any[]>([]),
-      recPage = ref(1), recTotal = ref(0);
+      recPage = ref(1),
+      recTotal = ref(0);
     const names = ["灵气", "妖灵币", "值钱玉佩", "天明珠"];
 
     const getChanges = (r: any) => {
@@ -83,7 +101,10 @@ export default defineComponent({
 
     const fetch = async () => {
       loading.value = true;
-      const r = await GetCreditDetailAPI({pageNum:recPage.value,pageSize:11});
+      const r = await GetCreditDetailAPI({
+        pageNum: recPage.value,
+        pageSize: 11,
+      });
       if (r.status === 200) {
         count.value = r.data.count;
         records.value = r.data.records || [];
@@ -92,7 +113,16 @@ export default defineComponent({
       loading.value = false;
     };
     onMounted(fetch);
-    return { loading, count, records, recPage, recTotal, fetch, getChanges, fmtTime };
+    return {
+      loading,
+      count,
+      records,
+      recPage,
+      recTotal,
+      fetch,
+      getChanges,
+      fmtTime,
+    };
   },
 });
 </script>

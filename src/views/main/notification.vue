@@ -2,7 +2,12 @@
   <div class="notification-page">
     <div class="page-header">
       <h2>通知中心</h2>
-      <el-button v-if="unreadCount > 0" type="primary" size="small" @click="handleReadAll">
+      <el-button
+        v-if="unreadCount > 0"
+        type="primary"
+        size="small"
+        @click="handleReadAll"
+      >
         全部已读
       </el-button>
     </div>
@@ -11,10 +16,18 @@
     <van-loading v-if="isLoading" color="#1989fa" class="loading-indicator" />
 
     <!-- 空状态 -->
-    <van-empty v-if="!isLoading && notificationList.length === 0" description="暂无通知" />
+    <van-empty
+      v-if="!isLoading && notificationList.length === 0"
+      description="暂无通知"
+      :image="require('@/assets/img/404.png')"
+      image-size="45%"
+    />
 
     <!-- 通知列表 -->
-    <div class="notification-list" v-if="!isLoading && notificationList.length > 0">
+    <div
+      class="notification-list"
+      v-if="!isLoading && notificationList.length > 0"
+    >
       <div
         v-for="item in notificationList"
         :key="item.id"
@@ -61,7 +74,12 @@
 <script lang="ts">
 import { ref, defineComponent } from "vue";
 import { useRouter } from "vue-router";
-import { GetNotificationListAPI, GetUnreadCountAPI, ReadNotificationAPI, ReadAllNotificationAPI } from "@/api/index";
+import {
+  GetNotificationListAPI,
+  GetUnreadCountAPI,
+  ReadNotificationAPI,
+  ReadAllNotificationAPI,
+} from "@/api/index";
 import { ElMessage } from "element-plus";
 import { Loading, Empty } from "vant";
 
