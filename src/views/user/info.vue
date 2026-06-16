@@ -106,7 +106,8 @@
           :value="onlyacceptfriendpm ? '仅接受好友私信' : '接受所有人私信'"
         />
         <van-cell title="用户组" :value="userGroup" />
-        <van-cell title="积分" :value="userdata?.credits" />
+        <van-cell title="积分" :value="weightedCredits" />
+        <van-cell title="今日积分" :value="userdata?.credits" />
       </van-cell-group>
 
       <!-- 积分详情 -->
@@ -147,6 +148,7 @@ import {
   GetGroupListAPI,
   GetUserMedalsAPI,
   StartConversationAPI,
+  GetCreditDefsAPI,
 } from "@/api/index";
 import router from "@/router";
 import store from "@/store";
@@ -239,8 +241,22 @@ export default defineComponent({
     const currentUid = store.state.user?.info?.user?.uid;
     const hasError = ref(false);
     const activeNames = ref(["1"]);
-    const avatarUrl = ref<string>("../../assets/img/avatar.png"); // 头像地址
-    const groupList = ref<GroupItem>(null); // 用户组列表（与首页一致）
+    const avatarUrl = ref<string>("../../assets/img/avatar.png");
+    const groupList = ref<GroupItem>(null);
+    const creditDefs = ref<any[]>([]);
+    const weightedCredits = computed(() => {
+      if (!count.value || !creditDefs.value.length) return userdata.value?.credits || 0;
+      let total = 0;
+      for (const def of creditDefs.value) {
+        if (!def.extcreditsEnable) continue;
+        const rule = parseInt(def.extcreditsRule) || 0;
+        if (rule <= 0) continue;
+        const key = def.extcredits;
+        const amount = (count.value as any)[key] || 0;
+        total += amount * rule;
+      }
+      return total;
+    });
 
     // 用户组信息映射（备用）
     const groupMap: GroupInfo = {
@@ -296,10 +312,11 @@ export default defineComponent({
           throw new Error("用户ID格式错误");
         }
 
-        // 并行获取用户组列表和用户头像
+        // 并行获取用户组列表、用户头像和积分定义
         await Promise.all([
-          getGroupData(), // 获取用户组数据
-          getUserAvatar(userId), // 获取用户头像
+          getGroupData(),
+          getUserAvatar(userId),
+          GetCreditDefsAPI().then(r => { if (r.status === 200) creditDefs.value = r.data || []; }).catch(() => {}),
         ]);
 
         // 调用API时传递id参数
@@ -432,7 +449,8 @@ export default defineComponent({
       emailstatus,
       onlyacceptfriendpm,
       activeNames,
-      avatarUrl, // 导出头像地址
+      weightedCredits,
+      avatarUrl,
       groupList, // 导出用户组列表
       fetchUserInfo,
       sendMessageToUser,

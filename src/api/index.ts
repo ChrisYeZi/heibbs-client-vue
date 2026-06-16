@@ -965,6 +965,7 @@ export const InsertCreditRuleAPI = (data:any): Res<String> => instance.post("/ad
 export const DeleteCreditRuleAPI = (id:number): Res<String> => instance.get("/admin/credit/delete-rule",{params:{id}});
 export const GrantCreditsAPI = (data:any): Res<String> => instance.post("/admin/credit/grant",data);
 export const GetUserCountAPI = (uid: number): Res<any> => instance.get("/admin/credit/user-count", { params: { uid } });
+export const GetMyCountAPI = (): Res<any> => instance.get("/count/getcount");
 export const SetUserCreditsAPI = (data: { uid: number; extcredits1?: number; extcredits2?: number; extcredits3?: number; extcredits4?: number }): Res<String> =>
   instance.post("/admin/credit/set", data);
 export const UpdateUserItemAPI = (data: { userItemId: number; quantity: number }): Res<String> =>
@@ -998,6 +999,7 @@ export const GetRecentMedalLogsAPI = (): Res<any[]> => instance.get("/medal/rece
 export const GetPromotionStatusAPI = (): Res<any> => instance.get("/user/promotion-status");
 export const ConfirmPromotionAPI = (logId: number): Res<String> => instance.post(`/user/confirm-promotion/${logId}`);
 export const RejectPromotionAPI = (logId: number): Res<String> => instance.post(`/user/reject-promotion/${logId}`);
+export const DirectPromoteAPI = (targetGid: number): Res<String> => instance.post(`/user/direct-promote/${targetGid}`);
 
 // ——————Attachment 附件管理模块
 interface AttachmentItem {

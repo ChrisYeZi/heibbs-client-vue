@@ -14,7 +14,6 @@
       <!-- Chat UI -->
       <div class="chat" @click="toChat()">
         <img src="../../assets/icon/xinxi.svg" width="30" />
-        <span class="chat-red-dot" v-if="unreadCount > 0"></span>
       </div>
     </van-row>
     <!-- 搜索弹出框 -->
@@ -49,7 +48,7 @@ import NavbarUserVue from "../user/NavbarUser.vue";
 import store from "@/store";
 import router from "@/router";
 // 引入头像接口
-import { GetUserAvatarAPI, GetUnreadCountAPI } from "@/api/index";
+import { GetUserAvatarAPI } from "@/api/index";
 import { getCachedAvatar, setCachedAvatar } from "@/assets/js/imageCache";
 
 export default {
@@ -61,15 +60,7 @@ export default {
       test: null,
       searchShow: false,
       avatarUrl: "../../assets/img/avatar.png",
-      unreadCount: 0,
     };
-  },
-  mounted() {
-    this.loadUnreadCount();
-    this._unreadTimer = setInterval(() => this.loadUnreadCount(), 30000);
-  },
-  beforeUnmount() {
-    if (this._unreadTimer) clearInterval(this._unreadTimer);
   },
   computed: {
     login() {
@@ -135,11 +126,6 @@ export default {
     toChat() {
       router.push("/chatlist");
     },
-    loadUnreadCount() {
-      GetUnreadCountAPI().then(res => {
-        if (res.status === 200) this.unreadCount = res.data || 0;
-      }).catch(() => {});
-    },
   },
 };
 </script>
@@ -184,17 +170,6 @@ export default {
     right: 0;
     box-sizing: border-box;
     margin-right: 10px;
-    position: relative;
-    .chat-red-dot {
-      position: absolute;
-      top: 2px;
-      right: 4px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #ff4d4f;
-      border: 1.5px solid #fff;
-    }
   }
   .chat:active {
     transition: 0.2s;

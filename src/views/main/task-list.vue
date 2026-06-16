@@ -230,7 +230,7 @@ export default defineComponent({
     const creditDefList = ref<any[]>([]);
     const getItemIcon = (id: number) => { const it = itemList.value.find((i: any) => i.id === id); return it ? it.icon : ''; };
     const getMedalIcon = (id: number) => { const m = medalList.value.find((i: any) => i.id === id); return m ? m.imageUrl : ''; };
-    const getCreditName = (key: string) => { const d = creditDefList.value.find((i: any) => i.extcreditsKey === key || i.id === key); return d ? d.title : key.replace('extcredits', '积分'); };
+    const getCreditName = (key: string) => { const d = creditDefList.value.find((i: any) => i.extcredits === key); return d ? d.extcreditsName : key.replace('extcredits', '积分'); };
     const getItemName = (id: number) => { const it = itemList.value.find((i: any) => i.id === id); return it ? it.name : '物品#' + id; };
     const getMedalName = (id: number) => { const m = medalList.value.find((i: any) => i.id === id); return m ? m.name : '勋章#' + id; };
     const randomRewardText = (r: any) => {
@@ -253,10 +253,8 @@ export default defineComponent({
       }
       const parts = [];
       if (t.rewardType && t.rewardValue)
-        parts.push(
-          t.rewardType.replace("extcredits", "积分") + "+" + t.rewardValue
-        );
-      if (t.rewardItemId) parts.push("物品x" + t.rewardItemQuantity);
+        parts.push(getCreditName(t.rewardType) + "+" + t.rewardValue);
+      if (t.rewardItemId) parts.push(getItemName(t.rewardItemId) + " x" + (t.rewardItemQuantity || 1));
       return parts.join(" + ") || "无";
     };
     const getPercent = (item: any) =>

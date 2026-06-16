@@ -203,12 +203,37 @@
 
         <template v-if="dialogType === 'group'">
           <el-form-item label="所需积分" prop="credits">
-            <el-input-number
-              v-model="formData.credits"
-              :min="0"
-              placeholder="请输入所需积分"
-            />
+            <el-input-number v-model="formData.credits" :min="0" placeholder="请输入所需积分"/>
           </el-form-item>
+          <el-form-item label="晋升条件">
+            <el-select v-model="formData.promotionType" style="width:100%">
+              <el-option label="无条件" value="unconditional"/>
+              <el-option label="消耗物品" value="item"/>
+              <el-option label="积分要求" value="credits"/>
+            </el-select>
+          </el-form-item>
+          <template v-if="formData.promotionType==='item'">
+            <el-form-item label="晋升物品">
+              <el-select v-model="formData.promotionItemId" style="width:100%" filterable placeholder="选择物品">
+                <el-option v-for="it in itemList" :key="it.id" :label="it.name" :value="it.id">
+                  <span style="display:flex;align-items:center;gap:6px"><img v-if="it.icon" :src="it.icon" style="width:22px;height:22px;border-radius:3px"/>{{ it.name }}</span>
+                </el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="物品数量">
+              <el-input-number v-model="formData.promotionItemQty" :min="1" style="width:100%"/>
+            </el-form-item>
+          </template>
+          <template v-if="formData.promotionType==='credits'">
+            <el-form-item label="消耗积分类型">
+              <el-select v-model="formData.promotionCreditType" style="width:100%" placeholder="选择积分类型">
+                <el-option v-for="cd in creditDefs" :key="cd.extcredits" :label="cd.extcreditsName" :value="cd.extcredits"/>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="消耗积分数量">
+              <el-input-number v-model="formData.promotionCreditAmount" :min="1" style="width:100%" placeholder="需消耗的积分数量"/>
+            </el-form-item>
+          </template>
         </template>
 
         <template v-if="dialogType === 'extgroup'">
@@ -285,7 +310,9 @@ import {
   InsertExtGroupAPI,
   UpdateExtGroupAPI,
   DeleteExtGroupAPI,
-  SelectPermissionAPI
+  SelectPermissionAPI,
+  GetAdminItemListAPI,
+  GetCreditDefsAPI,
 } from "@/api/index";
 
 // 定义权限接口
@@ -309,6 +336,11 @@ interface GroupItem {
   credits: number;
   description: string;
   color: string;
+  promotionType?: string;
+  promotionItemId?: number;
+  promotionItemQty?: number;
+  promotionCreditType?: string;
+  promotionCreditAmount?: number;
 }
 
 // 定义特殊用户组接口
@@ -358,6 +390,8 @@ export default defineComponent({
     const groupList = ref<GroupItem[]>([]);
     const extgroupList = ref<ExtgroupItem[]>([]);
     const permissionList = ref<PermissionItem[]>([]);
+    const itemList = ref<any[]>([]);
+    const creditDefs = ref<any[]>([]);
     const isLoading = ref({
       group: true,
       extgroup: true,
@@ -393,6 +427,11 @@ export default defineComponent({
       description: "",
       color: "#ffffff",
       gType: 1,
+      promotionType: "unconditional",
+      promotionItemId: 0,
+      promotionItemQty: 1,
+      promotionCreditType: "extcredits2",
+      promotionCreditAmount: 10,
     });
 
     // 解析权限列表
@@ -478,6 +517,11 @@ export default defineComponent({
         description: "",
         color: "#ffffff",
         gtype: 1,
+        promotionType: "unconditional",
+        promotionItemId: 0,
+        promotionItemQty: 1,
+        promotionCreditType: "extcredits2",
+      promotionCreditAmount: 10,
       });
       dialogVisible.value = true;
     };
@@ -596,16 +640,23 @@ export default defineComponent({
     };
 
     // 初始化加载数据
+    const loadItems = async () => {
+      try { const r = await GetAdminItemListAPI(); if (r.status === 200) itemList.value = r.data.records || []; } catch (e) {}
+      try { const r2 = await GetCreditDefsAPI(); if (r2.status === 200) creditDefs.value = r2.data || []; } catch (e) {}
+    };
     onMounted(() => {
       getGroupList();
       getExtgroupList();
       getPermissionList();
+      loadItems();
     });
 
     return {
       groupList,
       extgroupList,
       permissionList,
+      itemList,
+      creditDefs,
       groupedPermissions,
       isLoading,
       dialogVisible,

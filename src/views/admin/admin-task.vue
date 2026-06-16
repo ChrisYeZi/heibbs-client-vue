@@ -180,7 +180,7 @@
                 </el-select>
                 <template v-if="r.type === 'credit'">
                   <el-select v-model="r.credit" size="small" style="width: 100px"
-                    ><el-option v-for="cd in creditDefs" :key="cd.extcreditsKey||cd.id" :label="cd.title" :value="cd.extcreditsKey||cd.id"/></el-select>
+                    ><el-option v-for="cd in creditDefs" :key="cd.extcredits" :label="cd.extcreditsName" :value="cd.extcredits"/></el-select>
                   <el-input-number
                     v-model="r.value"
                     size="small"
@@ -333,7 +333,7 @@ export default defineComponent({
     const creditDefs = ref<any[]>([]);
     const allItems = ref<any[]>([]);
     const allMedals = ref<any[]>([]);
-    const getCreditName = (key: string) => { const d = creditDefs.value.find((i: any) => i.extcreditsKey === key || i.id === key); return d ? d.title : key.replace('extcredits', '积分'); };
+    const getCreditName = (key: string) => { const d = creditDefs.value.find((i: any) => i.extcredits === key); return d ? d.extcreditsName : key.replace('extcredits', '积分'); };
     const getItemNameA = (id: number) => { const it = allItems.value.find((i: any) => i.id === id); return it ? it.name : '物品#' + id; };
     const getMedalNameA = (id: number) => { const m = allMedals.value.find((i: any) => i.id === id); return m ? m.name : '勋章#' + id; };
     const randomPoolText = (row: any) => {
