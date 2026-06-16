@@ -237,6 +237,7 @@ const routes: Array<RouteRecordRaw> = [
           title: "设置",
         },
       },
+      // 遗留代码
       {
         path: "/notification",
         name: "notification",

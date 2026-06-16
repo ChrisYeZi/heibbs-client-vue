@@ -32,7 +32,7 @@
             <div class="message-wrap">
               <div class="user-name">{{ getUserName(msg.sid) }}</div>
               <div class="message-bubble received-bubble">
-                <div class="message-content">{{ msg.content }}</div>
+                <div class="message-content" v-html="parseMsgContent(msg.content)"></div>
                 <div class="message-time">{{ formatTime(msg.time) }}</div>
               </div>
             </div>
@@ -42,7 +42,7 @@
           <div class="message sent" v-else>
             <div class="message-wrap">
               <div class="message-bubble sent-bubble">
-                <div class="message-content">{{ msg.content }}</div>
+                <div class="message-content" v-html="parseMsgContent(msg.content)"></div>
                 <div class="message-time">{{ formatTime(msg.time) }}</div>
               </div>
             </div>
@@ -320,6 +320,10 @@ export default {
       });
     },
 
+    parseMsgContent(text: string) {
+      if (!text) return '';
+      return text.replace(/\[pid:(\d+)\]/g, '<a href="javascript:void(0)" onclick="window.dispatchEvent(new CustomEvent(\'nav-post\',{detail:$1}))" style="color:#F6AD47;text-decoration:underline">[查看帖子]</a>');
+    },
     getAvatarUrl(uid: number) {
       return this.avatarUrls[uid] || defaultAvatar;
     },
@@ -340,6 +344,7 @@ export default {
   },
   created() {
     this.getMessageList();
+    window.addEventListener('nav-post', (e: any) => this.$router.push('/post/' + e.detail));
   },
 };
 </script>

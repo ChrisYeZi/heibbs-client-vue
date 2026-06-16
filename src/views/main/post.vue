@@ -187,6 +187,12 @@
         <el-button type="info" text @click="openRatingDialog(mainPost.pid)"
           >评分</el-button
         >
+        <el-button v-if="canDeletePost" type="info" text style="color:#e8743a" @click="warnUser(mainPost.authorid, mainPost.pid)"
+          >警告</el-button
+        >
+        <el-button v-if="canDeletePost" type="info" text style="color:#ff4d4f" @click="muteUser(mainPost.authorid)"
+          >禁言</el-button
+        >
 
         <!-- 使用原生下拉菜单 -->
         <div class="dropdown-container">
@@ -426,6 +432,12 @@
               >
               <el-button type="info" text @click="openRatingDialog(comment.pid)"
                 >评分</el-button
+              >
+              <el-button v-if="canDeletePost" type="info" text style="color:#e8743a" @click="warnUser(comment.authorid, comment.pid)"
+                >警告</el-button
+              >
+              <el-button v-if="canDeletePost" type="info" text style="color:#ff4d4f" @click="muteUser(comment.authorid)"
+                >禁言</el-button
               >
 
               <div class="dropdown-container">
@@ -722,6 +734,8 @@ import {
   SetPostStateAPI,
   DeletePostAPI,
   MovePostAPI,
+  WarnUserAPI,
+  MuteUserAPI,
 } from "@/api/index";
 import Postbar from "@/components/common/Postbar.vue";
 import parsedContent from "@/assets/js/parsedContent";
@@ -1494,6 +1508,20 @@ export default defineComponent({
     const canDeletePost = computed(() => {
       return userData?.extgroupids == 1 || userData?.extgroupids == 2;
     });
+    const warnUser = (uid: number, pid: number) => {
+      ElMessageBox.prompt("请输入警告原因", "警告用户", { inputType: "textarea" }).then(async ({ value }: any) => {
+        const r = await WarnUserAPI({ uid, pid, reason: value });
+        if (r.status === 200) ElMessage.success("已警告"); else ElMessage.error(String(r.data || "操作失败"));
+      }).catch(() => {});
+    };
+    const muteUser = (uid: number) => {
+      ElMessageBox.prompt("请输入禁言天数(1-90天)", "禁言用户", { inputType: "number", inputValue: "7" }).then(async ({ value }: any) => {
+        const days = parseInt(value) || 7;
+        if (days < 1 || days > 90) { ElMessage.warning("天数需在1-90之间"); return; }
+        const r = await MuteUserAPI({ uid, days });
+        if (r.status === 200) ElMessage.success("已禁言"); else ElMessage.error(String(r.data || "操作失败"));
+      }).catch(() => {});
+    };
 
     const judgmentPermission = (authorid: number) => {
       if (userData?.extgroupids == 1 || userData?.extgroupids == 2) {
@@ -1692,6 +1720,8 @@ export default defineComponent({
       getImgUrl,
       getBlockName,
       canDeletePost,
+      warnUser,
+      muteUser,
       judgmentPermission,
       PostClick,
       gotoInfo,

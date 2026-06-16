@@ -14,6 +14,19 @@
 
     <!-- 数据展示 -->
     <div v-else class="group-list-wrapper">
+      <!-- 禁言解除 -->
+      <div class="mute-card" v-if="muteStatus && muteStatus.status===1">
+        <div class="card-header">
+          <van-icon name="warning-o" color="#e8743a" />
+          <span class="card-title">禁言状态</span>
+        </div>
+        <div style="padding:10px 14px;font-size:13px;color:#728567">
+          <p>禁言截止：{{ fmtMuteDate(muteStatus.muteUntil) }}</p>
+          <p>原因：{{ muteStatus.reason || '无' }}</p>
+          <el-button v-if="canLiftMute" size="small" type="warning" @click="doLiftMute" style="margin-top:6px">申请解除</el-button>
+          <span v-else style="font-size:11px;color:#e8743a">禁言期未满，{{ remainDays }}天后可申请解除</span>
+        </div>
+      </div>
       <!-- 晋升提示 -->
       <div class="promotion-card" v-if="nextPromotion">
         <div class="card-header">
@@ -225,6 +238,8 @@ import {
   GetCreditDefsAPI,
   GetMyCountAPI,
   DirectPromoteAPI,
+  GetMuteStatusAPI,
+  LiftMuteAPI,
 } from "@/api/index";
 import { Loading, Icon, Tag } from "vant";
 import { ElMessage } from "element-plus";
@@ -280,6 +295,11 @@ export default defineComponent({
     const promoCreditName = ref("");
     const userWeightedCredits = ref(0);
     const userCount = ref<any>({});
+    const muteStatus = ref<any>(null);
+    const canLiftMute = computed(() => muteStatus.value && muteStatus.value.status === 1 && muteStatus.value.muteUntil && Date.now()/1000 >= muteStatus.value.muteUntil);
+    const remainDays = computed(() => muteStatus.value?.muteUntil ? Math.ceil((muteStatus.value.muteUntil - Date.now()/1000)/86400) : 0);
+    const fmtMuteDate = (ts: number) => ts ? new Date(ts*1000).toLocaleDateString() : '';
+    const doLiftMute = async () => { const r = await LiftMuteAPI(); if (r.status===200) { ElMessage.success("禁言已解除"); muteStatus.value = null; } else ElMessage.error(String(r.data||"操作失败")); };
     const nextPromotion = computed(() => {
       if (!groupDo.value.length || !userdata?.user) return null;
       const currentGid = userdata.user?.groupid;
@@ -430,6 +450,8 @@ export default defineComponent({
           .catch(() => {}),
       ]);
       await loadUserCount();
+      const uid = userdata?.user?.uid;
+      if (uid) { GetMuteStatusAPI(uid).then(r => { if (r.status===200) muteStatus.value = r.data; }).catch(()=>{}); }
     });
 
     return {
@@ -446,6 +468,11 @@ export default defineComponent({
       promoItemCount,
       promoItemName,
       promoCreditBalance,
+      muteStatus,
+      canLiftMute,
+      remainDays,
+      doLiftMute,
+      fmtMuteDate,
       promoCreditName,
     };
   },
@@ -589,6 +616,15 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 4px;
+}
+.mute-card {
+  background: #FFF5F0;
+  border: 1px solid rgba(232,116,58,0.3);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  .card-header { padding: 10px 14px; display:flex; align-items:center; gap:8px; }
+  .card-title { font-size: 15px; font-weight: 500; color: #e8743a; }
 }
 .promotion-card {
   background: rgba(255, 255, 255, 0.9);

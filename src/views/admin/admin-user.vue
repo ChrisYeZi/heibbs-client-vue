@@ -104,20 +104,14 @@
       </el-table-column>
 
       <!-- 操作 -->
-      <el-table-column label="操作" width="320" align="center">
+      <el-table-column label="操作" width="400" align="center">
         <template #default="scope">
-          <el-button size="mini" type="primary" @click="handleEdit(scope.row)"
-            >编辑</el-button
-          >
-          <el-button size="mini" @click="openCreditDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567"
-            >积分</el-button
-          >
-          <el-button size="mini" @click="openItemDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567"
-            >物品</el-button
-          >
-          <el-button size="mini" @click="openMedalDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567"
-            >勋章</el-button
-          >
+          <el-button size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+          <el-button size="mini" @click="openCreditDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567">积分</el-button>
+          <el-button size="mini" @click="openItemDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567">物品</el-button>
+          <el-button size="mini" @click="openMedalDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567">勋章</el-button>
+          <el-button v-if="scope.row.groupid===1" size="mini" type="success" @click="doUnban(scope.row.uid)">解封</el-button>
+          <el-button v-if="scope.row.groupid===1||scope.row.groupid===2" size="mini" type="warning" @click="doAdminUnmute(scope.row.uid)">解禁</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -310,7 +304,7 @@ import {
   ElSwitch,
 } from "element-plus";
 import { Empty } from "vant";
-import { SelectUserAPI, UpdateUserAPI, GetGroupListAPI, SearchUserAPI, GetUserCountAPI, SetUserCreditsAPI, GetAdminItemListAPI, GrantItemAPI, GetAdminUserItemsAPI, UpdateUserItemAPI, DeleteUserItemAPI, GetAdminMedalListAPI, GrantMedalAPI, RevokeMedalAPI, GetUserMedalsAPI } from "@/api/index";
+import { SelectUserAPI, UpdateUserAPI, GetGroupListAPI, SearchUserAPI, GetUserCountAPI, SetUserCreditsAPI, GetAdminItemListAPI, GrantItemAPI, GetAdminUserItemsAPI, UpdateUserItemAPI, DeleteUserItemAPI, GetAdminMedalListAPI, GrantMedalAPI, RevokeMedalAPI, GetUserMedalsAPI, BanUserAPI, UnbanUserAPI, AdminUnmuteAPI } from "@/api/index";
 
 // 分页结果接口
 interface PageResult<T> {
@@ -779,6 +773,9 @@ export default defineComponent({
       getExtGroupColor,
       handleSearch,
       resetSearch,
+      // 封禁/解禁/解禁言
+      doUnban(uid: number) { UnbanUserAPI({ uid }).then(r => { if (r.status===200) { ElMessage.success("已解封"); getData(); } else ElMessage.error(String(r.data||"失败")); }); },
+      doAdminUnmute(uid: number) { AdminUnmuteAPI({ uid }).then(r => { if (r.status===200) { ElMessage.success("禁言已解除"); getData(); } else ElMessage.error(String(r.data||"失败")); }); },
       // 积分/物品/勋章
       creditDlgVisible, creditTarget, creditForm, openCreditDlg, doSetCredit,
       itemDlgVisible, itemTarget, userItems, editItemQtys, itemList, itemForm, getItemInfo, openItemDlg, doSaveItemQty, doDeleteItem, doGrantItem,

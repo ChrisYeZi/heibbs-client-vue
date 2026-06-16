@@ -1000,6 +1000,13 @@ export const GetPromotionStatusAPI = (): Res<any> => instance.get("/user/promoti
 export const ConfirmPromotionAPI = (logId: number): Res<String> => instance.post(`/user/confirm-promotion/${logId}`);
 export const RejectPromotionAPI = (logId: number): Res<String> => instance.post(`/user/reject-promotion/${logId}`);
 export const DirectPromoteAPI = (targetGid: number): Res<String> => instance.post(`/user/direct-promote/${targetGid}`);
+export const WarnUserAPI = (data: { uid: number; pid?: number; reason?: string }): Res<String> => instance.post("/moderation/warn", data);
+export const MuteUserAPI = (data: { uid: number; days: number; reason?: string }): Res<String> => instance.post("/moderation/mute", data);
+export const BanUserAPI = (data: { uid: number }): Res<String> => instance.post("/moderation/ban", data);
+export const UnbanUserAPI = (data: { uid: number }): Res<String> => instance.post("/moderation/unban", data);
+export const AdminUnmuteAPI = (data: { uid: number }): Res<String> => instance.post("/moderation/admin-unmute", data);
+export const LiftMuteAPI = (): Res<String> => instance.post("/moderation/lift-mute");
+export const GetMuteStatusAPI = (uid: number): Res<any> => instance.get("/moderation/mute-status", { params: { uid } });
 
 // ——————Attachment 附件管理模块
 interface AttachmentItem {
