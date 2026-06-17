@@ -161,10 +161,6 @@
                   晋升条件：{{ promotionLabel(group) }}
                 </span>
                 <span class="meta-item">
-                  <van-icon name="key-o" size="14" color="#86909c" />
-                  权限：{{ group.permission || "默认权限" }}
-                </span>
-                <span class="meta-item">
                   <van-icon name="info-o" size="14" color="#86909c" />
                   描述：{{ group.description || "无描述" }}
                 </span>
@@ -209,20 +205,41 @@
                   组类型：{{ group.gtype === 1 ? "系统管理组" : "自定义组" }}
                 </span>
                 <span class="meta-item">
-                  <van-icon name="key-o" size="14" color="#ff6b35" />
-                  权限：{{
-                    group.permission
-                      ? group.permission.split(",").join("、")
-                      : "无特殊权限"
-                  }}
-                </span>
-                <span class="meta-item">
                   <van-icon name="info-o" size="14" color="#86909c" />
                   描述：{{ group.description || "无描述" }}
                 </span>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 权限矩阵表 -->
+      <div class="perm-table-card" v-if="permMatrix.length">
+        <div class="card-header">
+          <van-icon name="key-o" color="#728567" />
+          <span class="card-title">权限一览</span>
+        </div>
+        <div class="perm-table-wrap">
+          <table class="perm-table">
+            <thead>
+              <tr>
+                <th class="perm-name-col">权限</th>
+                <th v-for="g in groupDo" :key="'h'+g.gid"
+                  :class="{ 'my-group': g.gid === userdata?.user?.groupid }">{{ g.gname }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="perm in permMatrix" :key="perm.name">
+                <td class="perm-name-col" :title="perm.desc">{{ perm.name }}</td>
+                <td v-for="g in groupDo" :key="g.gid"
+                  :class="{ 'my-group': g.gid === userdata?.user?.groupid }">
+                  <span v-if="perm.groups[g.gid]" style="color:#67c23a">✔</span>
+                  <span v-else style="color:#ddd">✘</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -240,6 +257,7 @@ import {
   DirectPromoteAPI,
   GetMuteStatusAPI,
   LiftMuteAPI,
+  SelectPermissionAPI,
 } from "@/api/index";
 import { Loading, Icon, Tag } from "vant";
 import { ElMessage } from "element-plus";
@@ -289,6 +307,26 @@ export default defineComponent({
     const userdata = store.state.user?.info;
     const allItems = ref<any[]>([]);
     const creditDefs = ref<any[]>([]);
+    const allPerms = ref<any[]>([]);
+    const permMatrix = computed(() => {
+      const seen = new Set<string>();
+      const rows: any[] = [];
+      for (const g of groupDo.value) {
+        const perms = (g.permission || "").split(",").filter(Boolean);
+        for (const p of perms) {
+          const trimmed = p.trim();
+          if (!trimmed || seen.has(trimmed)) continue;
+          seen.add(trimmed);
+          const detail = allPerms.value.find((ap: any) => ap.permission === trimmed);
+          const groups: Record<number, boolean> = {};
+          for (const gg of groupDo.value) {
+            groups[gg.gid] = (gg.permission || "").split(",").map((s: string) => s.trim()).includes(trimmed);
+          }
+          rows.push({ name: trimmed, desc: detail?.description || "", groups });
+        }
+      }
+      return rows;
+    });
     const promoItemCount = ref(0);
     const promoItemName = ref("");
     const promoCreditBalance = ref(0);
@@ -450,6 +488,7 @@ export default defineComponent({
           .catch(() => {}),
       ]);
       await loadUserCount();
+      SelectPermissionAPI().then((r: any) => { if (r.status === 200) allPerms.value = r.data || []; }).catch(() => {});
       const uid = userdata?.user?.uid;
       if (uid) { GetMuteStatusAPI(uid).then(r => { if (r.status===200) muteStatus.value = r.data; }).catch(()=>{}); }
     });
@@ -474,6 +513,7 @@ export default defineComponent({
       doLiftMute,
       fmtMuteDate,
       promoCreditName,
+      permMatrix,
     };
   },
 });
@@ -676,5 +716,23 @@ export default defineComponent({
     display: flex;
     justify-content: flex-end;
   }
+}
+.perm-table-card {
+  background: rgba(255,255,255,0.7);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  margin-top: 16px;
+  .card-header { padding: 10px 14px; display:flex; align-items:center; gap:8px; }
+  .card-title { font-size: 15px; font-weight: 500; color: #728567; }
+}
+.perm-table-wrap { overflow-x: auto; padding: 0 8px 10px; }
+.perm-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  th, td { padding: 5px 8px; text-align: center; border: 1px solid rgba(246,173,71,0.12); white-space: nowrap; }
+  th { background: #FCF9E0; color: #728567; font-weight: 500; font-size: 11px; }
+  .my-group { background: rgba(246,173,71,0.15) !important; font-weight: 600; }
+  .perm-name-col { text-align: left; color: #728567; font-weight: 500; min-width: 100px; }
+  td.my-group { background: rgba(246,173,71,0.08) !important; }
 }
 </style>

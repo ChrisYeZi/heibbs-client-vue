@@ -187,12 +187,6 @@
         <el-button type="info" text @click="openRatingDialog(mainPost.pid)"
           >评分</el-button
         >
-        <el-button v-if="canDeletePost" type="info" text style="color:#e8743a" @click="warnUser(mainPost.authorid, mainPost.pid)"
-          >警告</el-button
-        >
-        <el-button v-if="canDeletePost" type="info" text style="color:#ff4d4f" @click="muteUser(mainPost.authorid)"
-          >禁言</el-button
-        >
 
         <!-- 使用原生下拉菜单 -->
         <div class="dropdown-container">
@@ -213,6 +207,12 @@
             <div class="dropdown-item" @click="handleMainPostAction('share')">
               分享
             </div>
+            <div
+              class="dropdown-divider"
+              v-if="canDeletePost"
+            ></div>
+            <div class="dropdown-item danger" v-if="canDeletePost" @click="warnUser(mainPost.authorid, mainPost.pid)">警告</div>
+            <div class="dropdown-item danger" v-if="canDeletePost" @click="muteUser(mainPost.authorid)">禁言</div>
             <div
               class="dropdown-divider"
               v-if="judgmentPermission(mainPost.authorid)"
@@ -433,12 +433,6 @@
               <el-button type="info" text @click="openRatingDialog(comment.pid)"
                 >评分</el-button
               >
-              <el-button v-if="canDeletePost" type="info" text style="color:#e8743a" @click="warnUser(comment.authorid, comment.pid)"
-                >警告</el-button
-              >
-              <el-button v-if="canDeletePost" type="info" text style="color:#ff4d4f" @click="muteUser(comment.authorid)"
-                >禁言</el-button
-              >
 
               <div class="dropdown-container">
                 <button
@@ -467,6 +461,9 @@
                   >
                     分享
                   </div>
+                  <div class="dropdown-divider" v-if="canDeletePost"></div>
+                  <div class="dropdown-item danger" v-if="canDeletePost" @click="warnUser(comment.authorid, comment.pid)">警告</div>
+                  <div class="dropdown-item danger" v-if="canDeletePost" @click="muteUser(comment.authorid)">禁言</div>
                   <div
                     class="dropdown-divider"
                     v-if="judgmentPermission(comment.authorid)"
@@ -967,10 +964,11 @@ export default defineComponent({
 
     // 获取简短内容（用于引用）
     const getShortContent = (content: string) => {
-      // 移除HTML标签
-      const text = content.replace(/<[^>]*>/g, "");
-      // 如果内容过长，截取前50个字符
-      return text.length > 50 ? text.substring(0, 50) + "..." : text;
+      const text = content
+        .replace(/<[^>]*>/g, "")
+        .replace(/&[a-z]+;/g, "")
+        .trim();
+      return text.length > 30 ? text.substring(0, 30) + "..." : text;
     };
 
     // 生成积分变化描述
@@ -1011,11 +1009,7 @@ export default defineComponent({
     const showCommentReply = (comment: PostItem, index: number) => {
       replyToComment.value = comment;
       replyToIndex.value = index;
-      // 构造引用内容
-      const quotedContent = `[quote]@${comment.author} ${
-        comment.formattedCreateTime
-      }\n${getShortContent(comment.message)}[/quote]\n`;
-      replyContent.value = quotedContent;
+      replyContent.value = "";
     };
 
     // 提交主帖回复
@@ -1072,14 +1066,20 @@ export default defineComponent({
       }
       if (isSubmitting.value) return;
 
+      // 将引用内容拼入回复正文
+      const quotedPart = `[quote]@${replyToComment.value.author} ${
+        replyToComment.value.formattedCreateTime
+      }\n${getShortContent(replyToComment.value.message)}[/quote]\n`;
+      const fullContent = quotedPart + replyContent.value;
+
       try {
         isSubmitting.value = true;
 
         // 构造回复参数
         const postData: InsertPostQuery = {
           fid: mainPost.value.fid,
-          tid: mainPost.value.tid || mainPost.value.pid, // 使用主帖的tid或pid作为主题ID
-          message: replyContent.value.trim(),
+          tid: mainPost.value.tid || mainPost.value.pid,
+          message: fullContent,
         };
 
         // 调用回复接口
@@ -1509,18 +1509,32 @@ export default defineComponent({
       return userData?.extgroupids == 1 || userData?.extgroupids == 2;
     });
     const warnUser = (uid: number, pid: number) => {
-      ElMessageBox.prompt("请输入警告原因", "警告用户", { inputType: "textarea" }).then(async ({ value }: any) => {
-        const r = await WarnUserAPI({ uid, pid, reason: value });
-        if (r.status === 200) ElMessage.success("已警告"); else ElMessage.error(String(r.data || "操作失败"));
-      }).catch(() => {});
+      ElMessageBox.prompt("请输入警告原因", "警告用户", {
+        inputType: "textarea",
+      })
+        .then(async ({ value }: any) => {
+          const r = await WarnUserAPI({ uid, pid, reason: value });
+          if (r.status === 200) ElMessage.success("已警告");
+          else ElMessage.error(String(r.data || "操作失败"));
+        })
+        .catch(() => {});
     };
     const muteUser = (uid: number) => {
-      ElMessageBox.prompt("请输入禁言天数(1-90天)", "禁言用户", { inputType: "number", inputValue: "7" }).then(async ({ value }: any) => {
-        const days = parseInt(value) || 7;
-        if (days < 1 || days > 90) { ElMessage.warning("天数需在1-90之间"); return; }
-        const r = await MuteUserAPI({ uid, days });
-        if (r.status === 200) ElMessage.success("已禁言"); else ElMessage.error(String(r.data || "操作失败"));
-      }).catch(() => {});
+      ElMessageBox.prompt("请输入禁言天数(1-90天)", "禁言用户", {
+        inputType: "number",
+        inputValue: "7",
+      })
+        .then(async ({ value }: any) => {
+          const days = parseInt(value) || 7;
+          if (days < 1 || days > 90) {
+            ElMessage.warning("天数需在1-90之间");
+            return;
+          }
+          const r = await MuteUserAPI({ uid, days });
+          if (r.status === 200) ElMessage.success("已禁言");
+          else ElMessage.error(String(r.data || "操作失败"));
+        })
+        .catch(() => {});
     };
 
     const judgmentPermission = (authorid: number) => {
@@ -1932,7 +1946,7 @@ export default defineComponent({
 .comment-actions-container {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   justify-content: flex-end;
   margin-bottom: 30px;
   padding: 5px 10px;
@@ -2251,6 +2265,49 @@ export default defineComponent({
       padding: 10px 0;
       border-bottom: 1px solid #fcf9e0;
 
+      .quote-content {
+        margin-bottom: 10px;
+        padding: 10px 12px;
+        background: #fcf9e0;
+        border-left: 3px solid #f6ad47;
+        border-radius: 4px;
+
+        .quote-header {
+          font-size: 12px;
+          color: #728567;
+          margin-bottom: 4px;
+          font-weight: 600;
+        }
+
+        .quote-text {
+          font-size: 13px;
+          color: rgba(114, 133, 103, 0.7);
+          line-height: 1.4;
+        }
+      }
+
+      // 渲染后的 [quote] 标签样式
+      :deep(.discuz-quote) {
+        margin: 8px 0;
+        padding: 10px 12px;
+        background: #fcf9e04f;
+        border-left: 3px solid #f6ad47;
+        border-radius: 4px;
+        font-size: 13px;
+        color: rgba(114, 133, 103, 0.7);
+        .quote-author {
+          font-weight: 600;
+          color: #728567;
+          margin-bottom: 4px;
+        }
+        .quote-content {
+          background: transparent;
+          border: none;
+          padding: 0;
+          margin: 0;
+        }
+      }
+
       &:last-child {
         border-bottom: none;
       }
@@ -2410,26 +2467,6 @@ export default defineComponent({
   padding: 15px;
   background-color: #f9f9f9;
   border-radius: 6px;
-
-  .quote-content {
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
-
-    .quote-header {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-
-    .quote-text {
-      font-size: 13px;
-      color: #888;
-      line-height: 1.4;
-    }
-  }
 
   .reply-textarea {
     width: 100%;

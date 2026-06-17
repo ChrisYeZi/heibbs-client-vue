@@ -148,7 +148,7 @@
     <el-dialog
       title="编辑用户"
       v-model="editDialogVisible"
-      width="50%"
+      width="400px"
       @close="handleClose"
     >
       <el-form :model="form" ref="formRef" label-width="120px" :rules="rules">
