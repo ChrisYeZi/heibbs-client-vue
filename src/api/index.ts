@@ -186,6 +186,9 @@ export const MovePostAPI = (data: { pid: number; targetFid: number }): Res<Strin
  */
 export const DeletePostAPI = (pid: number): Res<String> =>
   instance.delete(`/post/deletepost/${pid}`);
+// 删除自己的回复
+export const DeleteReplyAPI = (pid: number): Res<String> =>
+  instance.delete(`/post/reply/${pid}`);
 
 
 // ——————Like 点赞模块
@@ -379,10 +382,10 @@ export const ChangeUserPassword = (data: ChangeUserPasswordItem): Res<String> =>
 
 /**|　 碎觉觉啦！　 |
 ＼　　　　　　　　/
-　￣￣￣￣∨￣￣
-　　　　　　　。
-　　　∧ ∧　.・
-　|￣￣( ´Д｀)￣|
+ ￣￣￣￣∨￣￣
+       。
+   ∧ ∧　.・
+ |￣￣( ´Д｀)￣|
 |＼⌒⌒⌒⌒⌒⌒＼
 |　 ＼⌒⌒⌒⌒⌒⌒＼
 ＼　｜⌒⌒⌒⌒⌒⌒⌒|
@@ -916,7 +919,7 @@ export const RevokeMedalAPI = (id: number): Res<String> => instance.get("/medal/
 
 // ——————Shop 集市模块
 export const GetShopListingsAPI = (params?: { pageNum?: number; pageSize?: number; type?: string }): Res<any> => {
-  const p = { pageNum:1, pageSize:20, ...params };
+  const p = { pageNum: 1, pageSize: 20, ...params };
   return instance.get("/shop/listings", { params: p });
 };
 export const SellItemAPI = (data: { userItemId: number; quantity: number; price: number; type: string; auctionDays?: number }): Res<String> =>
@@ -940,30 +943,30 @@ export const GetTradeHistoryAPI = (params?: { pageNum?: number; pageSize?: numbe
 };
 
 // ——————Stamp 图章模块
-interface StampItem { id?:number; name:string; imageUrl?:string; displayOrder?:number; status?:number }
+interface StampItem { id?: number; name: string; imageUrl?: string; displayOrder?: number; status?: number }
 export const GetStampListAPI = (): Res<StampItem[]> => instance.get("/admin/stamp/list");
 export const GetActiveStampsAPI = (): Res<StampItem[]> => instance.get("/admin/stamp/active");
-export const InsertStampAPI = (data:StampItem): Res<String> => instance.post("/admin/stamp/insert",data);
-export const UpdateStampAPI = (data:StampItem): Res<String> => instance.post("/admin/stamp/update",data);
-export const DeleteStampAPI = (id:number): Res<String> => instance.get("/admin/stamp/delete",{params:{id}});
-export const SetPostStampAPI = (pid:number, stampId:number|null): Res<String> => instance.post("/admin/stamp/set-post-stamp",{pid,stampId});
+export const InsertStampAPI = (data: StampItem): Res<String> => instance.post("/admin/stamp/insert", data);
+export const UpdateStampAPI = (data: StampItem): Res<String> => instance.post("/admin/stamp/update", data);
+export const DeleteStampAPI = (id: number): Res<String> => instance.get("/admin/stamp/delete", { params: { id } });
+export const SetPostStampAPI = (pid: number, stampId: number | null): Res<String> => instance.post("/admin/stamp/set-post-stamp", { pid, stampId });
 
 // ——————UserPosts 用户帖子
-export const GetUserTopicsAPI = (params?:any): Res<any> => instance.get("/post/getuserpost",{params});
-export const GetUserRepliesAPI = (params?:any): Res<any> => instance.get("/post/getuserrepost",{params});
+export const GetUserTopicsAPI = (params?: any): Res<any> => instance.get("/post/getuserpost", { params });
+export const GetUserRepliesAPI = (params?: any): Res<any> => instance.get("/post/getuserrepost", { params });
 
 // ——————SystemConfig 系统配置
 export const GetSystemConfigAPI = (): Res<any> => instance.get("/admin/config/all");
-export const SetSystemConfigAPI = (key:string,value:string): Res<String> => instance.post("/admin/config/set",{key,value});
+export const SetSystemConfigAPI = (key: string, value: string): Res<String> => instance.post("/admin/config/set", { key, value });
 
 // ——————CreditManage 积分管理
 export const GetCreditDefsAPI = (): Res<any> => instance.get("/admin/credit/defs");
-export const UpdateCreditDefAPI = (data:any): Res<String> => instance.post("/admin/credit/update-def",data);
+export const UpdateCreditDefAPI = (data: any): Res<String> => instance.post("/admin/credit/update-def", data);
 export const GetCreditRulesAPI = (): Res<any> => instance.get("/admin/credit/rules");
-export const UpdateCreditRuleAPI = (data:any): Res<String> => instance.post("/admin/credit/update-rule",data);
-export const InsertCreditRuleAPI = (data:any): Res<String> => instance.post("/admin/credit/insert-rule",data);
-export const DeleteCreditRuleAPI = (id:number): Res<String> => instance.get("/admin/credit/delete-rule",{params:{id}});
-export const GrantCreditsAPI = (data:any): Res<String> => instance.post("/admin/credit/grant",data);
+export const UpdateCreditRuleAPI = (data: any): Res<String> => instance.post("/admin/credit/update-rule", data);
+export const InsertCreditRuleAPI = (data: any): Res<String> => instance.post("/admin/credit/insert-rule", data);
+export const DeleteCreditRuleAPI = (id: number): Res<String> => instance.get("/admin/credit/delete-rule", { params: { id } });
+export const GrantCreditsAPI = (data: any): Res<String> => instance.post("/admin/credit/grant", data);
 export const GetUserCountAPI = (uid: number): Res<any> => instance.get("/admin/credit/user-count", { params: { uid } });
 export const GetMyCountAPI = (): Res<any> => instance.get("/count/getcount");
 export const SetUserCreditsAPI = (data: { uid: number; extcredits1?: number; extcredits2?: number; extcredits3?: number; extcredits4?: number }): Res<String> =>
@@ -974,20 +977,32 @@ export const DeleteUserItemAPI = (data: { userItemId: number }): Res<String> =>
   instance.post("/item/admin/user-item/delete", data);
 
 // ——————BlockFinance 会馆财政
-export const GetBlockFinanceAPI = (blockId:number, params?:any): Res<any> => instance.get(`/block-finance/finance/${blockId}`,{params});
+export const GetBlockFinanceAPI = (blockId: number, params?: any): Res<any> => instance.get(`/block-finance/finance/${blockId}`, { params });
 export const GetMyStockAPI = (): Res<any> => instance.get("/block-finance/stock/my");
-export const BuyStockAPI = (amount:number): Res<String> => instance.post("/block-finance/stock/buy",{amount});
-export const SellStockAPI = (amount:number): Res<String> => instance.post("/block-finance/stock/sell",{amount});
+export const BuyStockAPI = (amount: number): Res<String> => instance.post("/block-finance/stock/buy", { amount });
+export const SellStockAPI = (lotId: number, shares: number): Res<String> => instance.post("/block-finance/stock/sell", { lotId, shares });
+// 持仓明细（分页）
+export const GetMyStockLotsAPI = (pageNum?: number, pageSize?: number): Res<any> =>
+  instance.get("/block-finance/stock/lots", { params: { pageNum: pageNum || 1, pageSize: pageSize || 10 } });
+// 实时行情
+export const GetStockRealtimeAPI = (): Res<any> => instance.get("/block-finance/stock/realtime");
+// 用户财务摘要
+export const GetFinanceSummaryAPI = (): Res<any> => instance.get("/block-finance/finance/summary");
+// 管理员 - 财政存取
+export const AdminFinanceTransactAPI = (data: { amount: number; description?: string }): Res<String> => instance.post("/admin/finance/admin-transact", data);
+// 管理员 - 股票配置
+export const GetStockConfigAPI = (): Res<any> => instance.get("/admin/finance/config");
+export const SaveStockConfigAPI = (data: Record<string, string>): Res<String> => instance.post("/admin/finance/config", data);
 
 // ——————CreditDetail 积分明细
-export const GetCreditDetailAPI = (params?:any): Res<any> => instance.get("/count/detail",{params});
+export const GetCreditDetailAPI = (params?: any): Res<any> => instance.get("/count/detail", { params });
 
 // ——————Attachment 附件管理(admin)
-export const GetAdminAttachmentListAPI = (params?:any): Res<any> => instance.get("/admin/attachment/list",{params});
-export const DeleteAdminAttachmentAPI = (aid:number): Res<String> => instance.delete("/admin/attachment/"+aid);
+export const GetAdminAttachmentListAPI = (params?: any): Res<any> => instance.get("/admin/attachment/list", { params });
+export const DeleteAdminAttachmentAPI = (aid: number): Res<String> => instance.delete("/admin/attachment/" + aid);
 
 // ——————Gugu 番剧
-export const GetGuguEpisodesAPI = (epId?:number): Res<any> => instance.get("/gugu/episodes",{params:{epId:epId||32374}});
+export const GetGuguEpisodesAPI = (epId?: number): Res<any> => instance.get("/gugu/episodes", { params: { epId: epId || 32374 } });
 
 // 勋章新接口
 export const GetAllMedalsAPI = (): Res<any> => instance.get("/medal/all");
@@ -1003,6 +1018,7 @@ export const DirectPromoteAPI = (targetGid: number): Res<String> => instance.pos
 export const WarnUserAPI = (data: { uid: number; pid?: number; reason?: string }): Res<String> => instance.post("/moderation/warn", data);
 export const MuteUserAPI = (data: { uid: number; days: number; reason?: string }): Res<String> => instance.post("/moderation/mute", data);
 export const BanUserAPI = (data: { uid: number }): Res<String> => instance.post("/moderation/ban", data);
+export const BatchBanUserAPI = (data: { uids: number[] }): Res<any> => instance.post("/moderation/ban/batch", data);
 export const UnbanUserAPI = (data: { uid: number }): Res<String> => instance.post("/moderation/unban", data);
 export const AdminUnmuteAPI = (data: { uid: number }): Res<String> => instance.post("/moderation/admin-unmute", data);
 export const LiftMuteAPI = (): Res<String> => instance.post("/moderation/lift-mute");
@@ -1017,13 +1033,13 @@ interface AttachmentItem {
 export const GetAttachmentListAPI = (params?: {
   pageNum?: number; pageSize?: number; category?: string; attachmentType?: string;
 }): Res<PageResult<AttachmentItem>> => {
-  const p = { pageNum:1, pageSize:30, ...params };
+  const p = { pageNum: 1, pageSize: 30, ...params };
   return instance.get("/admin/attachment/list", { params: p });
 };
 export const GetSystemAttachmentListAPI = (systemCategory?: string): Res<AttachmentItem[]> =>
   instance.get("/admin/attachment/system-list", { params: { systemCategory } });
 export const DeleteAttachmentAPI = (aid: number): Res<String> =>
-  instance.delete("/admin/attachment/"+aid);
+  instance.delete("/admin/attachment/" + aid);
 
 // ——————Dashboard 仪表盘模块
 // 仪表盘统计数据接口

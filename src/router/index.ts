@@ -452,6 +452,12 @@ const routes: Array<RouteRecordRaw> = [
             component: () => import("../views/admin/admin-medal.vue"),
             meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 勋章管理" },
           },
+          {
+            path: "/admin/finance",
+            name: "admin-finance",
+            component: () => import("../views/admin/admin-finance.vue"),
+            meta: { Login: true, NavReturnbar: true, Copyright: true, title: "管理面板 - 会馆财政" },
+          },
         ]
       },
     ]

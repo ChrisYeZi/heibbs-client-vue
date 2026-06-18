@@ -730,6 +730,7 @@ import {
   SetPostStampAPI,
   SetPostStateAPI,
   DeletePostAPI,
+  DeleteReplyAPI,
   MovePostAPI,
   WarnUserAPI,
   MuteUserAPI,
@@ -1382,23 +1383,22 @@ export default defineComponent({
           handleEditComment(comment);
           break;
         case "delete":
-          ElMessageBox.confirm("此操作将永久删除该评论，是否继续？", "提示", {
+          ElMessageBox.confirm("确定要删除该评论吗？", "提示", {
             confirmButtonText: "确定",
             cancelButtonText: "取消",
             type: "warning",
           })
-            .then(() => {
-              ElMessage({
-                type: "success",
-                message: "删除成功!",
-              });
-              // 这里可以添加实际的删除API调用
+            .then(async () => {
+              const res = await DeleteReplyAPI(comment.pid);
+              if (res.status === 200) {
+                ElMessage.success("删除成功");
+                await getData(); // 刷新页面数据
+              } else {
+                ElMessage.error(String(res.data || "删除失败"));
+              }
             })
             .catch(() => {
-              ElMessage({
-                type: "info",
-                message: "已取消删除",
-              });
+              ElMessage.info("已取消删除");
             });
           break;
       }
@@ -2094,9 +2094,9 @@ export default defineComponent({
 .extcredits-records {
   margin: 15px 0;
   padding: 10px;
-  background-color: #fcf9e0;
+  background-color: #fcf9e03b;
   border-radius: 6px;
-  border: 1px solid rgba(246, 173, 71, 0.2);
+  border: 1px solid rgba(246, 173, 71, 0.1);
 
   .records-title {
     font-size: 14px;

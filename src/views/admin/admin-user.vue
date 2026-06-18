@@ -13,6 +13,7 @@
       />
       <el-button type="primary" @click="handleSearch">搜索</el-button>
       <el-button v-if="hasSearched" @click="resetSearch">重置</el-button>
+      <el-button type="danger" @click="openBatchBanDlg" style="margin-left:16px">批量封禁</el-button>
     </div>
 
     <!-- 表格 -->
@@ -110,6 +111,7 @@
           <el-button size="mini" @click="openCreditDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567">积分</el-button>
           <el-button size="mini" @click="openItemDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567">物品</el-button>
           <el-button size="mini" @click="openMedalDlg(scope.row)" style="background:#FCF9E0;border-color:#F6AD47;color:#728567">勋章</el-button>
+          <el-button v-if="scope.row.groupid!==1" size="mini" type="danger" @click="doBan(scope.row.uid)">封禁</el-button>
           <el-button v-if="scope.row.groupid===1" size="mini" type="success" @click="doUnban(scope.row.uid)">解封</el-button>
           <el-button v-if="scope.row.groupid===1||scope.row.groupid===2" size="mini" type="warning" @click="doAdminUnmute(scope.row.uid)">解禁</el-button>
         </template>
@@ -283,6 +285,47 @@
       </div>
       <template #footer><el-button @click="medalDlgVisible=false">关闭</el-button></template>
     </el-dialog>
+
+    <!-- 批量封禁对话框 -->
+    <el-dialog title="批量封禁用户" v-model="batchBanDlgVisible" width="650px">
+      <el-tabs v-model="banMode">
+        <el-tab-pane label="按UID封禁" name="uid">
+          <el-input
+            v-model="banUidText"
+            type="textarea"
+            :rows="6"
+            placeholder="输入要封禁的用户UID，每行一个或用逗号分隔&#10;例如：&#10;1001&#10;1002,1003&#10;1004"
+          />
+          <div style="margin-top:8px;color:#909399;font-size:12px">
+            已识别 {{ parsedUids.length }} 个UID
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="搜索封禁" name="search">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <el-input v-model="banSearchKeyword" placeholder="用户名/邮箱" style="width:240px" @keyup.enter="doBanSearch" />
+            <el-button type="primary" @click="doBanSearch">搜索</el-button>
+          </div>
+          <el-checkbox-group v-model="banSelectedUids">
+            <div v-for="u in banSearchResults" :key="u.uid" style="padding:4px 0;border-bottom:1px solid #f5f5f5">
+              <el-checkbox :value="u.uid" :disabled="u.groupid===1">
+                {{ u.uid }} - {{ u.username }} ({{ u.email }})
+                <el-tag v-if="u.groupid===1" type="danger" size="mini">已封禁</el-tag>
+              </el-checkbox>
+            </div>
+          </el-checkbox-group>
+          <div v-if="banSearchDone && banSearchResults.length===0" style="color:#909399;text-align:center;padding:20px">无匹配结果</div>
+        </el-tab-pane>
+      </el-tabs>
+      <div style="margin-top:12px;color:#e8743a;font-size:12px">
+        封禁后用户将无法登录，状态变为禁用，用户组设为封禁组
+      </div>
+      <template #footer>
+        <el-button @click="batchBanDlgVisible=false">取消</el-button>
+        <el-button type="danger" @click="doBatchBan" :loading="banning">
+          确认封禁（{{ banMode==='uid' ? parsedUids.length : banSelectedUids.length }}人）
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -304,7 +347,7 @@ import {
   ElSwitch,
 } from "element-plus";
 import { Empty } from "vant";
-import { SelectUserAPI, UpdateUserAPI, GetGroupListAPI, SearchUserAPI, GetUserCountAPI, SetUserCreditsAPI, GetAdminItemListAPI, GrantItemAPI, GetAdminUserItemsAPI, UpdateUserItemAPI, DeleteUserItemAPI, GetAdminMedalListAPI, GrantMedalAPI, RevokeMedalAPI, GetUserMedalsAPI, BanUserAPI, UnbanUserAPI, AdminUnmuteAPI } from "@/api/index";
+import { SelectUserAPI, UpdateUserAPI, GetGroupListAPI, SearchUserAPI, GetUserCountAPI, SetUserCreditsAPI, GetAdminItemListAPI, GrantItemAPI, GetAdminUserItemsAPI, UpdateUserItemAPI, DeleteUserItemAPI, GetAdminMedalListAPI, GrantMedalAPI, RevokeMedalAPI, GetUserMedalsAPI, BanUserAPI, BatchBanUserAPI, UnbanUserAPI, AdminUnmuteAPI } from "@/api/index";
 
 // 分页结果接口
 interface PageResult<T> {
@@ -418,6 +461,22 @@ export default defineComponent({
     const medalList = ref<any[]>([]);
     const userMedals = ref<any[]>([]);
     const medalForm = ref({ medalId: 0 });
+
+    // ===== 批量封禁 =====
+    const batchBanDlgVisible = ref(false);
+    const banMode = ref("uid");
+    const banUidText = ref("");
+    const banSearchKeyword = ref("");
+    const banSelectedUids = ref<number[]>([]);
+    const banSearchResults = ref<any[]>([]);
+    const banSearchDone = ref(false);
+    const banning = ref(false);
+    const parsedUids = computed(() => {
+      return banUidText.value
+        .split(/[\n,，]+/)
+        .map(s => parseInt(s.trim()))
+        .filter(n => !isNaN(n) && n > 0);
+    });
 
     // 表单验证规则
     const rules = {
@@ -774,8 +833,34 @@ export default defineComponent({
       handleSearch,
       resetSearch,
       // 封禁/解禁/解禁言
+      doBan(uid: number) { BanUserAPI({ uid }).then(r => { if (r.status===200) { ElMessage.success("已封禁"); getData(); } else ElMessage.error(String(r.data||"失败")); }); },
       doUnban(uid: number) { UnbanUserAPI({ uid }).then(r => { if (r.status===200) { ElMessage.success("已解封"); getData(); } else ElMessage.error(String(r.data||"失败")); }); },
       doAdminUnmute(uid: number) { AdminUnmuteAPI({ uid }).then(r => { if (r.status===200) { ElMessage.success("禁言已解除"); getData(); } else ElMessage.error(String(r.data||"失败")); }); },
+      // 批量封禁
+      batchBanDlgVisible, banMode, banUidText, banSearchKeyword, banSelectedUids, banSearchResults, banSearchDone, banning, parsedUids,
+      openBatchBanDlg() { banMode.value="uid"; banUidText.value=""; banSearchKeyword.value=""; banSelectedUids.value=[]; banSearchResults.value=[]; banSearchDone.value=false; batchBanDlgVisible.value=true; },
+      async doBanSearch() {
+        if (!banSearchKeyword.value.trim()) return;
+        const r: any = await SearchUserAPI({ keyword: banSearchKeyword.value.trim(), pageNum:1, pageSize:50 });
+        banSearchResults.value = (r.status===200 && r.data?.records) ? r.data.records : [];
+        banSearchDone.value = true;
+      },
+      async doBatchBan() {
+        const uids = banMode.value==="uid" ? parsedUids.value : banSelectedUids.value;
+        if (!uids.length) { ElMessage.warning("请选择要封禁的用户"); return; }
+        banning.value = true;
+        const r = await BatchBanUserAPI({ uids });
+        banning.value = false;
+        if (r.status===200) {
+          const d = r.data;
+          ElMessage.success(`封禁完成：成功${d.success}人，失败${d.fail}人`);
+          if (d.errors?.length) ElMessage.error(d.errors.join("; "));
+          batchBanDlgVisible.value = false;
+          getData();
+        } else {
+          ElMessage.error(String(r.data||"操作失败"));
+        }
+      },
       // 积分/物品/勋章
       creditDlgVisible, creditTarget, creditForm, openCreditDlg, doSetCredit,
       itemDlgVisible, itemTarget, userItems, editItemQtys, itemList, itemForm, getItemInfo, openItemDlg, doSaveItemQty, doDeleteItem, doGrantItem,

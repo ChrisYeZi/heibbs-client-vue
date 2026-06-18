@@ -18,25 +18,29 @@
         <el-menu-item index="group" @click="routerGoto('/admin/group')"
           >用户组</el-menu-item
         >
-        <el-menu-item index="permission" @click="routerGoto('/admin/permission')"
+        <el-menu-item
+          index="permission"
+          @click="routerGoto('/admin/permission')"
           >权限</el-menu-item
         >
         <el-sub-menu index="post">
           <template #title>帖子</template>
-          <el-menu-item index="2-1" @click="routerGoto('/admin/post')">主题贴管理</el-menu-item>
+          <el-menu-item index="2-1" @click="routerGoto('/admin/post')"
+            >主题贴管理</el-menu-item
+          >
           <el-menu-item index="2-2">回帖管理</el-menu-item>
         </el-sub-menu>
-        <el-menu-item index="message" @click="routerGoto('/admin/message')"
-          >消息</el-menu-item
-        >
-        <el-menu-item index="attachment" @click="routerGoto('/admin/attachment')"
+
+        <el-menu-item
+          index="attachment"
+          @click="routerGoto('/admin/attachment')"
           >附件</el-menu-item
         >
         <el-menu-item index="banner" @click="routerGoto('/admin/banner')"
           >横幅</el-menu-item
         >
-        <el-menu-item index="announcement" @click="routerGoto('/admin/announcement')"
-          >公告</el-menu-item
+        <el-menu-item index="finance" @click="routerGoto('/admin/finance')"
+          >财政</el-menu-item
         >
         <el-menu-item index="report" @click="routerGoto('/admin/report')"
           >举报</el-menu-item
@@ -55,6 +59,14 @@
         >
         <el-menu-item index="medal" @click="routerGoto('/admin/medal')"
           >勋章</el-menu-item
+        >
+        <el-menu-item index="message" @click="routerGoto('/admin/message')"
+          >消息</el-menu-item
+        >
+        <el-menu-item
+          index="announcement"
+          @click="routerGoto('/admin/announcement')"
+          >公告</el-menu-item
         >
         <el-menu-item index="version" @click="routerGoto('/admin/version')"
           >版本控制</el-menu-item
@@ -96,7 +108,6 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .admin {
-  margin-top: 60px;
   padding: 10px 20px;
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;

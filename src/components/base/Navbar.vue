@@ -59,7 +59,7 @@ export default {
       imgUrl: config.imgUrl,
       test: null,
       searchShow: false,
-      avatarUrl: "../../assets/img/avatar.png",
+      avatarUrl: "",
     };
   },
   computed: {

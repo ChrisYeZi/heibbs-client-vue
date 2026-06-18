@@ -69,12 +69,16 @@
         <input type="text" v-model="user.captcha" v-if="questCaptcha" />
         <div
           class="form-quest-submit"
-          v-if="!questCaptcha && captchaCountdown<=0"
+          v-if="!questCaptcha && captchaCountdown <= 0"
           @click="forgotRequestCaptcha()"
         >
           获取验证码
         </div>
-        <div class="form-quest-submit" v-if="captchaCountdown>0" style="background:#ccc;color:#666">
+        <div
+          class="form-quest-submit"
+          v-if="captchaCountdown > 0"
+          style="background: #ccc; color: #666"
+        >
           {{ captchaCountdown }}秒后重试
         </div>
       </div>
@@ -120,12 +124,16 @@
         <input type="text" v-model="user.captcha" v-if="questCaptcha" />
         <div
           class="form-quest-submit"
-          v-if="!questCaptcha && captchaCountdown<=0"
+          v-if="!questCaptcha && captchaCountdown <= 0"
           @click="registerRequestCaptcha()"
         >
           获取验证码
         </div>
-        <div class="form-quest-submit" v-if="captchaCountdown>0" style="background:#ccc;color:#666">
+        <div
+          class="form-quest-submit"
+          v-if="captchaCountdown > 0"
+          style="background: #ccc; color: #666"
+        >
           {{ captchaCountdown }}秒后重试
         </div>
       </div>
@@ -210,12 +218,14 @@ export default {
   },
   methods: {
     loadNoticeConfig() {
-      GetSystemConfigAPI().then(res => {
-        if (res.status === 200) {
-          this.noticeEnabled = res.data.notice_enabled !== 'false';
-          this.noticeText = res.data.notice_text || this.noticeText;
-        }
-      }).catch(() => {});
+      GetSystemConfigAPI()
+        .then((res) => {
+          if (res.status === 200) {
+            this.noticeEnabled = res.data.notice_enabled !== "false";
+            this.noticeText = res.data.notice_text || this.noticeText;
+          }
+        })
+        .catch(() => {});
     },
     // 跳转首页
     toIndex() {
@@ -279,10 +289,10 @@ export default {
         if (res.status == 200) {
           this.content = res.data;
           this.msgShow = true;
-          // 延迟跳转
+          // 延迟跳转回登录表单
           setTimeout(() => {
-            router.push("/login");
-          }, 1000);
+            this.indexType = "login";
+          }, 1500);
         } else {
           this.content = res.data;
           this.msgShow = true;
@@ -290,14 +300,14 @@ export default {
       });
     },
     startCaptchaTimer() {
-      this.captchaCountdown = 60
+      this.captchaCountdown = 60;
       this.captchaTimer = setInterval(() => {
-        this.captchaCountdown--
+        this.captchaCountdown--;
         if (this.captchaCountdown <= 0) {
-          clearInterval(this.captchaTimer)
-          this.captchaTimer = null
+          clearInterval(this.captchaTimer);
+          this.captchaTimer = null;
         }
-      }, 1000)
+      }, 1000);
     },
     // 忘记密码请求验证码
     forgotRequestCaptcha() {
@@ -475,6 +485,7 @@ export default {
         border-radius: 10px;
         margin-left: 50px;
         background: rgba(116, 135, 105, 0.6);
+        color: rgba(255, 255, 255, 0.9);
       }
       .form-quest-submit:active {
         background: rgba(116, 135, 105, 0.9);

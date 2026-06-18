@@ -21,7 +21,16 @@
     />
 
     <div class="task-list">
-      <div v-for="item in filteredTasks" :key="item.task.id" class="task-card">
+      <div
+        v-for="item in filteredTasks"
+        :key="item.task.id"
+        class="task-card"
+        :class="{
+          'task-done':
+            item.progress &&
+            (item.progress.status === 4 || item.progress.status === 5),
+        }"
+      >
         <div class="task-header">
           <span class="task-tag">{{ cycleLabel(item.task.cycleType) }}</span
           ><span class="task-title">{{ item.task.title }}</span>
@@ -131,16 +140,20 @@
             >领取奖励</el-button
           >
           <!-- 已领取 -->
-          <span
+          <el-button
             v-if="item.progress && item.progress.status === 4"
-            class="status-text done"
-            >已完成</span
+            size="small"
+            disabled
+            class="done-btn"
+            >任务已完成</el-button
           >
           <!-- 已取消 -->
-          <span
+          <el-button
             v-if="item.progress && item.progress.status === 5"
-            class="status-text cancelled"
-            >已取消</span
+            size="small"
+            disabled
+            class="done-btn"
+            >任务已取消</el-button
           >
         </div>
       </div>
@@ -224,23 +237,49 @@ export default defineComponent({
           group_level: "用户组等级",
         } as any
       )[c] || c);
-    const parseRandomPool = (json: string) => { try { return JSON.parse(json) || []; } catch (e) { return []; } };
+    const parseRandomPool = (json: string) => {
+      try {
+        return JSON.parse(json) || [];
+      } catch (e) {
+        return [];
+      }
+    };
     const itemList = ref<any[]>([]);
     const medalList = ref<any[]>([]);
     const creditDefList = ref<any[]>([]);
-    const getItemIcon = (id: number) => { const it = itemList.value.find((i: any) => i.id === id); return it ? it.icon : ''; };
-    const getMedalIcon = (id: number) => { const m = medalList.value.find((i: any) => i.id === id); return m ? m.imageUrl : ''; };
-    const getCreditName = (key: string) => { const d = creditDefList.value.find((i: any) => i.extcredits === key); return d ? d.extcreditsName : key.replace('extcredits', '积分'); };
-    const getItemName = (id: number) => { const it = itemList.value.find((i: any) => i.id === id); return it ? it.name : '物品#' + id; };
-    const getMedalName = (id: number) => { const m = medalList.value.find((i: any) => i.id === id); return m ? m.name : '勋章#' + id; };
+    const getItemIcon = (id: number) => {
+      const it = itemList.value.find((i: any) => i.id === id);
+      return it ? it.icon : "";
+    };
+    const getMedalIcon = (id: number) => {
+      const m = medalList.value.find((i: any) => i.id === id);
+      return m ? m.imageUrl : "";
+    };
+    const getCreditName = (key: string) => {
+      const d = creditDefList.value.find((i: any) => i.extcredits === key);
+      return d ? d.extcreditsName : key.replace("extcredits", "积分");
+    };
+    const getItemName = (id: number) => {
+      const it = itemList.value.find((i: any) => i.id === id);
+      return it ? it.name : "物品#" + id;
+    };
+    const getMedalName = (id: number) => {
+      const m = medalList.value.find((i: any) => i.id === id);
+      return m ? m.name : "勋章#" + id;
+    };
     const randomRewardText = (r: any) => {
-      if (r.type === "credit") return getCreditName(r.credit || 'extcredits2') + '+' + (r.value || 0);
-      if (r.type === "item") return getItemName(r.id) + ' x' + (r.qty || 1);
+      if (r.type === "credit")
+        return getCreditName(r.credit || "extcredits2") + "+" + (r.value || 0);
+      if (r.type === "item") return getItemName(r.id) + " x" + (r.qty || 1);
       if (r.type === "medal") return getMedalName(r.id);
-      return '';
+      return "";
     };
     const loadRefData = async () => {
-      const [it, md, cd] = await Promise.all([GetAdminItemListAPI(), GetAdminMedalListAPI(), GetCreditDefsAPI()]);
+      const [it, md, cd] = await Promise.all([
+        GetAdminItemListAPI(),
+        GetAdminMedalListAPI(),
+        GetCreditDefsAPI(),
+      ]);
       if (it.status === 200) itemList.value = it.data.records || [];
       if (md.status === 200) medalList.value = md.data.records || [];
       if (cd.status === 200) creditDefList.value = cd.data || [];
@@ -254,7 +293,10 @@ export default defineComponent({
       const parts = [];
       if (t.rewardType && t.rewardValue)
         parts.push(getCreditName(t.rewardType) + "+" + t.rewardValue);
-      if (t.rewardItemId) parts.push(getItemName(t.rewardItemId) + " x" + (t.rewardItemQuantity || 1));
+      if (t.rewardItemId)
+        parts.push(
+          getItemName(t.rewardItemId) + " x" + (t.rewardItemQuantity || 1)
+        );
       return parts.join(" + ") || "无";
     };
     const getPercent = (item: any) =>
@@ -506,5 +548,29 @@ h2 {
   color: #f6ad47;
   font-weight: 600;
   font-size: 11px;
+}
+
+/* 已完成/已取消任务 */
+.task-card.task-done {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  opacity: 0.75;
+}
+.task-card.task-done .task-title {
+  text-decoration: line-through;
+  color: #b0b0b0;
+}
+.task-card.task-done .task-desc,
+.task-card.task-done .task-meta {
+  color: #c0c0c0;
+}
+.task-card.task-done .task-tag {
+  background: rgba(180, 180, 180, 0.6);
+}
+.done-btn {
+  background: #e0e0e0 !important;
+  border-color: #d0d0d0 !important;
+  color: #a0a0a0 !important;
+  cursor: not-allowed;
 }
 </style>
