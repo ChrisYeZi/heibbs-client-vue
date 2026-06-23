@@ -245,7 +245,7 @@ export default defineComponent({
           description: adminDesc.value,
         });
         ElMessage[r.status === 200 ? "success" : "error"](
-          r.data || String(r)
+          String(r.data || "")
         );
         if (r.status === 200) {
           adminAmt.value = 0;

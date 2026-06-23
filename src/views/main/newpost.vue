@@ -13,7 +13,7 @@
         :model="postForm"
         style="max-width: 100%"
       >
-        <el-form-item label="帖子标题" label-position="right" required>
+        <el-form-item v-if="!isReply" label="帖子标题" label-position="right" required>
           <el-input
             v-model="postForm.subject"
             placeholder="请输入帖子标题（最多80字）"
@@ -22,6 +22,9 @@
           />
           <div class="input-tip">{{ postForm.subject.length }}/80</div>
         </el-form-item>
+        <div v-else class="reply-hint">
+          <span>回复帖子</span>
+        </div>
       </el-form>
     </div>
 
@@ -135,15 +138,17 @@ export default defineComponent({
     const currentBlockName = ref("");
 
     // 发帖表单数据
+    const isReply = computed(() => !!route.query.tid); // 有tid=回复模式
     const postForm = ref<InsertPostQuery>({
-      fid: Number(route.params.bid) || 0, // 从路由获取板块ID
+      fid: Number(route.params.bid) || 0,
+      tid: route.query.tid ? Number(route.query.tid) : undefined,
       subject: "",
       message: "",
     });
 
-    // 表单验证：标题和内容不能为空
+    // 表单验证：回复模式只需内容，发帖模式还需标题
     const isFormValid = computed(() => {
-      const hasSubject = postForm.value.subject?.trim().length > 0;
+      const hasSubject = isReply.value || postForm.value.subject?.trim().length > 0;
       let hasContent = false;
 
       if (isCodeView.value) {
@@ -199,30 +204,28 @@ export default defineComponent({
     // 提交发帖
     const handleSubmit = async () => {
       if (!isFormValid.value) {
-        ElMessage.warning("标题和内容不能为空！");
+        ElMessage.warning(isReply.value ? "内容不能为空！" : "标题和内容不能为空！");
         return;
       }
 
       // 构造提交数据
       const submitData: InsertPostQuery = {
         fid: postForm.value.fid,
-        subject: postForm.value.subject.trim(),
+        subject: isReply.value ? undefined : postForm.value.subject.trim(),
         message: isCodeView.value
           ? codeContent.value.trim()
           : editorRef.value?.getHtml() || valueHtml.value.trim(),
       };
+      if (isReply.value) submitData.tid = postForm.value.tid;
 
       try {
         isSubmitting.value = true;
         const res: any = await InsertPostAPI(submitData);
 
         if (res.status === 200) {
-          ElMessage.success("帖子发布成功！");
-          // 发布成功后跳转：可选跳转到板块页或新帖子页
+          ElMessage.success(isReply.value ? "回复成功！" : "帖子发布成功！");
           setTimeout(() => {
             router.push(`/block/${postForm.value.fid}`);
-            // 如果接口返回帖子ID，可跳转到帖子详情页：
-            // router.push(`/post/${res.data.pid}`);
           }, 1000);
         } else {
           ElMessage.error(`发布失败：${res.data || "服务器错误"}`);
@@ -341,6 +344,7 @@ export default defineComponent({
       codeContent,
       toggleCodeView,
       isFormValid,
+      isReply,
       validateForm,
       currentBlockName,
     };
@@ -389,6 +393,12 @@ export default defineComponent({
       color: #999;
       margin-top: 5px;
       text-align: right;
+    }
+    .reply-hint {
+      font-size: 14px;
+      color: #728567;
+      padding: 8px 0;
+      font-weight: 500;
     }
   }
 

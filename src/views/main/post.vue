@@ -207,12 +207,21 @@
             <div class="dropdown-item" @click="handleMainPostAction('share')">
               分享
             </div>
+            <div class="dropdown-divider" v-if="canDeletePost"></div>
             <div
-              class="dropdown-divider"
+              class="dropdown-item danger"
               v-if="canDeletePost"
-            ></div>
-            <div class="dropdown-item danger" v-if="canDeletePost" @click="warnUser(mainPost.authorid, mainPost.pid)">警告</div>
-            <div class="dropdown-item danger" v-if="canDeletePost" @click="muteUser(mainPost.authorid)">禁言</div>
+              @click="warnUser(mainPost.authorid, mainPost.pid)"
+            >
+              警告
+            </div>
+            <div
+              class="dropdown-item danger"
+              v-if="canDeletePost"
+              @click="muteUser(mainPost.authorid)"
+            >
+              禁言
+            </div>
             <div
               class="dropdown-divider"
               v-if="judgmentPermission(mainPost.authorid)"
@@ -245,6 +254,13 @@
         ></textarea>
         <div class="reply-actions">
           <el-button type="warning" @click="submitPostReply">回复</el-button>
+          <el-button
+            type="primary"
+            size="default"
+            plain
+            @click="gotoAdvancedNewReply(mainPost.fid, mainPost.tid)"
+            >高级编辑</el-button
+          >
           <el-button @click="cancelReply">取消</el-button>
         </div>
       </div>
@@ -317,14 +333,15 @@
               <div class="comment-edit-actions">
                 <el-button
                   type="warning"
-                  size="small"
+                  size="default"
                   @click="handleSubmitEdit(comment)"
                   >修改</el-button
                 >
-                <el-button size="small" @click="cancelEdit">取消</el-button>
+                <el-button size="default" @click="cancelEdit">取消</el-button>
                 <el-button
                   type="primary"
-                  size="small"
+                  size="default"
+                  plain
                   @click="gotoAdvancedEdit(comment.pid)"
                   >高级编辑</el-button
                 >
@@ -462,8 +479,20 @@
                     分享
                   </div>
                   <div class="dropdown-divider" v-if="canDeletePost"></div>
-                  <div class="dropdown-item danger" v-if="canDeletePost" @click="warnUser(comment.authorid, comment.pid)">警告</div>
-                  <div class="dropdown-item danger" v-if="canDeletePost" @click="muteUser(comment.authorid)">禁言</div>
+                  <div
+                    class="dropdown-item danger"
+                    v-if="canDeletePost"
+                    @click="warnUser(comment.authorid, comment.pid)"
+                  >
+                    警告
+                  </div>
+                  <div
+                    class="dropdown-item danger"
+                    v-if="canDeletePost"
+                    @click="muteUser(comment.authorid)"
+                  >
+                    禁言
+                  </div>
                   <div
                     class="dropdown-divider"
                     v-if="judgmentPermission(comment.authorid)"
@@ -509,6 +538,13 @@
               <div class="reply-actions">
                 <el-button type="warning" @click="submitCommentReply"
                   >回复</el-button
+                >
+                <el-button
+                  type="primary"
+                  size="default"
+                  plain
+                  @click="gotoAdvancedNewReply(comment.fid, comment.tid)"
+                  >高级编辑</el-button
                 >
                 <el-button @click="cancelReply">取消</el-button>
               </div>
@@ -1695,6 +1731,10 @@ export default defineComponent({
       router.push(`/editpost/${pid}`);
       cancelEdit();
     };
+    // 高级编辑新建回复（带富文本编辑器）
+    const gotoAdvancedNewReply = (fid: number, tid: number) => {
+      router.push(`/newpost/${fid}?tid=${tid}`);
+    };
 
     // 初始化数据
     getData();
@@ -1746,6 +1786,7 @@ export default defineComponent({
       cancelEdit,
       handleSubmitEdit,
       gotoAdvancedEdit,
+      gotoAdvancedNewReply,
       // 下拉菜单相关
       showMainPostDropdown,
       showCommentDropdown,
@@ -2123,7 +2164,7 @@ export default defineComponent({
     }
 
     tr:nth-child(even) {
-      background-color: #fafafa;
+      background-color: rgba(255, 255, 255, 0.9);
     }
     .neg {
       color: #e8743a;

@@ -215,8 +215,8 @@ export default defineComponent({
 
     // 优先用代码视图内容（如果处于代码视图）
     const handleSubmit = async () => {
-      // 标题验证
-      if (!postData.value.subject?.trim()) {
+      // 标题验证（仅主题帖需要标题，回复帖跳过）
+      if (postData.value.first === 1 && !postData.value.subject?.trim()) {
         ElMessage.warning("请输入帖子标题");
         return;
       }

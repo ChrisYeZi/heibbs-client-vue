@@ -13,7 +13,7 @@ import 'element-plus/dist/index.css'
 
 import axios from 'axios'
 app.config.globalProperties.$axios = axios
-app.config.globalProperties.$version = "beta-0.06.500"
+app.config.globalProperties.$version = "release-1.00.000"
 
 app.use(store).use(router).use(vant).use(ElementPlus).mount('#app')
 
