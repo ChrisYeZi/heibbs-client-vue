@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://www.heibbs.net/favicon.ico" width="80" alt="HeiBBS Logo" />
+  <img src="https://api.heibbs.net/favicon.ico" width="80" alt="HeiBBS Logo" />
 </p>
 
 <h1 align="center">HeiBBS — 罗小黑妖灵论坛</h1>
